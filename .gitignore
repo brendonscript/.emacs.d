@@ -1,0 +1,6 @@
+eln-cache/
+elpa/
+etc/
+var/
+
+.last-package-update-day
