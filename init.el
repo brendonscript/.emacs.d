@@ -206,6 +206,7 @@
   (evil-set-initial-state 'dashboard-mode 'normal))
 
 (use-package evil-collection
+  :diminish evil-collection-unimpaired-mode
   :after evil
   :config
   (evil-collection-init))
@@ -237,6 +238,7 @@
    :defer t)
 
 (use-package undo-tree
+  :diminish undo-tree-mode
   :init
   (global-undo-tree-mode))
 
@@ -294,8 +296,9 @@
 
 (use-package consult
   ;; Replace bindings. Lazily loaded due by `use-package'.
-  :bind (("C-c f a" . consult-org-agenda)
-         ("C-c f f" . consult-org-heading)
+  :bind (("C-c s a" . consult-org-agenda)
+         ("C-c s o" . consult-outline)
+         ("C-c s s" . consult-org-heading)
          ("C-c r" . consult-recent-file)
          ("C-c h" . consult-history)
          ("C-c m" . consult-mode-command)
@@ -478,6 +481,7 @@
         ;;; but rather prepended to the default completion-styles.
         ;; completion-category-overrides '((file (styles orderless partial-completion))) ;; orderless is tried first
         completion-category-overrides '((file (styles partial-completion)) ;; partial-completion is tried first
+                                        (consult-multi (styles orderless+initialism))
                                         ;; enable initialism by default for symbols
                                         (command (styles +orderless-with-initialism))
                                         (variable (styles +orderless-with-initialism))
@@ -587,7 +591,7 @@
   ("k" text-scale-decrease "out")
   ("f" nil "finished" :exit t))
 
-(global-set-key (kbd "C-c t f") 'me/hydra-text-scale/body)
+(global-set-key (kbd "C-c T f") 'me/hydra-text-scale/body)
 
 ;; (me/leader-keys
 ;;   "ts" '(hydra-text-scale/body :which-key "scale text"))
@@ -715,7 +719,9 @@
     (setq org-agenda-todo-ignore-scheduled 'future)
     (setq org-agenda-skip-scheduled-if-deadline-is-shown t)
     (setq org-agenda-skip-scheduled-if-done t)
-    (setq org-deadline-warning-days 1)
+    (setq org-agenda-skip-deadline-if-done t)
+    (setq org-deadline-warning-days 0)
+
 
     (setq org-agenda-custom-commands
           '(("n" "Agenda and all TODOs"
@@ -729,7 +735,12 @@
 (defun me/org-capture-setup ()
   (progn
     (setq org-capture-templates
-          '(("d" "Distraction" entry
+          '(
+
+            ("c" "Capture" entry
+             (file+headline "~/Org/distractions.org" "Distractions")
+             "* %^{Title}\n\n  Source: %u, %c\n\n  %i" :prepend t)
+            ("d" "Distraction" entry
              (file+headline "~/Org/distractions.org" "Distractions")
              "* %?\n%U\n" :prepend t)
             ("n" "Note" entry
@@ -797,14 +808,17 @@
          ("C-c l" . org-store-link)
          :map org-mode-map
          ("C-c ?" . nil)
-         ("C-c t ?" . org-table-field-info))
+         ("C-c T ?" . org-table-field-info)
+         :map org-agenda-mode-map
+         ("C-c o l" . org-agenda-log-mode))
   :config
   (me/org-settings-setup)
   (me/org-habit-setup)
   (me/org-todo-tag-setup)
   (me/org-agenda-setup)
   (me/org-capture-setup)
-  (me/org-font-setup))
+  (me/org-font-setup)
+  (require 'org-protocol))
 
 (use-package org-contrib
   :after org)
@@ -982,7 +996,7 @@
 
 (use-package vterm
   :commands vterm
-  :bind (("C-c T" . vterm))
+  :bind (("C-c t" . vterm))
   :config
   (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *")  ;; Set this to match your custom shell prompt
   ;;(setq vterm-shell "zsh")                       ;; Set this to customize the shell to launch
