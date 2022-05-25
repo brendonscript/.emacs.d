@@ -180,9 +180,11 @@
 
 (winner-mode 1)
 
-(use-package exec-path-from-shell
-:config
-  (when '(IS-MAC)
+(set-language-environment "UTF-8")
+
+(when '(IS-MAC)
+  (use-package exec-path-from-shell
+    :config
     (exec-path-from-shell-initialize)))
 
 ;; NOTE: If you want to move everything out of the ~/.emacs.d folder
@@ -737,7 +739,7 @@
 
     ;; Time and Clock settings
     (setq org-clock-out-when-done t)
-    (setq org-clock-idle-time 15)
+    (setq org-clock-idle-time nil)
 
     ;; Sometimes I change tasks I'm clocking quickly - this removes clocked tasks with 0:00 duration
     (setq org-clock-out-remove-zero-time-clocks t)
@@ -825,20 +827,18 @@
     (setq org-agenda-skip-scheduled-if-deadline-is-shown t)
     (setq org-agenda-skip-scheduled-if-done t)
     (setq org-agenda-skip-deadline-if-done t)
-    (setq org-agenda-scheduled-leaders '("" ""))
     (setq org-deadline-warning-days 0)
-    (setq org-agenda-compact-blocks nil)
-    (setq org-agenda-block-separator (string-to-char " "))
-    (setq org-agenda-hidden-separator "‌‌ ")
-    (setq org-cycle-separator-lines 2)
-    (setq org-agenda-sorting-strategy '(todo-state-down time-down))
-
+    (setq org-agenda-compact-blocks t)
+    (setq org-agenda-sorting-strategy '((agenda todo-state-down habit-down time-up priority-down category-keep)
+                                        (todo priority-down category-keep)
+                                        (tags priority-down category-keep)
+                                        (search category-keep)))
     ;; (setq org-agenda-category-icon-alist
     ;;       `(("work" ,(list (all-the-icons-faicon "briefcase")) nil nil :ascent center)
     ;;         ("work projects" ,(list (all-the-icons-material "build")) nil nil :ascent center)))
 
     (setq org-agenda-prefix-format '((agenda  . " %i %-12:c%?-12t% s")
-                                     ;(agenda  . " %i %-12:c%?-12t% s") ;; file name + org-agenda-entry-type
+                                        ;(agenda  . " %i %-12:c%?-12t% s") ;; file name + org-agenda-entry-type
                                      (timeline  . "  % s")
                                      (todo  . " %i %-12:c")
                                      (tags  . " %i %-12:c")
