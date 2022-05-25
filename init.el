@@ -46,8 +46,8 @@
   (auto-package-update-at-time "09:00"))
 
 ;; You will most likely need to adjust this font size for your system!
-(defvar me/default-font-size 150)
-(defvar me/default-variable-font-size 150)
+(defvar me/default-font-size 160)
+(defvar me/default-variable-font-size 160)
 
 ;; Make frame transparency overridable
 (defvar me/frame-transparency '(95 . 95))
@@ -61,6 +61,10 @@
 (defconst IS-BSD     (or IS-MAC (eq system-type 'berkeley-unix))
   "If the host is running BSD return true")
 
+(defun me/alternate-buffer ()
+  (interactive)
+  (switch-to-buffer (other-buffer)))
+
 (defun me/save-all-unsaved ()
   "Save all unsaved files. no ask."
   (interactive)
@@ -71,11 +75,17 @@
 
 (setq inhibit-startup-message t)
 
-(scroll-bar-mode -1)        ; Disable visible scrollbar
-(tool-bar-mode -1)          ; Disable the toolbar
-(tooltip-mode -1)           ; Disable tooltips
-(menu-bar-mode -1)          ; Disable the menu bar
-(set-fringe-mode 10)        ; Give some breathing room
+;; Have to wrap all of these due to them not working inside Termux on Android or inside terminals
+(when (fboundp 'scroll-bar-mode)
+  (scroll-bar-mode -1))
+(when (fboundp 'tool-bar-mode)
+  (tool-bar-mode -1))
+(when (fboundp 'tooltip-mode)
+  (tooltip-mode -1))
+(when (fboundp 'menu-bar-mode)
+  (menu-bar-mode -1))
+(when (fboundp 'set-fringe-mode)
+  (set-fringe-mode 10))
 
 (setq visible-bell nil)            ;; Set up the visible bell
 (setq ring-bell-function #'ignore) ;; Disable the annoying bell sound
@@ -102,14 +112,22 @@
   (add-hook mode (lambda () (display-line-numbers-mode 0))))
 
 (set-face-attribute 'default nil :font "Fira Code Retina" :height me/default-font-size)
-
-;; Set the fixed pitch face
 (set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height me/default-font-size)
+
+;; (when '(IS-MAC)
+;;   (set-face-attribute 'default nil :font "MonoLisa Custom" :height me/default-font-size)
+;;   (set-face-attribute 'fixed-pitch nil :font "MonoLisa Custom" :height me/default-font-size))
 
 ;; Set the variable pitch face
 (set-face-attribute 'variable-pitch nil :font "Cantarell" :height me/default-variable-font-size :weight 'regular)
 
 (defalias 'yes-or-no-p 'y-or-n-p)
+
+(customize-set-variable 'display-buffer-base-action
+                        '((display-buffer-reuse-window display-buffer-same-window)
+                          (reusable-frames . t)))
+
+(customize-set-variable 'even-window-sizes nil)     ; avoid resizing
 
 ;; Make ESC quit prompts
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
@@ -117,6 +135,8 @@
 (setq mac-command-modifier 'meta
         mac-option-modifier 'super
         mac-control-modifier 'control
+        mac-right-command-modifier 'control
+        mac-right-option-modifier 'meta
         nx-function-modifier 'hyper)
 
 (defun me/open-config ()
@@ -158,6 +178,8 @@
 ;; Enable recursive minibuffers
 (setq enable-recursive-minibuffers t)
 
+(winner-mode 1)
+
 (use-package exec-path-from-shell
 :config
   (when '(IS-MAC)
@@ -165,14 +187,17 @@
 
 ;; NOTE: If you want to move everything out of the ~/.emacs.d folder
 ;; reliably, set `user-emacs-directory` before loading no-littering!
-;(setq user-emacs-directory "~/.cache/emacs")
+                                        ;(setq user-emacs-directory "~/.cache/emacs")
 
-(use-package no-littering)
+(use-package no-littering
+  :config
+  (add-to-list 'recentf-exclude no-littering-var-directory)
+  (add-to-list 'recentf-exclude no-littering-etc-directory)
 
-;; no-littering doesn't set this by default so we must place
-;; auto save files in the same path as it uses for sessions
-(setq auto-save-file-name-transforms
-      `((".*" ,(no-littering-expand-var-file-name "auto-save/") t)))
+  ;; no-littering doesn't set this by default so we must place
+  ;; auto save files in the same path as it uses for sessions
+  (setq auto-save-file-name-transforms
+        `((".*" ,(no-littering-expand-var-file-name "auto-save/") t))))
 
 (use-package evil
   :init
@@ -278,7 +303,12 @@
   :custom ((doom-modeline-height 15)
            (doom-modeline-bar-width 6)
            (doom-modeline-minor-modes t)
-           (doom-modeline-buffer-file-name-style 'truncate-except-project))
+           (doom-modeline-buffer-file-name-style 'truncate-except-project)
+           (doom-modeline-minor-modes nil)
+           (doom-modeline-persp-name t)
+           (doom-modeline-display-default-persp-name t)
+           (doom-modeline-persp-icon t)
+           (doom-modeline-modal-icon t))
   ;; This configuration to is fix a bug where certain windows would not display
   ;; their full content due to the overlapping modeline
   :config (advice-add #'fit-window-to-buffer :before (lambda (&rest _) (redisplay t))))
@@ -293,6 +323,16 @@
 (use-package savehist
   :init
   (savehist-mode))
+
+(use-package perspective
+  :custom
+  (persp-mode-prefix-key (kbd "C-c w"))  ; pick your own prefix key here
+  :init
+  (setq persp-state-default-file (concat persp-save-dir "persp-state"))
+  :config
+  (unless (equal persp-mode t)
+    (persp-mode))
+  (add-hook 'kill-emacs-hook #'persp-state-save))
 
 (use-package consult
   ;; Replace bindings. Lazily loaded due by `use-package'.
@@ -383,7 +423,8 @@
    consult--source-bookmark consult--source-recent-file
    consult--source-project-recent-file
    :preview-key (kbd "M-."))
-
+  (consult-customize consult--source-buffer :hidden t :default nil)
+  (add-to-list 'consult-buffer-sources persp-consult-source)
   ;; Optionally configure the narrowing key.
   ;; Both < and C-+ work reasonably well.
   (setq consult-narrow-key "<") ;; (kbd "C-+")
@@ -395,14 +436,14 @@
   ;; By default `consult-project-function' uses `project-root' from project.el.
   ;; Optionally configure a different project root function.
   ;; There are multiple reasonable alternatives to chose from.
-  ;;;; 1. project.el (the default)
+    ;;;; 1. project.el (the default)
   ;; (setq consult-project-function #'consult--default-project--function)
-  ;;;; 2. projectile.el (projectile-project-root)
+    ;;;; 2. projectile.el (projectile-project-root)
   ;; (autoload 'projectile-project-root "projectile")
   ;; (setq consult-function-project (lambda (_) (projectile-project-root)))
-  ;;;; 3. vc.el (vc-root-dir)
+    ;;;; 3. vc.el (vc-root-dir)
   ;; (setq consult-project-function (lambda (_) (vc-root-dir)))
-  ;;;; 4. locate-dominating-file
+    ;;;; 4. locate-dominating-file
   ;; (setq consult-project-function (lambda (_) (locate-dominating-file "." ".git")))
   )
 
@@ -593,8 +634,70 @@
 
 (global-set-key (kbd "C-c T f") 'me/hydra-text-scale/body)
 
-;; (me/leader-keys
-;;   "ts" '(hydra-text-scale/body :which-key "scale text"))
+(defhydra me/hydra-buffers (:color blue :hint nil)
+  "
+                                                                       ╭─────────┐
+     Move to Window         Switch                  Do                 │ Buffers │
+  ╭────────────────────────────────────────────────────────────────────┴─────────╯
+           ^_k_^          [_b_] switch             [_d_] kill the buffer
+           ^^↑^^          [_i_] ibuffer            [_r_] toggle read-only mode
+       _h_ ←   → _l_      [_a_] alternate          [_u_] revert buffer changes
+           ^^↓^^          [_o_] other              [_w_] save buffer
+           ^_j_^
+  --------------------------------------------------------------------------------
+              "
+  ("<tab>" hydra-master/body "back")
+  ("<ESC>" nil "quit")
+  ("a" me/alternate-buffer)
+  ("b" consult-buffer)
+  ("d" kill-current-buffer)
+  ("i" ibuffer)
+  ("o" other-window)
+  ("h" windmove-left  :color red)
+  ("k" windmove-up    :color red)
+  ("j" windmove-down  :color red)
+  ("l" windmove-right :color red)
+  ("r" read-only-mode)
+  ("u" revert-buffer)
+  ("w" save-buffer))
+
+(global-set-key (kbd "C-c b") 'me/hydra-buffers/body)
+
+(defhydra me/hydra-windows (:color blue :hint nil)
+  "
+                                                                       ╭─────────┐
+     Move to      Size    Scroll        Split                    Do    │ Windows │
+  ╭────────────────────────────────────────────────────────────────────┴─────────╯
+        ^_k_^           ^_K_^       ^_p_^    ╭─┬─┐^ ^        ╭─┬─┐^ ^         ↺ [_u_] undo layout
+        ^^↑^^           ^^↑^^       ^^↑^^    │ │ │_v_ertical ├─┼─┤_b_alance   ↻ [_r_] restore layout
+    _h_ ←   → _l_   _H_ ←   → _L_   ^^ ^^    ╰─┴─╯^ ^        ╰─┴─╯^ ^         ✗ [_d_] close window
+        ^^↓^^           ^^↓^^       ^^↓^^    ╭───┐^ ^        ╭───┐^ ^         ⇋ [_w_] cycle window
+        ^_j_^           ^_J_^       ^_n_^    ├───┤_s_tack    │   │_z_oom
+        ^^ ^^           ^^ ^^       ^^ ^^    ╰───╯^ ^        ╰───╯^ ^
+  --------------------------------------------------------------------------------
+            "
+  ("<tab>" hydra-master/body "back")
+  ("<ESC>" nil "quit")
+  ("n" scroll-other-window :color red)
+  ("p" scroll-other-window-down :color red)
+  ("b" balance-windows)
+  ("d" delete-window)
+  ("H" shrink-window-horizontally :color red)
+  ("h" windmove-left :color red)
+  ("J" shrink-window :color red)
+  ("j" windmove-down :color red)
+  ("K" enlarge-window :color red)
+  ("k" windmove-up :color red)
+  ("L" enlarge-window-horizontally :color red)
+  ("l" windmove-right :color red)
+  ("r" winner-redo :color red)
+  ("s" split-window-vertically :color red)
+  ("u" winner-undo :color red)
+  ("v" split-window-horizontally :color red)
+  ("w" other-window)
+  ("z" delete-other-windows))
+
+(global-set-key (kbd "C-c W") 'me/hydra-windows/body)
 
 (defun me/org-mode-initial-setup ()
   (org-indent-mode)
@@ -629,9 +732,10 @@
     (setq org-duration-format 'h:mm)
     (setq-default org-enforce-todo-dependencies t)
 
-    ;; Time and Clock settings
+    ;; Source Editing
+    (setq org-edit-src-turn-on-auto-save t)
 
-    ;; Clock out when moving task to a done state
+    ;; Time and Clock settings
     (setq org-clock-out-when-done t)
     (setq org-clock-idle-time 15)
 
@@ -649,15 +753,16 @@
 
     ;; Refile
     (setq org-refile-target-files me/org-refile-files)
-    (setq org-refile-targets '((org-refile-target-files :maxlevel . 2)))
-
-    ;; Save Org buffers after refiling!
-    (advice-add 'org-refile :after 'org-save-all-org-buffers)))
+    (setq org-refile-targets '((org-refile-target-files :maxlevel . 2)))))
 
 (defun me/org-habit-setup ()
   (progn
     (require 'org-habit)
     (add-to-list 'org-modules 'org-habit)
+    (setq org-habit-today-glyph ?◌)
+    (setq org-habit-completed-glyph ?●)
+    (setq org-habit-missed-glyph ?○)
+    (setq org-habit-preceding-days 10)
     (setq org-habit-show-habits-only-for-today t
           org-habit-graph-column 65)))
 
@@ -720,53 +825,96 @@
     (setq org-agenda-skip-scheduled-if-deadline-is-shown t)
     (setq org-agenda-skip-scheduled-if-done t)
     (setq org-agenda-skip-deadline-if-done t)
+    (setq org-agenda-scheduled-leaders '("" ""))
     (setq org-deadline-warning-days 0)
+    (setq org-agenda-compact-blocks nil)
+    (setq org-agenda-block-separator (string-to-char " "))
+    (setq org-agenda-hidden-separator "‌‌ ")
+    (setq org-cycle-separator-lines 2)
+    (setq org-agenda-sorting-strategy '(todo-state-down time-down))
 
+    ;; (setq org-agenda-category-icon-alist
+    ;;       `(("work" ,(list (all-the-icons-faicon "briefcase")) nil nil :ascent center)
+    ;;         ("work projects" ,(list (all-the-icons-material "build")) nil nil :ascent center)))
+
+    (setq org-agenda-prefix-format '((agenda  . " %i %-12:c%?-12t% s")
+                                     ;(agenda  . " %i %-12:c%?-12t% s") ;; file name + org-agenda-entry-type
+                                     (timeline  . "  % s")
+                                     (todo  . " %i %-12:c")
+                                     (tags  . " %i %-12:c")
+                                     (search . " %i %-12:c")))
 
     (setq org-agenda-custom-commands
           '(("n" "Agenda and all TODOs"
              ((agenda "")
-              (alltodo "")))
+              (alltodo "" ((org-agenda-tag-filter-preset '("-routine"))))))
+            ("r" "Routines"
+             ((agenda "" ((org-agenda-tag-filter-preset '("+routine"))))))
             ("w" "Work Agenda"
              ((agenda "" (
                           (org-agenda-span 7)
-                          (org-agenda-tag-filter-preset '("+@work"))))))))))
+                          (org-agenda-tag-filter-preset '("+@work"))))
+              (alltodo "" ((org-agenda-tag-filter-preset '("+@work"))))))))
+    ))
+
+;; (setq org-agenda-custom-commands
+;;       '(("n" "Agenda and all TODOs"
+;;          ((agenda "")
+;;           (alltodo "")))
+;; 	  ("s" "Super View"
+;; 	   (
+;; 	    (org-ql-block '(and (todo "TODO" "NEXT" "PROG" "INTR")
+;; 				(planning 7)
+;; 			  (not (tags "@work" "routine")))
+;; 			  ((org-ql-block-header "Upcoming")))
+;; 	    (org-ql-block '(and (todo "TODO" "NEXT" "PROG" "INTR")
+;; 				(tags "@work")
+;; 				(planning 1))
+;; 			  ((org-ql-block-header "Work")))
+;; 	    (agenda "" ((let org-agenda-category-filter-preset '("-routine"))))
+;; 	    (org-ql-block '(and (todo "TODO" "NEXT" "PROG" "INTR")
+;; 				(tags "routine")
+;; 				(planning 0)))
+;; 	  ))))
 
 (defun me/org-capture-setup ()
   (progn
     (setq org-capture-templates
           '(
-
-            ("c" "Capture" entry
-             (file+headline "~/Org/distractions.org" "Distractions")
-             "* %^{Title}\n\n  Source: %u, %c\n\n  %i" :prepend t)
             ("d" "Distraction" entry
              (file+headline "~/Org/distractions.org" "Distractions")
              "* %?\n%U\n" :prepend t)
             ("n" "Note" entry
              (file+headline "~/Org/inbox.org" "Note Inbox")
              "* %?\n%U\n" :prepend t)
-            ("t" "Task" entry
+            ("t" "New Task" entry
              (file+headline "~/Org/inbox.org" "Task Inbox")
              "* TODO %?\n%U\n" :prepend t)
-            ("T" "Task Today" entry
+            ("T" "New Task Today" entry
              (file+headline "~/Org/inbox.org" "Task Inbox")
              "* TODO %?\nSCHEDULED: %t" :prepend t)
-            ("w" "Work Task" entry
-             (file+headline "~/Org/todo.org" "Work Tasks")
+            ("w" "Work Captures")
+            ("wt" "Work Task" entry
+             (file+headline "~/Org/inbox.org" "Work Inbox")
+             "* TODO %?\n%U\n" :prepend t)
+            ("wT" "Work Task Today" entry
+             (file+headline "~/Org/inbox.org" "Work Inbox")
              "* TODO %?\nSCHEDULED: %t" :prepend t)
+            ("wf" "Family Office Task" entry
+             (file+headline "~/Org/projects.org" "Family Office")
+             "* TODO %?\n%U\n" :prepend t)
+            ("wa" "Architecture Task" entry
+             (file+headline "~/Org/projects.org" "Architecture")
+             "* TODO %?\n%U\n" :prepend t)
             ("a" "Snippet" entry
              (file+headline "~/Org/inbox.org" "Snippet Notes")
              "* %?\n%U\n%i\n" :prepend t)
             ("i" "Interuptions" entry
              (file+headline "~/Org/todo.org" "Interuptions")
-             "* INTR %?\n%U\n" :prepend t)
+             "* INTR %?\nSCHEDULED: %t\n" :prepend t)
             ("j" "Journal" entry
              (file+olp+datetree "~/Org/journal.org")
-             "* %U - %?\n")
-            ("z" "Test" entry
-             (file+headline "~/Org/distractions.org" "Testing")
-             "* %^{Testing thing}\n%^{Other thing}\n%?\n")
+             "* %U\n%?\n")
             ))))
 
 (defun me/org-font-setup ()
@@ -806,6 +954,7 @@
   :bind (("C-c c" . org-capture)
          ("C-c a" . org-agenda)
          ("C-c l" . org-store-link)
+         ("C-c o s" . org-save-all-org-buffers)
          :map org-mode-map
          ("C-c ?" . nil)
          ("C-c T ?" . org-table-field-info)
@@ -858,7 +1007,22 @@
 (use-package visual-fill-column
   :hook (org-mode . me/org-mode-visual-fill))
 
+(use-package org-pretty-tags
+  :commands (org-pretty-tags-global-mode)
+  :init (org-pretty-tags-global-mode t)
+  :config
+  (setq org-pretty-tags-surrogate-strings '(("@errand" "🛒")
+                                            ("@home" "🏡")
+                                            ("@work" "💼")
+                                            ("@emacs" "⌨️")
+                                            ("routine" "🔁")
+                                            ("bookmark" "🔖")
+                                            ("idea" "💡")
+                                            ("distraction" "❓")
+                                            ("ARCHIVE" "🗄️")
+                                            )))
 
+(use-package org-ql)
 
 (setq org-confirm-babel-evaluate nil)
 
@@ -900,9 +1064,6 @@
 (use-package lsp-treemacs
   :after lsp)
 
-(use-package lsp-ivy
-  :after lsp)
-
 (use-package dap-mode
   ;; Uncomment the config below if you want all UI panes to be hidden by default!
   ;; :custom
@@ -913,13 +1074,7 @@
   :config
   ;; Set up Node debugging
   (require 'dap-node)
-  (dap-node-setup) ;; Automatically installs Node debug adapter if needed
-
-  ;; Bind `C-c l d` to `dap-hydra` for easy access
-  (general-define-key
-    :keymaps 'lsp-mode-map
-    :prefix lsp-keymap-prefix
-    "d" '(dap-hydra t :wk "debugger")))
+  (dap-node-setup)) ;; Automatically installs Node debug adapter if needed
 
 (use-package typescript-mode
   :mode "\\.ts\\'"
@@ -1048,6 +1203,7 @@
   :bind (("C-x C-j" . dired-jump))
   :custom ((dired-listing-switches "-agho --group-directories-first"))
   :config
+  (setq dired-dwim-target t)
   (evil-collection-define-key 'normal 'dired-mode-map
       "h" 'dired-single-up-directory
       "l" 'dired-single-buffer)
@@ -1068,7 +1224,7 @@
                                 ("mkv" . "mpv"))))
 
 (use-package dired-hide-dotfiles
-  :hook (dired-mode . dired-hide-dotfiles-mode)
+  ;;:hook (dired-mode . dired-hide-dotfiles-mode)
   :config
   (evil-collection-define-key 'normal 'dired-mode-map
     "H" 'dired-hide-dotfiles-mode))

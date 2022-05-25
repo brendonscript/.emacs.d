@@ -4,3 +4,4 @@ etc/
 var/
 
 .last-package-update-day
+*.txt
