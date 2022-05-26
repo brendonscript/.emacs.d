@@ -1247,7 +1247,6 @@ Date Usage
       (setq org-deadline-warning-days 0)
       (setq org-agenda-compact-blocks t)
       (setq org-agenda-window-setup 'current-window)
-      (setq org-agenda-sticky t)
       (setq org-agenda-restore-windows-after-quit t)
       (setq org-agenda-sorting-strategy '((agenda habit-down time-up priority-down category-keep)
                                           (todo priority-down category-keep)
