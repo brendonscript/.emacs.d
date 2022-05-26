@@ -757,6 +757,11 @@
     (setq org-refile-target-files me/org-refile-files)
     (setq org-refile-targets '((org-refile-target-files :maxlevel . 2)))))
 
+(defun me/insert-timestamp ()
+  (interactive)
+  (let ((current-prefix-arg '(16))) (call-interactively 'org-time-stamp-inactive))) ; Universal Argument x2 - 4*4
+(global-set-key (kbd "C-c o t") 'me/insert-timestamp)
+
 (defun me/org-habit-setup ()
   (progn
     (require 'org-habit)
@@ -823,13 +828,18 @@
     (setq org-agenda-start-with-log-mode nil)
     (setq org-agenda-use-time-grid nil)
     (setq org-agenda-start-on-weekday nil)
+    (setq org-agenda-start-day "-2d")
+    (setq org-agenda-span 7)
     (setq org-agenda-todo-ignore-scheduled 'future)
     (setq org-agenda-skip-scheduled-if-deadline-is-shown t)
     (setq org-agenda-skip-scheduled-if-done t)
     (setq org-agenda-skip-deadline-if-done t)
     (setq org-deadline-warning-days 0)
     (setq org-agenda-compact-blocks t)
-    (setq org-agenda-sorting-strategy '((agenda todo-state-down habit-down time-up priority-down category-keep)
+    (setq org-agenda-window-setup 'current-window)
+    (setq org-agenda-sticky t)
+    (setq org-agenda-restore-windows-after-quit t)
+    (setq org-agenda-sorting-strategy '((agenda habit-down time-up priority-down category-keep)
                                         (todo priority-down category-keep)
                                         (tags priority-down category-keep)
                                         (search category-keep)))
