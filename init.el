@@ -132,12 +132,12 @@
 ;; Make ESC quit prompts
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 
-(setq mac-command-modifier 'meta
-        mac-option-modifier 'super
-        mac-control-modifier 'control
+(setq mac-command-modifier 'control
+        mac-option-modifier 'meta
+        mac-control-modifier 'super
         mac-right-command-modifier 'control
         mac-right-option-modifier 'meta
-        nx-function-modifier 'hyper)
+        ns-function-modifier 'hyper)
 
 (defun me/open-config ()
   (interactive)
@@ -331,6 +331,7 @@
   (persp-mode-prefix-key (kbd "C-c w"))  ; pick your own prefix key here
   :init
   (setq persp-state-default-file (concat persp-save-dir "persp-state"))
+  (setq persp-modestring-short t)
   :config
   (unless (equal persp-mode t)
     (persp-mode))
@@ -427,27 +428,7 @@
    :preview-key (kbd "M-."))
   (consult-customize consult--source-buffer :hidden t :default nil)
   (add-to-list 'consult-buffer-sources persp-consult-source)
-  ;; Optionally configure the narrowing key.
-  ;; Both < and C-+ work reasonably well.
-  (setq consult-narrow-key "<") ;; (kbd "C-+")
-
-  ;; Optionally make narrowing help available in the minibuffer.
-  ;; You may want to use `embark-prefix-help-command' or which-key instead.
-  ;; (define-key consult-narrow-map (vconcat consult-narrow-key "?") #'consult-narrow-help)
-
-  ;; By default `consult-project-function' uses `project-root' from project.el.
-  ;; Optionally configure a different project root function.
-  ;; There are multiple reasonable alternatives to chose from.
-    ;;;; 1. project.el (the default)
-  ;; (setq consult-project-function #'consult--default-project--function)
-    ;;;; 2. projectile.el (projectile-project-root)
-  ;; (autoload 'projectile-project-root "projectile")
-  ;; (setq consult-function-project (lambda (_) (projectile-project-root)))
-    ;;;; 3. vc.el (vc-root-dir)
-  ;; (setq consult-project-function (lambda (_) (vc-root-dir)))
-    ;;;; 4. locate-dominating-file
-  ;; (setq consult-project-function (lambda (_) (locate-dominating-file "." ".git")))
-  )
+  (setq consult-narrow-key "<"))
 
 (use-package orderless
   :demand t
@@ -866,6 +847,9 @@
               (alltodo "" ((org-agenda-tag-filter-preset '("+@work"))))))))
     ))
 
+(add-hook 'org-agenda-finalize-hook #'org-agenda-find-same-or-today-or-agenda 90)
+
+
 ;; (setq org-agenda-custom-commands
 ;;       '(("n" "Agenda and all TODOs"
 ;;          ((agenda "")
@@ -1107,6 +1091,8 @@
   :config
   (pyvenv-mode 1))
 
+(use-package json-mode)
+
 (use-package projectile
   :diminish projectile-mode
   :config (projectile-mode)
@@ -1200,6 +1186,8 @@
     (setq eshell-visual-commands '("htop" "zsh" "vim")))
 
   (eshell-git-prompt-use-theme 'powerline))
+
+(use-package fish-mode)
 
 (when (string= system-type "darwin")
   (setq dired-use-ls-dired t

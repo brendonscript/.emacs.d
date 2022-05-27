@@ -230,12 +230,12 @@ I am using the [[https://github.com/tonsky/FiraCode][Fira Code]] and [[https://f
 
 #+begin_src emacs-lisp
 
-  (setq mac-command-modifier 'meta
-          mac-option-modifier 'super
-          mac-control-modifier 'control
+  (setq mac-command-modifier 'control
+          mac-option-modifier 'meta
+          mac-control-modifier 'super
           mac-right-command-modifier 'control
           mac-right-option-modifier 'meta
-          nx-function-modifier 'hyper)
+          ns-function-modifier 'hyper)
 
 #+end_src
 
@@ -598,6 +598,7 @@ For smarter undo functionality inside Emacs
     (persp-mode-prefix-key (kbd "C-c w"))  ; pick your own prefix key here
     :init
     (setq persp-state-default-file (concat persp-save-dir "persp-state"))
+    (setq persp-modestring-short t)
     :config
     (unless (equal persp-mode t)
       (persp-mode))
@@ -698,27 +699,7 @@ For smarter undo functionality inside Emacs
      :preview-key (kbd "M-."))
     (consult-customize consult--source-buffer :hidden t :default nil)
     (add-to-list 'consult-buffer-sources persp-consult-source)
-    ;; Optionally configure the narrowing key.
-    ;; Both < and C-+ work reasonably well.
-    (setq consult-narrow-key "<") ;; (kbd "C-+")
-
-    ;; Optionally make narrowing help available in the minibuffer.
-    ;; You may want to use `embark-prefix-help-command' or which-key instead.
-    ;; (define-key consult-narrow-map (vconcat consult-narrow-key "?") #'consult-narrow-help)
-
-    ;; By default `consult-project-function' uses `project-root' from project.el.
-    ;; Optionally configure a different project root function.
-    ;; There are multiple reasonable alternatives to chose from.
-      ;;;; 1. project.el (the default)
-    ;; (setq consult-project-function #'consult--default-project--function)
-      ;;;; 2. projectile.el (projectile-project-root)
-    ;; (autoload 'projectile-project-root "projectile")
-    ;; (setq consult-function-project (lambda (_) (projectile-project-root)))
-      ;;;; 3. vc.el (vc-root-dir)
-    ;; (setq consult-project-function (lambda (_) (vc-root-dir)))
-      ;;;; 4. locate-dominating-file
-    ;; (setq consult-project-function (lambda (_) (locate-dominating-file "." ".git")))
-    )
+    (setq consult-narrow-key "<"))
 #+end_src
 
 **** Orderless Completion
@@ -1276,6 +1257,9 @@ Date Usage
                 (alltodo "" ((org-agenda-tag-filter-preset '("+@work"))))))))
       ))
 
+  (add-hook 'org-agenda-finalize-hook #'org-agenda-find-same-or-today-or-agenda 90)
+
+
   ;; (setq org-agenda-custom-commands
   ;;       '(("n" "Agenda and all TODOs"
   ;;          ((agenda "")
@@ -1680,6 +1664,14 @@ You can use the pyvenv package to use =virtualenv= environments in Emacs.  The =
 
 #+end_src
 
+**** Json
+
+#+begin_src emacs-lisp
+
+  (use-package json-mode)
+
+#+end_src
+
 *** Company Mode
 
 [[http://company-mode.github.io/][Company Mode]] provides a nicer in-buffer completion interface than =completion-at-point= which is more reminiscent of what you would expect from an IDE.  We add a simple configuration to make the keybindings a little more useful (=TAB= now completes the selection and initiates completion at the current location if needed).
@@ -1914,6 +1906,14 @@ For more thoughts on Eshell, check out these articles by Pierre Neidhardt:
     (eshell-git-prompt-use-theme 'powerline))
 
 
+#+end_src
+
+*** Fish Mode
+
+#+begin_src emacs-lisp
+
+  (use-package fish-mode)
+  
 #+end_src
 
 ** File Management
