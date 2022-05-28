@@ -45,6 +45,8 @@
   (auto-package-update-maybe)
   (auto-package-update-at-time "09:00"))
 
+(setq custom-file "~/.emacs.d/custom.el")
+
 ;; You will most likely need to adjust this font size for your system!
 (defvar me/default-font-size 160)
 (defvar me/default-variable-font-size 160)

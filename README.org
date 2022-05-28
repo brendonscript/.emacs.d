@@ -81,6 +81,12 @@ You can also use =M-x auto-package-update-now= to update right now!
 #+end_src
 
 * Custom Variables
+** Custom.el
+#+begin_src emacs-lisp
+
+  (setq custom-file "~/.emacs.d/custom.el")
+
+#+end_src
 ** Fonts
 
 #+begin_src emacs-lisp
