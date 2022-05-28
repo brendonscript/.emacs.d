@@ -1151,9 +1151,9 @@
   :bind (("C-c t" . vterm))
   :config
   (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *")  ;; Set this to match your custom shell prompt
-  ;;(setq vterm-shell "zsh")                       ;; Set this to customize the shell to launch
+  (setq vterm-shell "fish")                       ;; Set this to customize the shell to launch
   (setq vterm-max-scrollback 10000)
-  (evil-set-initial-state 'vterm-mode 'emacs))
+  )
 
 (when (eq system-type 'windows-nt)
   (setq explicit-shell-file-name "powershell.exe")
