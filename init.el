@@ -51,6 +51,10 @@
 (defvar me/default-font-size 160)
 (defvar me/default-variable-font-size 160)
 
+(when '(IS-WINDOWS)
+  (setq me/default-font-size 130)
+  (setq me/default-variable-font-size 130))
+
 ;; Make frame transparency overridable
 (defvar me/frame-transparency '(95 . 95))
 
@@ -113,15 +117,13 @@
                 vterm-mode-hook))
   (add-hook mode (lambda () (display-line-numbers-mode 0))))
 
-(set-face-attribute 'default nil :font "Fira Code Retina" :height me/default-font-size)
-(set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height me/default-font-size)
+(defun me/set-fonts ()
+  (set-face-attribute 'default nil :font "Fira Code Retina" :height me/default-font-size)
+  (set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height me/default-font-size)
+  ;; Set the variable pitch face
+  (set-face-attribute 'variable-pitch nil :font "Cantarell" :height me/default-variable-font-size :weight 'regular))
 
-;; (when '(IS-MAC)
-;;   (set-face-attribute 'default nil :font "MonoLisa Custom" :height me/default-font-size)
-;;   (set-face-attribute 'fixed-pitch nil :font "MonoLisa Custom" :height me/default-font-size))
-
-;; Set the variable pitch face
-(set-face-attribute 'variable-pitch nil :font "Cantarell" :height me/default-variable-font-size :weight 'regular)
+(me/set-fonts)
 
 (defalias 'yes-or-no-p 'y-or-n-p)
 
@@ -919,6 +921,10 @@
             ("n" "Note" entry
              (file me/org-note-inbox-file)
              "* NOTE %?\n%U\n" :prepend t)
+
+            ("e" "Emacs" entry
+             (file+headline me/org-todo-file "Emacs")
+             "* TODO %?\n%T\n" :prepend t)
 
             ("t" "Task" entry
              (file+headline me/org-todo-file "Personal Inbox")
