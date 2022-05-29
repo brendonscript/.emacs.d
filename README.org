@@ -1,3 +1,4 @@
+
 #+TITLE: Brendon's Emacs Config
 #+PROPERTY: header-args:emacs-lisp :tangle ./init.el :mkdirp yes :results silent :noweb yes
 #+PROPERTY: CATEGORY emacs
@@ -356,11 +357,10 @@ I am using the [[https://github.com/tonsky/FiraCode][Fira Code]] and [[https://f
 
 #+begin_src emacs-lisp
 
-  (when '(IS-MAC)
-    (use-package exec-path-from-shell
-      :config
+  (use-package exec-path-from-shell
+    :config
+    (when (memq window-system '(mac ns x))
       (exec-path-from-shell-initialize)))
-  
 #+end_src
 
 ** Behavior
