@@ -189,6 +189,12 @@
     :config
     (exec-path-from-shell-initialize)))
 
+(use-package persistent-scratch
+  :after (no-littering org)
+  :custom ((persistent-scratch-autosave-interval 180))
+  :config
+  (add-hook 'after-init-hook 'persistent-scratch-setup-default))
+
 ;; NOTE: If you want to move everything out of the ~/.emacs.d folder
 ;; reliably, set `user-emacs-directory` before loading no-littering!
                                         ;(setq user-emacs-directory "~/.cache/emacs")
@@ -602,11 +608,14 @@
   ;; (counsel-describe-function-function #'helpful-callable)
   ;; (counsel-describe-variable-function #'helpful-variable)
   :bind
-  ("H-h" . helpful-at-point)
+  ("H-d" . helpful-at-point)
   ([remap describe-function] . helpful-function)
   ([remap describe-command] . helpful-command)
   ([remap describe-variable] . helpful-variable)
-  ([remap describe-key] . helpful-key))
+  ([remap describe-key] . helpful-key)
+  :config
+  (evil-global-set-key 'motion "K" 'helpful-at-point)
+  )
 
 (use-package hydra
   :defer t)
@@ -691,13 +700,27 @@
   (variable-pitch-mode 1)
   (visual-line-mode 1))
 
-(defvar me/org-dir "~/Org")
+;; Directories
+(defconst me/org-dir "~/Org/")
 
-(defvar me/org-archive-location "~/Org/archive.org::* From %s")
+;; Files
+(defconst me/org-todo-file (concat me/org-dir "todo.org"))
+(defconst me/org-note-inbox-file (concat me/org-dir "notes/inbox.org"))
+(defconst me/org-personal-note-file (concat me/org-dir "notes/personal.org"))
+(defconst me/org-work-note-file (concat me/org-dir "notes/work.org"))
+(defconst me/org-projects-file (concat me/org-dir "projects.org"))
+(defconst me/org-snippet-file (concat me/org-dir "notes/snippets.org"))
+(defconst me/org-mobile-file (concat me/org-dir "mobile.org"))
+(defconst me/org-distractions-file (concat me/org-dir "distractions.org"))
+(defconst me/org-journal-file (concat me/org-dir "journal.org"))
+(defconst me/org-archive-file (concat me/org-dir "archive.org"))
+(defconst me/org-emacs-config-file (concat user-emacs-directory "README.org"))
 
-(defvar me/org-agenda-files '("archive.org" "todo.org" "inbox.org" "projects.org" "distractions.org" "mobile.org" "journal.org" "routines.org"))
+;; Archive
+(defconst me/org-archive-location (concat me/org-archive-file "::* From %s"))
 
-(defvar me/org-refile-files '("archive.org" "todo.org" "inbox.org" "projects.org" "someday.org" "distractions.org" "mobile.org" "journal.org" "routines.org"))
+(defvar me/org-agenda-files (list me/org-todo-file me/org-projects-file me/org-mobile-file me/org-distractions-file me/org-journal-file me/org-emacs-config-file me/org-archive-file))
+(defvar me/org-refile-files (list me/org-todo-file me/org-projects-file me/org-mobile-file me/org-distractions-file me/org-journal-file me/org-archive-file))
 
 (defun me/org-settings-setup ()
   (progn
@@ -715,7 +738,7 @@
     (setq org-link-search-must-match-exact-headline nil)
     (setq org-log-done 'time)
     (setq org-log-into-drawer t)
-    (setq org-extend-today-until 7)
+    (setq org-extend-today-until 4)
     (setq org-duration-format 'h:mm)
     (setq-default org-enforce-todo-dependencies t)
 
@@ -729,8 +752,19 @@
     ;; Sometimes I change tasks I'm clocking quickly - this removes clocked tasks with 0:00 duration
     (setq org-clock-out-remove-zero-time-clocks t)
 
-    ;; Change tasks to whatever when clocking in
-    (setq org-clock-in-switch-to-state "PROG")
+    ;; Use a function to decide what to change the state to.
+    (defun me/switch-task-on-clock-start (task-state)
+      (if (or (string= task-state "TODO")(string= task-state "NEXT"))
+          "PROG"
+        task-state))
+
+    (defun me/switch-task-on-clock-out (task-state)
+      (if (string= task-state "PROG")
+          "NEXT"
+        task-state))
+
+    (setq org-clock-in-switch-to-state #'me/switch-task-on-clock-start)
+    (setq org-clock-out-switch-to-state #'me/switch-task-on-clock-out)
 
     ;; Resume clocking task on clock-in if the clock is open
     (setq org-clock-in-resume t)
@@ -740,7 +774,7 @@
 
     ;; Refile
     (setq org-refile-target-files me/org-refile-files)
-    (setq org-refile-targets '((org-refile-target-files :maxlevel . 2)))))
+    (setq org-refile-targets '((org-refile-target-files :maxlevel . 5)))))
 
 (defun me/insert-timestamp ()
     (interactive)
@@ -748,12 +782,12 @@
   ; This should be org specific
   (global-set-key (kbd "C-c o t") 'me/insert-timestamp)
 ;  (global-set-key (kbd "C-c o c") 'org-clock-goto)
-;  (add-hook '
+;  (add-hook ')
 
 
 ;  (global-set-key (kbd "C-c o c") 'org-clock-goto)
 ;  (global-set-key (kbd "C-c o c") 'org-clock-goto)
-;  (define-key
+;  (define-key )
 
 (defun me/org-habit-setup ()
   (progn
@@ -769,8 +803,9 @@
 (defun me/org-todo-tag-setup ()
   (progn
     (setq org-todo-keywords
-          '((sequence "TODO(t)" "NEXT(n)" "PROG(p!)" "INTR(i!)" "|" "DONE(d!)" "CANCELLED(c!)")
-            (sequence "|" "NOTE(N)" "PROJ(P)" "IDEA(I)" "DEPR(D)")))
+          '((sequence "TODO(t)" "NEXT(n)" "PROG(p)" "INTR(i!)" "|" "DONE(d!)" "CANCELLED(c@)")
+            (sequence "APT(a)" "SOMEDAY(s)" "NOTE(N)" "PROJ(P)" "IDEA(I)" "DEPR(D)")
+            (sequence "[ ](x)" "[-](-)" "|" "[X](X)")))
 
     (setq org-todo-keyword-faces
           '(
@@ -801,8 +836,10 @@
             ("@work" . ?w)
             ("@emacs" . ?e)
             (:endgroup)
+            ("inbox" . ?I)
             ("routine" . ?r)
             ("bookmark" . ?b)
+            ("backlog" . ?B)
             ("idea" . ?i)
             ("distraction" . ?d)))
     (setq org-tag-faces
@@ -811,17 +848,25 @@
             ("@work" . (:foreground "#1CC436" :weight bold))
             ("@emacs" . (:foreground "forest green" :weight bold))
             ("routine" . (:foreground "#CFE2F3" :weight regular))
+            ("inbox" . (:foreground "#CFE2F3" :weight regular))
             ("bookmark" . (:foreground "yellow1" :weight bold))
             ("idea" . (:foreground "pink" :weight bold))
             ("distraction" . (:foreground "red1" :weight bold))))))
 
 (defun me/org-agenda-setup ()
   (progn
+    (evil-define-key 'motion org-agenda-mode-map (kbd "sf") 'org-agenda-filter)
+    (evil-define-key 'motion org-agenda-mode-map (kbd "zc") 'evil-close-fold)
+    (evil-define-key 'motion org-agenda-mode-map (kbd "zo") 'evil-open-fold)
+    (evil-define-key 'motion org-agenda-mode-map (kbd "zr") 'evil-open-folds)
+    (evil-define-key 'motion org-agenda-mode-map (kbd "zm") 'evil-close-folds)
+    (evil-define-key 'motion org-agenda-mode-map (kbd "zO") 'evil-open-fold-rec)
+    (evil-define-key 'motion org-agenda-mode-map (kbd "za") 'evil-toggle-fold)
     (setq org-agenda-files me/org-agenda-files)
     (setq org-agenda-start-with-log-mode nil)
     (setq org-agenda-use-time-grid nil)
     (setq org-agenda-start-on-weekday nil)
-    (setq org-agenda-start-day "-2d")
+    (setq org-agenda-start-day nil)
     (setq org-agenda-span 7)
     (setq org-agenda-todo-ignore-scheduled 'future)
     (setq org-agenda-skip-scheduled-if-deadline-is-shown t)
@@ -835,91 +880,96 @@
                                         (todo priority-down category-keep)
                                         (tags priority-down category-keep)
                                         (search category-keep)))
-    ;; (setq org-agenda-category-icon-alist
-    ;;       `(("work" ,(list (all-the-icons-faicon "briefcase")) nil nil :ascent center)
-    ;;         ("work projects" ,(list (all-the-icons-material "build")) nil nil :ascent center)))
+    (setq org-agenda-tags-todo-honor-ignore-options t)
 
-    (setq org-agenda-prefix-format '((agenda  . " %i %-12:c%?-12t% s")
-                                        ;(agenda  . " %i %-12:c%?-12t% s") ;; file name + org-agenda-entry-type
-                                     (timeline  . "  % s")
-                                     (todo  . " %i %-12:c")
-                                     (tags  . " %i %-12:c")
-                                     (search . " %i %-12:c")))
+    ;; (setq org-agenda-prefix-format '((agenda  . " %i %-12:c%?-12t% s")
+    ;;                                     ;(agenda  . " %i %-12:c%?-12t% s") ;; file name + org-agenda-entry-type
+    ;;                                  (timeline  . "  % s")
+    ;;                                  (todo  . " %i %-12:c")
+    ;;                                  (tags  . " %i %-12:c")
+    ;;                                  (search . " %i %-12:c")))
+                                        ; https://emacs.stackexchange.com/questions/18179/org-agenda-command-with-org-agenda-filter-by-tag-not-working
 
-    (setq org-agenda-custom-commands
-          '(("n" "Agenda and all TODOs"
-             ((agenda "")
-              (alltodo "" ((org-agenda-tag-filter-preset '("-routine"))))))
-            ("r" "Routines"
-             ((agenda "" ((org-agenda-tag-filter-preset '("+routine"))))))
-            ("w" "Work Agenda"
-             ((agenda "" (
-                          (org-agenda-span 7)
-                          (org-agenda-tag-filter-preset '("+@work"))))
-              (alltodo "" ((org-agenda-tag-filter-preset '("+@work"))))))))
+    (defun me/org-agenda-place-point ()
+      (goto-char (point-min)))
+
+                                        ;(add-hook 'org-agenda-finalize-hook (lambda () (goto-char (point-min))) 90)
+                                        ;(remove-hook 'org-agenda-finalize-hook 'me/org-agenda-place-at-point)
+
+    (add-hook 'org-agenda-finalize-hook #'me/org-agenda-place-point 90)
     ))
-
-(add-hook 'org-agenda-finalize-hook #'org-agenda-find-same-or-today-or-agenda 90)
-
-
-;; (setq org-agenda-custom-commands
-;;       '(("n" "Agenda and all TODOs"
-;;          ((agenda "")
-;;           (alltodo "")))
-;; 	  ("s" "Super View"
-;; 	   (
-;; 	    (org-ql-block '(and (todo "TODO" "NEXT" "PROG" "INTR")
-;; 				(planning 7)
-;; 			  (not (tags "@work" "routine")))
-;; 			  ((org-ql-block-header "Upcoming")))
-;; 	    (org-ql-block '(and (todo "TODO" "NEXT" "PROG" "INTR")
-;; 				(tags "@work")
-;; 				(planning 1))
-;; 			  ((org-ql-block-header "Work")))
-;; 	    (agenda "" ((let org-agenda-category-filter-preset '("-routine"))))
-;; 	    (org-ql-block '(and (todo "TODO" "NEXT" "PROG" "INTR")
-;; 				(tags "routine")
-;; 				(planning 0)))
-;; 	  ))))
 
 (defun me/org-capture-setup ()
   (progn
     (setq org-capture-templates
           '(
+            ;; Personal ;;
             ("d" "Distraction" entry
-             (file+headline "~/Org/distractions.org" "Distractions")
-             "* %?\n%U\n" :prepend t)
+             (file+olp+datetree me/org-distractions-file)
+             "* %U - %? :distraction:\n")
+
             ("n" "Note" entry
-             (file+headline "~/Org/inbox.org" "Note Inbox")
-             "* %?\n%U\n" :prepend t)
-            ("t" "New Task" entry
-             (file+headline "~/Org/inbox.org" "Task Inbox")
-             "* TODO %?\n%U\n" :prepend t)
-            ("T" "New Task Today" entry
-             (file+headline "~/Org/inbox.org" "Task Inbox")
-             "* TODO %?\nSCHEDULED: %t" :prepend t)
-            ("w" "Work Captures")
-            ("wt" "Work Task" entry
-             (file+headline "~/Org/inbox.org" "Work Inbox")
-             "* TODO %?\n%U\n" :prepend t)
-            ("wT" "Work Task Today" entry
-             (file+headline "~/Org/inbox.org" "Work Inbox")
-             "* TODO %?\nSCHEDULED: %t" :prepend t)
-            ("wf" "Family Office Task" entry
-             (file+headline "~/Org/projects.org" "Family Office")
-             "* TODO %?\n%U\n" :prepend t)
-            ("wa" "Architecture Task" entry
-             (file+headline "~/Org/projects.org" "Architecture")
-             "* TODO %?\n%U\n" :prepend t)
-            ("a" "Snippet" entry
-             (file+headline "~/Org/inbox.org" "Snippet Notes")
+             (file me/org-note-inbox-file)
+             "* NOTE %?\n%U\n" :prepend t)
+
+            ("t" "Task" entry
+             (file+headline me/org-todo-file "Personal Inbox")
+             "* TODO %?\n%T\n" :prepend t)
+
+            ("T" "Task (Scheduled)" entry
+             (file+headline me/org-todo-file "Personal Inbox")
+             "* TODO %?\nSCHEDULED: %^T\n" :prepend t)
+
+            ("a" "Scheduled Appointment" entry
+             (file+headline me/org-todo-file "Appointments")
+             "* APT %?\n%^T\n" :prepend t)
+
+            ("A" "Active Appointment Notes" entry
+             (file+headline me/org-personal-note-file "Appointment Notes")
+             "* NOTE %?\n%U\n" :prepend t :clock-in t :clock-resume t)
+
+            ("s" "Snippet" entry
+             (file+headline me/org-snippet-file "Snippet Inbox")
              "* %?\n%U\n%i\n" :prepend t)
+
             ("i" "Interuptions" entry
-             (file+headline "~/Org/todo.org" "Interuptions")
-             "* INTR %?\nSCHEDULED: %t\n" :prepend t)
+             (file+headline me/org-todo-file "Interuptions")
+             "* INTR %?\n%T\n" :prepend t :clock-in t :clock-resume t)
+
             ("j" "Journal" entry
              (file+olp+datetree "~/Org/journal.org")
-             "* %U\n%?\n")
+             "* %U - %?\n")
+
+            ;; Work ;;
+            ("w" "Work Captures")
+
+            ("wt" "Work Task" entry
+             (file+headline me/org-todo-file "Work Inbox")
+             "* TODO %?\n%T\n" :prepend t)
+
+            ("wT" "Work Task (Scheduled)" entry
+             (file+headline me/org-todo-file "Work Inbox")
+             "* TODO %?\nSCHEDULED: %^T\n" :prepend t)
+
+            ("wm" "Scheduled Meeting" entry
+             (file+headline me/org-todo-file "Work Meetings")
+             "* APT %?\n%^T\n" :prepend t)
+
+            ("wM" "Active Meeting Notes" entry
+             (file+headline me/org-work-note-file "Meeting Notes")
+             "* NOTE %?\n%U\n" :prepend t :clock-in t :clock-resume t)
+
+            ("wf" "Family Office Task" entry
+             (file+headline me/org-projects-file "Family Office")
+             "* TODO %?\n%T\n" :prepend t)
+
+            ("ws" "Shareholder Task" entry
+             (file+headline me/org-projects-file "Shareholder")
+             "* TODO %?\n%T\n" :prepend t)
+
+            ("wa" "Architecture Task" entry
+             (file+headline me/org-projects-file "Architecture")
+             "* TODO %?\n%T\n" :prepend t)
             ))))
 
 (defun me/org-font-setup ()
@@ -1021,11 +1071,96 @@
                                             ("@work" "💼")
                                             ("@emacs" "⌨️")
                                             ("routine" "🔁")
+                                            ("inbox" "📥")
                                             ("bookmark" "🔖")
                                             ("idea" "💡")
                                             ("distraction" "❓")
                                             ("ARCHIVE" "🗄️")
                                             )))
+
+(use-package org-super-agenda
+  :config
+  (org-super-agenda-mode)
+  (setq org-agenda-custom-commands
+        '(("c" "Clean agenda"
+           ((agenda "" ((org-agenda-span 1)(org-agenda-tag-filter-preset '("-groceries" "-routine"))))))
+          ("r" "Routines"
+           ((agenda "" ((org-agenda-span 1)(org-agenda-tag-filter-preset '("+routine"))))))
+          ("i" "Inbox"
+           ((alltodo "" ((org-agenda-tag-filter-preset '("+inbox"))))))
+          ("w" "Work Agenda"
+           ((agenda "" ((org-agenda-span 7)
+                        (org-agenda-tag-filter-preset '("+@work"))))))
+          ("s" "SUPER AGENDA"
+           ((agenda "" ((org-agenda-span 1)))
+            (tags-todo "+inbox-@work")
+            (tags-todo "+groceries")
+            (tags-todo "+routine")
+            (tags-todo "+work")
+            (alltodo "")))
+          ("a" "POG AGENDA"
+           ((agenda "" ((org-agenda-span 'day)
+                        (org-super-agenda-groups
+                         '((:discard (:todo ("DONE" "CANCELLED")))
+                           (:name "In Progress" :todo "PROG" :order 1)
+                           (:name "Habits" :habit t :order 98)
+
+                           (:name "Today"
+                                  :time-grid t
+                                  :date t
+                                  :order 2)))))
+            (alltodo "" ((org-agenda-todo-ignore-scheduled nil)
+                         (org-agenda-show-inherited-tags nil)
+                         (org-agenda-overriding-header "")
+                         (org-super-agenda-groups
+                          '((:auto-category t)
+                            (:name "Next to do"
+                                   :todo "NEXT"
+                                   :order 1)
+                            (:name "Interupts"
+                                   :todo "INTR"
+                                   :order 2)
+                            (:name "Due Today"
+                                   :deadline today
+                                   :order 3)
+                            (:name "Due Soon"
+                                   :deadline future
+                                   :order 4)
+                            (:name "Overdue"
+                                   :deadline past
+                                   :order 5)
+                            (:name "Projects"
+                                   :todo "PROJ"
+                                   :order 6)
+                            (:name "Home Tasks"
+                                   :tag "@home"
+                                   :order 7)
+                            (:name "Errands"
+                                   :tag "@errand"
+                                   :order 8)
+                            (:name "Emacs"
+                                   :tag "@emacs"
+                                   :order 9)
+                            (:name "Ideas"
+                                   :tag "idea"
+                                   :todo "IDEA"
+                                   :order 10)
+                            (:name "Bookmarks"
+                                   :tag "bookmark"
+                                   :order 11)
+                            (:name "Work"
+                                   :tag "@work"
+                                   :order 12)
+                            (:name "Future"
+                                   :scheduled future
+                                   :order 13)
+                            (:discard (:anything))
+                            )))))
+           ((org-agenda-show-inherited-tags nil)
+            (org-agenda-compact-blocks t))
+           )))
+  (setq org-super-agenda-header-map nil))
+  ;(evil-define-key 'motion org-agenda-mode-map (kbd "q") 'org-agenda-quit))
 
 (use-package org-ql)
 
