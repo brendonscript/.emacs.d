@@ -684,6 +684,8 @@
 
 (global-set-key (kbd "C-c W") 'me/hydra-windows/body)
 
+(use-package origami)
+
 (defun me/org-mode-initial-setup ()
   (org-indent-mode)
   (variable-pitch-mode 1)
@@ -741,9 +743,17 @@
     (setq org-refile-targets '((org-refile-target-files :maxlevel . 2)))))
 
 (defun me/insert-timestamp ()
-  (interactive)
-  (let ((current-prefix-arg '(16))) (call-interactively 'org-time-stamp-inactive))) ; Universal Argument x2 - 4*4
-(global-set-key (kbd "C-c o t") 'me/insert-timestamp)
+    (interactive)
+    (let ((current-prefix-arg '(16))) (call-interactively 'org-time-stamp-inactive))) ; Universal Argument x2 - 4*4
+  ; This should be org specific
+  (global-set-key (kbd "C-c o t") 'me/insert-timestamp)
+;  (global-set-key (kbd "C-c o c") 'org-clock-goto)
+;  (add-hook '
+
+
+;  (global-set-key (kbd "C-c o c") 'org-clock-goto)
+;  (global-set-key (kbd "C-c o c") 'org-clock-goto)
+;  (define-key
 
 (defun me/org-habit-setup ()
   (progn

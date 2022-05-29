@@ -1025,7 +1025,7 @@ This is an example of using [[https://github.com/abo-abo/hydra][Hydra]] to desig
 
 *** Origami
 
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
 
   (use-package origami)
 
@@ -1136,11 +1136,20 @@ Date Usage
 
 **** Org Keybinds
 
+***** 
 #+begin_src emacs-lisp
   (defun me/insert-timestamp ()
     (interactive)
     (let ((current-prefix-arg '(16))) (call-interactively 'org-time-stamp-inactive))) ; Universal Argument x2 - 4*4
+  ; This should be org specific
   (global-set-key (kbd "C-c o t") 'me/insert-timestamp)
+;  (global-set-key (kbd "C-c o c") 'org-clock-goto)
+;  (add-hook '
+
+
+;  (global-set-key (kbd "C-c o c") 'org-clock-goto)
+;  (global-set-key (kbd "C-c o c") 'org-clock-goto)
+;  (define-key 
 #+end_src
 
 **** Org Habit Settings
