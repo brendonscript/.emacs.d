@@ -238,7 +238,15 @@
 
   ;; Initial states
   (evil-set-initial-state 'messages-buffer-mode 'normal)
-  (evil-set-initial-state 'dashboard-mode 'normal))
+  (evil-set-initial-state 'dashboard-mode 'normal)
+  (defun my-evil-record-macro ()
+    (interactive)
+    (if buffer-read-only
+        (quit-window)
+      (call-interactively 'evil-record-macro)))
+
+  (define-key evil-normal-state-map (kbd "q") 'my-evil-record-macro)
+  )
 
 (use-package evil-collection
   :diminish evil-collection-unimpaired-mode
@@ -603,7 +611,7 @@
   :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
 
 (use-package helpful
-  :commands (helpful-callable helpful-variable helpful-command helpful-key)
+  :commands (helpful-callable helpful-variable helpful-command helpful-key helpful-at-point)
   ;;:custom
   ;; (counsel-describe-function-function #'helpful-callable)
   ;; (counsel-describe-variable-function #'helpful-variable)
@@ -613,8 +621,8 @@
   ([remap describe-command] . helpful-command)
   ([remap describe-variable] . helpful-variable)
   ([remap describe-key] . helpful-key)
-  :config
-  (evil-global-set-key 'motion "K" 'helpful-at-point)
+  (:map evil-motion-state-map
+        ("K" . helpful-at-point))
   )
 
 (use-package hydra
@@ -1079,25 +1087,13 @@
                                             )))
 
 (use-package org-super-agenda
+  :after org
   :config
   (org-super-agenda-mode)
   (setq org-agenda-custom-commands
-        '(("c" "Clean agenda"
-           ((agenda "" ((org-agenda-span 1)(org-agenda-tag-filter-preset '("-groceries" "-routine"))))))
-          ("r" "Routines"
-           ((agenda "" ((org-agenda-span 1)(org-agenda-tag-filter-preset '("+routine"))))))
-          ("i" "Inbox"
-           ((alltodo "" ((org-agenda-tag-filter-preset '("+inbox"))))))
-          ("w" "Work Agenda"
-           ((agenda "" ((org-agenda-span 7)
-                        (org-agenda-tag-filter-preset '("+@work"))))))
-          ("s" "SUPER AGENDA"
-           ((agenda "" ((org-agenda-span 1)))
-            (tags-todo "+inbox-@work")
-            (tags-todo "+groceries")
-            (tags-todo "+routine")
-            (tags-todo "+work")
-            (alltodo "")))
+        '(("A" "Archive"
+           ((todo "DONE|CANCELLED")
+            ))
           ("a" "POG AGENDA"
            ((agenda "" ((org-agenda-span 'day)
                         (org-super-agenda-groups
@@ -1160,7 +1156,6 @@
             (org-agenda-compact-blocks t))
            )))
   (setq org-super-agenda-header-map nil))
-  ;(evil-define-key 'motion org-agenda-mode-map (kbd "q") 'org-agenda-quit))
 
 (use-package org-ql)
 
@@ -1376,10 +1371,14 @@
 (setq erc-server "irc.libera.chat"
       erc-nick "geoffery"
       erc-user-full-name "Geoffery"
+      erc-autojoin-timing 'ident
       erc-track-shorten-start 8
-      erc-autojoin-channels-alist '(("irc-libera.chat" "#emacs"))
+      erc-autojoin-channels-alist '(("libera.chat" "#org-mode" "#evil-mode" "#emacs-beginners" "#emacs-til" "#emacs" "#linux" "#fedora" "#archlinux" "##rust" "##programming"))
       erc-kill-buffer-on-part t
-      erc-auto-query 'bury)
+      erc-auto-query 'bury
+      ;; Stop displaying channels in the mode line for no good reason.
+      erc-track-exclude-type '("JOIN" "KICK" "NICK" "PART" "QUIT" "MODE" "333" "353")
+      erc-hide-list '("JOIN" "PART" "QUIT" "KICK" "NICK" "MODE" "333" "353"))
 
 ;; Make gc pauses faster by decreasing the threshold.
 (setq gc-cons-threshold (* 2 1000 1000))
