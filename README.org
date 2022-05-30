@@ -4,7 +4,16 @@
 #+STARTUP: content
 
 * Comments
-[[file:~/Code/dotfiles/.config/emacs/config/scratch/config.org::*Consult][Old Configuration]]
+- [[file:~/Code/dotfiles/.config/emacs/config/scratch/config.org::*Consult][Old Configuration]]
+- [[https://github.com/caisah/emacs.dz][Inspiration]]
+** Tasks
+*** TODO Organize Keybindings
+Put everything in functions and call inside the package configuration?
+Use ~(require 'package)~ to confirm its loaded
+Use ~(add-hook)~ to configure bindings on modes
+Use ~(bind-key "C-x M-$" 'ispell-buffer)~ for global binds
+**** TODO Document Keybindings
+**** TODO Fix Bullet sizes
 * Init.el Header
 
 #+begin_src emacs-lisp
@@ -361,6 +370,28 @@ I am using the [[https://github.com/tonsky/FiraCode][Fira Code]] and [[https://f
     :config
     (when (memq window-system '(mac ns x))
       (exec-path-from-shell-initialize)))
+
+#+end_src
+
+** Elisp Extensions 
+*** Dash
+[[https://github.com/magnars/dash.el][Modern Elisp List API]]
+
+#+begin_src emacs-lisp
+
+  (use-package dash
+    :commands (global-dash-fontify-mode)
+    :init (global-dash-fontify-mode)
+    :config (dash-register-info-lookup))
+  
+#+end_src
+*** s.el
+[[https://github.com/magnars/s.el][The long lost Emacs string manipulation library.]]
+
+#+begin_src emacs-lisp
+
+  (use-package s)
+
 #+end_src
 
 ** Behavior
@@ -1106,7 +1137,7 @@ This is an example of using [[https://github.com/abo-abo/hydra][Hydra]] to desig
       (setq org-pretty-entities t)
 
       ;; Behavior
-      (setq org-cycle-emulate-tab 'whitestart)
+      (setq org-cycle-emulate-tab 'white)
       (setq org-catch-invisible-edits 'smart)
       (setq org-link-search-must-match-exact-headline nil)
       (setq org-log-done 'time)
@@ -1456,8 +1487,9 @@ Need to update colors and icons
 #+end_src
 
 *** Appearance
-**** Superstar
+**** TODO Superstar
 
+Clean this up. First bullet is way smaller than the rest
 #+begin_src emacs-lisp
 
   (use-package org-superstar
@@ -1470,7 +1502,6 @@ Need to update colors and icons
       (set-face-attribute 'org-superstar-header-bullet nil :inherit 'fixed-pitched :height 90))
 
     :custom
-    
     ((org-superstar-todo-bullet-alist
      '(("TODO" . ?λ)
        ("NEXT" . ?✰)
@@ -1508,9 +1539,9 @@ We use [[https://github.com/joostkremers/visual-fill-column][visual-fill-column]
     :hook (org-mode . me/org-mode-visual-fill))
 
 #+end_src
-**** Pretty Tags
-
-#+begin_src emacs-lisp
+**** TODO Pretty Tags
+Disabled
+#+begin_src emacs-lisp :tangle no
 
   (use-package org-pretty-tags
     :commands (org-pretty-tags-global-mode)
@@ -1533,76 +1564,76 @@ We use [[https://github.com/joostkremers/visual-fill-column][visual-fill-column]
 
 #+begin_src emacs-lisp
 
-    (use-package org-super-agenda
-      :after org
-      :config
-      (org-super-agenda-mode)
-      (setq org-agenda-custom-commands
-            '(("A" "Archive"
-               ((todo "DONE|CANCELLED")
-                ))
-              ("a" "POG AGENDA"
-               ((agenda "" ((org-agenda-span 'day)
-                            (org-super-agenda-groups
-                             '((:discard (:todo ("DONE" "CANCELLED")))
-                               (:name "In Progress" :todo "PROG" :order 1)
-                               (:name "Habits" :habit t :order 98)
-
-                               (:name "Today"
-                                      :time-grid t
-                                      :date t
-                                      :order 2)))))
-                (alltodo "" ((org-agenda-todo-ignore-scheduled nil)
-                             (org-agenda-show-inherited-tags nil)
-                             (org-agenda-overriding-header "")
-                             (org-super-agenda-groups
-                              '((:auto-category t)
-                                (:name "Next to do"
-                                       :todo "NEXT"
-                                       :order 1)
-                                (:name "Interupts"
-                                       :todo "INTR"
-                                       :order 2)
-                                (:name "Due Today"
-                                       :deadline today
-                                       :order 3)
-                                (:name "Due Soon"
-                                       :deadline future
-                                       :order 4)
-                                (:name "Overdue"
-                                       :deadline past
-                                       :order 5)
-                                (:name "Projects"
-                                       :todo "PROJ"
-                                       :order 6)
-                                (:name "Home Tasks"
-                                       :tag "@home"
-                                       :order 7)
-                                (:name "Errands"
-                                       :tag "@errand"
-                                       :order 8)
-                                (:name "Emacs"
-                                       :tag "@emacs"
-                                       :order 9)
-                                (:name "Ideas"
-                                       :tag "idea"
-                                       :todo "IDEA"
-                                       :order 10)
-                                (:name "Bookmarks"
-                                       :tag "bookmark"
-                                       :order 11)
-                                (:name "Work"
-                                       :tag "@work"
-                                       :order 12)
-                                (:name "Future"
-                                       :scheduled future
-                                       :order 13)
-                                (:discard (:anything))
-                                )))))
-               ((org-agenda-show-inherited-tags nil)
-                (org-agenda-compact-blocks t))
-               )))
-      (setq org-super-agenda-header-map nil))
+  (use-package org-super-agenda
+    :after org
+    :config
+    (org-super-agenda-mode)
+    (setq org-agenda-custom-commands
+          '(("A" "Archive"
+             ((todo "DONE|CANCELLED")
+              ))
+            ("a" "POG AGENDA"
+             ((agenda "" ((org-agenda-span 'day)
+                          (org-super-agenda-groups
+                           '((:discard (:todo ("DONE" "CANCELLED")))
+                             (:name "In Progress" :todo "PROG" :order 1)
+                             (:name "Habits" :habit t :order 98)
+                             (:name "Today"
+                                    :time-grid t
+                                    :date t
+                                    :order 2)))))
+              (alltodo "" ((org-agenda-todo-ignore-scheduled nil)
+                           (org-agenda-show-inherited-tags nil)
+                           (org-agenda-overriding-header "")
+                           (org-super-agenda-groups
+                            '((:name "Habits" :habit t :order 99)
+                              (:name "In Progress"
+                                     :todo "PROG")
+                              (:name "Next to do"
+                                     :todo "NEXT"
+                                     :order 1)
+                              (:name "Interupts"
+                                     :todo "INTR"
+                                     :order 2)
+                              (:name "Due Today"
+                                     :deadline today
+                                     :order 3)
+                              (:name "Due Soon"
+                                     :deadline future
+                                     :order 4)
+                              (:name "Overdue"
+                                     :deadline past
+                                     :order 5)
+                              (:name "Projects"
+                                     :todo "PROJ"
+                                     :order 6)
+                              (:name "Home Tasks"
+                                     :tag "@home"
+                                     :order 7)
+                              (:name "Errands"
+                                     :tag "@errand"
+                                     :order 8)
+                              (:name "Emacs"
+                                     :tag "@emacs"
+                                     :order 9)
+                              (:name "Ideas"
+                                     :tag "idea"
+                                     :todo "IDEA"
+                                     :order 10)
+                              (:name "Bookmarks"
+                                     :tag "bookmark"
+                                     :order 11)
+                              (:name "Work"
+                                     :tag "@work"
+                                     :order 12)
+                              (:name "Future"
+                                     :scheduled future
+                                     :order 13)
+                              (:auto-category t :order 98))))))
+             ((org-agenda-show-inherited-tags nil)
+              (org-agenda-compact-blocks t))
+             )))
+    (setq org-super-agenda-header-map nil))
 #+end_src
 
 *** Org QL
@@ -1650,9 +1681,8 @@ This snippet adds a hook to =org-mode= buffers so that =me/org-babel-tangle-conf
 
 ** Development
 *** Languages
-
 **** IDE Features with lsp-mode
-
+Currently disabled
 ***** lsp-mode
 
 We use the excellent [[https://emacs-lsp.github.io/lsp-mode/][lsp-mode]] to enable IDE-like functionality for many different programming languages via "language servers" that speak the [[https://microsoft.github.io/language-server-protocol/][Language Server Protocol]].  Before trying to set up =lsp-mode= for a particular language, check out the [[https://emacs-lsp.github.io/lsp-mode/page/languages/][documentation for your language]] so that you can learn which language servers are available and how to install them.
@@ -1661,7 +1691,7 @@ The =lsp-keymap-prefix= setting enables you to define a prefix for where =lsp-mo
 
 The =which-key= integration adds helpful descriptions of the various keys so you should be able to learn a lot just by pressing =C-c l= in a =lsp-mode= buffer and trying different things that you find there.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 
   (defun me/lsp-mode-setup ()
     (setq lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
@@ -1671,7 +1701,7 @@ The =which-key= integration adds helpful descriptions of the various keys so you
     :commands (lsp lsp-deferred)
     :hook (lsp-mode . me/lsp-mode-setup)
     :init
-    (setq lsp-keymap-prefix "C-c l")  ;; Or 'C-l', 's-l'
+    ;(setq lsp-keymap-prefix "C-c l")  ;; Or 'C-l', 's-l'
     :config
     (lsp-enable-which-key-integration t))
 
@@ -1681,7 +1711,7 @@ The =which-key= integration adds helpful descriptions of the various keys so you
 
 [[https://emacs-lsp.github.io/lsp-ui/][lsp-ui]] is a set of UI enhancements built on top of =lsp-mode= which make Emacs feel even more like an IDE.  Check out the screenshots on the =lsp-ui= homepage (linked at the beginning of this paragraph) to see examples of what it can do.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 
   (use-package lsp-ui
     :hook (lsp-mode . lsp-ui-mode)
@@ -1702,7 +1732,7 @@ Try these commands with =M-x=:
 
 This package is built on the [[https://github.com/Alexander-Miller/treemacs][treemacs]] package which might be of some interest to you if you like to have a file browser at the left side of your screen in your editor.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 
   (use-package lsp-treemacs
     :after lsp)
@@ -1713,7 +1743,7 @@ This package is built on the [[https://github.com/Alexander-Miller/treemacs][tre
 
 [[https://emacs-lsp.github.io/dap-mode/][dap-mode]] is an excellent package for bringing rich debugging capabilities to Emacs via the [[https://microsoft.github.io/debug-adapter-protocol/][Debug Adapter Protocol]].  You should check out the [[https://emacs-lsp.github.io/dap-mode/page/configuration/][configuration docs]] to learn how to configure the debugger for your language.  Also make sure to check out the documentation for the debug adapter to see what configuration parameters are available to use for your debug templates!
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 
   (use-package dap-mode
     ;; Uncomment the config below if you want all UI panes to be hidden by default!
@@ -1729,6 +1759,7 @@ This package is built on the [[https://github.com/Alexander-Miller/treemacs][tre
 
 #+end_src
 
+**** elisp
 **** TypeScript
 
 This is a basic configuration for the TypeScript language so that =.ts= files activate =typescript-mode= when opened.  We're also adding a hook to =typescript-mode-hook= to call =lsp-deferred= so that we activate =lsp-mode= to get LSP features every time we edit TypeScript code.

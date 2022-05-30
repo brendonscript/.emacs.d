@@ -191,6 +191,13 @@
   (when (memq window-system '(mac ns x))
     (exec-path-from-shell-initialize)))
 
+(use-package dash
+  :commands (global-dash-fontify-mode)
+  :init (global-dash-fontify-mode)
+  :config (dash-register-info-lookup))
+
+(use-package s)
+
 (use-package persistent-scratch
   :after (no-littering org)
   :custom ((persistent-scratch-autosave-interval 180))
@@ -743,7 +750,7 @@
     (setq org-pretty-entities t)
 
     ;; Behavior
-    (setq org-cycle-emulate-tab 'whitestart)
+    (setq org-cycle-emulate-tab 'white)
     (setq org-catch-invisible-edits 'smart)
     (setq org-link-search-must-match-exact-headline nil)
     (setq org-log-done 'time)
@@ -1051,7 +1058,6 @@
     (set-face-attribute 'org-superstar-header-bullet nil :inherit 'fixed-pitched :height 90))
 
   :custom
-
   ((org-superstar-todo-bullet-alist
    '(("TODO" . ?λ)
      ("NEXT" . ?✰)
@@ -1081,22 +1087,6 @@
 (use-package visual-fill-column
   :hook (org-mode . me/org-mode-visual-fill))
 
-(use-package org-pretty-tags
-  :commands (org-pretty-tags-global-mode)
-  :init (org-pretty-tags-global-mode t)
-  :config
-  (setq org-pretty-tags-surrogate-strings '(("@errand" "🛒")
-                                            ("@home" "🏡")
-                                            ("@work" "💼")
-                                            ("@emacs" "⌨️")
-                                            ("routine" "🔁")
-                                            ("inbox" "📥")
-                                            ("bookmark" "🔖")
-                                            ("idea" "💡")
-                                            ("distraction" "❓")
-                                            ("ARCHIVE" "🗄️")
-                                            )))
-
 (use-package org-super-agenda
   :after org
   :config
@@ -1111,7 +1101,6 @@
                          '((:discard (:todo ("DONE" "CANCELLED")))
                            (:name "In Progress" :todo "PROG" :order 1)
                            (:name "Habits" :habit t :order 98)
-
                            (:name "Today"
                                   :time-grid t
                                   :date t
@@ -1120,7 +1109,9 @@
                          (org-agenda-show-inherited-tags nil)
                          (org-agenda-overriding-header "")
                          (org-super-agenda-groups
-                          '((:auto-category t)
+                          '((:name "Habits" :habit t :order 99)
+                            (:name "In Progress"
+                                   :todo "PROG")
                             (:name "Next to do"
                                    :todo "NEXT"
                                    :order 1)
@@ -1161,8 +1152,7 @@
                             (:name "Future"
                                    :scheduled future
                                    :order 13)
-                            (:discard (:anything))
-                            )))))
+                            (:auto-category t :order 98))))))
            ((org-agenda-show-inherited-tags nil)
             (org-agenda-compact-blocks t))
            )))
@@ -1189,38 +1179,6 @@
       (org-babel-tangle))))
 
 (add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'me/org-babel-tangle-config)))
-
-(defun me/lsp-mode-setup ()
-  (setq lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
-  (lsp-headerline-breadcrumb-mode))
-
-(use-package lsp-mode
-  :commands (lsp lsp-deferred)
-  :hook (lsp-mode . me/lsp-mode-setup)
-  :init
-  (setq lsp-keymap-prefix "C-c l")  ;; Or 'C-l', 's-l'
-  :config
-  (lsp-enable-which-key-integration t))
-
-(use-package lsp-ui
-  :hook (lsp-mode . lsp-ui-mode)
-  :custom
-  (lsp-ui-doc-position 'bottom))
-
-(use-package lsp-treemacs
-  :after lsp)
-
-(use-package dap-mode
-  ;; Uncomment the config below if you want all UI panes to be hidden by default!
-  ;; :custom
-  ;; (lsp-enable-dap-auto-configure nil)
-  ;; :config
-  ;; (dap-ui-mode 1)
-  :commands dap-debug
-  :config
-  ;; Set up Node debugging
-  (require 'dap-node)
-  (dap-node-setup)) ;; Automatically installs Node debug adapter if needed
 
 (use-package typescript-mode
   :mode "\\.ts\\'"
