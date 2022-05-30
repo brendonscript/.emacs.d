@@ -47,17 +47,6 @@
 
 (setq custom-file "~/.emacs.d/custom.el")
 
-;; You will most likely need to adjust this font size for your system!
-(defvar me/default-font-size 160)
-(defvar me/default-variable-font-size 160)
-
-(when '(IS-WINDOWS)
-  (setq me/default-font-size 130)
-  (setq me/default-variable-font-size 130))
-
-;; Make frame transparency overridable
-(defvar me/frame-transparency '(95 . 95))
-
 (defconst IS-MAC     (eq system-type 'darwin)
   "If the host is running MacOS return true")
 (defconst IS-LINUX   (eq system-type 'gnu/linux)
@@ -66,6 +55,17 @@
   "If the host is running Windows return true")
 (defconst IS-BSD     (or IS-MAC (eq system-type 'berkeley-unix))
   "If the host is running BSD return true")
+
+;; You will most likely need to adjust this font size for your system!
+(defvar me/default-font-size 160)
+(defvar me/default-variable-font-size 160)
+
+(when '(IS-WINDOWS)
+  (setq me/default-font-size 90)
+  (setq me/default-variable-font-size 90))
+
+;; Make frame transparency overridable
+(defvar me/frame-transparency '(95 . 95))
 
 (defun me/alternate-buffer ()
   (interactive)
@@ -993,14 +993,14 @@
                              (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
 
   ;; Set faces for heading levels
-  (dolist (face '((org-level-1 . 1.2)
-                  (org-level-2 . 1.1)
-                  (org-level-3 . 1.05)
-                  (org-level-4 . 1.0)
-                  (org-level-5 . 1.1)
-                  (org-level-6 . 1.1)
-                  (org-level-7 . 1.1)
-                  (org-level-8 . 1.1)))
+  (dolist (face '((org-level-1 . 1.1)
+                  (org-level-2 . 1.05)
+                  (org-level-3 . 1.00)
+                  (org-level-4 . 0.95)
+                  (org-level-5 . 0.9)
+                  (org-level-6 . 0.85)
+                  (org-level-7 . 0.80)
+                  (org-level-8 . 0.75)))
     (set-face-attribute (car face) nil :font "Cantarell" :weight 'regular :height (cdr face)))
 
   ;; Ensure that anything that should be fixed-pitch in Org files appears that way
@@ -1046,8 +1046,13 @@
   :hook (org-mode . org-superstar-mode)
   :config
   (set-face-attribute 'org-superstar-header-bullet nil :inherit 'fixed-pitched :height 180)
+
+  (when '(IS-WINDOWS)
+    (set-face-attribute 'org-superstar-header-bullet nil :inherit 'fixed-pitched :height 90))
+
   :custom
-  (org-superstar-todo-bullet-alist
+
+  ((org-superstar-todo-bullet-alist
    '(("TODO" . ?λ)
      ("NEXT" . ?✰)
      ("PROG" . ?∞)
@@ -1059,14 +1064,14 @@
      ("IDEA" . ?⚛)
      ("DEPR" . ?✘)))
 
- (org-superstar-item-bullet-alist
-        '((?* . ?•)
-          (?+ . ?➤)
-          (?- . ?•)))
+  (org-superstar-item-bullet-alist
+   '((?* . ?•)
+     (?+ . ?➤)
+     (?- . ?•)))
 
   (org-superstar-headline-bullets-list '("◉" "○" "●" "○" "●" "○" "●"))
   (org-superstar-special-todo-items t)
-  (org-superstar-leading-bullet ""))
+  (org-superstar-leading-bullet "")))
 
 (defun me/org-mode-visual-fill ()
   (setq visual-fill-column-width 100
