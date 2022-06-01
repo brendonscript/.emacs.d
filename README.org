@@ -13,7 +13,6 @@ Use ~(require 'package)~ to confirm its loaded
 Use ~(add-hook)~ to configure bindings on modes
 Use ~(bind-key "C-x M-$" 'ispell-buffer)~ for global binds
 **** TODO Document Keybindings
-**** TODO Fix Bullet sizes
 * Init.el Header
 
 #+begin_src emacs-lisp
@@ -90,6 +89,138 @@ You can also use =M-x auto-package-update-now= to update right now!
 
 #+end_src
 
+* Emacs Functionality
+** Completion
+
+#+begin_src emacs-lisp
+
+  (recentf-mode 1)
+  (setq recentf-max-menu-items 25)
+  (setq recentf-max-saved-items 25)
+
+  (setq read-file-name-completion-ignore-case t
+        read-buffer-completion-ignore-case t
+        completion-ignore-case t
+        completion-cycle-threshold 3
+        tab-always-indent 'complete)
+  ;; Use `consult-completion-in-region' if Vertico is enabled.
+  ;; Otherwise use the default `completion--in-region' function.
+  (setq completion-in-region-function
+        (lambda (&rest args)
+          (apply (if vertico-mode
+                     #'consult-completion-in-region
+                   #'completion--in-region)
+                 args)))
+#+end_src
+** Minibuffer
+
+#+begin_src emacs-lisp
+
+  ;; Do not allow the cursor in the minibuffer prompt
+  (setq minibuffer-prompt-properties
+        '(read-only t cursor-intangible t face minibuffer-prompt))
+  (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
+
+  ;; Emacs 28: Hide commands in M-x which do not work in the current mode.
+  ;; Vertico commands are hidden in normal buffers.
+  (setq read-extended-command-predicate
+        #'command-completion-default-include-p)
+
+  ;; Enable recursive minibuffers
+  (setq enable-recursive-minibuffers t)
+
+#+end_src
+** Winner Mode
+
+#+begin_src emacs-lisp
+
+  (winner-mode 1)
+
+#+end_src
+
+** UTF 8
+
+#+begin_src emacs-lisp
+
+  (set-language-environment "UTF-8")
+
+#+end_src
+
+** Server
+
+#+begin_src emacs-lisp :tangle no
+  (add-hook 'after-init-hook
+             (lambda ()
+               (require 'server)
+               (unless (server-running-p)
+                 (server-start))))
+#+end_src
+
+** Better defaults
+#+begin_src emacs-lisp
+  (defun me/comment-or-uncomment-region-or-line ()
+    "Comments or uncomments the region or the current line if
+  there's no active region."
+    (interactive)
+    (let (beg end)
+      (if (region-active-p)
+          (setq beg (region-beginning) end (region-end))
+        (setq beg (line-beginning-position) end (line-end-position)))
+      (comment-or-uncomment-region beg end)))
+
+  (defun me/reset-text-size ()
+    (interactive)
+    (text-scale-set 0))
+
+  (setq default-directory "~/")
+  (add-hook 'before-save-hook 'delete-trailing-whitespace)
+  (add-hook 'prog-mode-hook 'subword-mode)
+  (setq vc-follow-symlinks t)
+  (add-hook 'after-save-hook
+            'executable-make-buffer-file-executable-if-script-p)
+
+  (setq sentence-end-double-space nil)
+
+  (add-hook 'before-save-hook
+            (lambda ()
+              (when buffer-file-name
+                (let ((dir (file-name-directory buffer-file-name)))
+                  (when (and (not (file-exists-p dir))
+                             (y-or-n-p (format "Directory %s does not exist. Create it?" dir)))
+                    (make-directory dir t))))))
+  (defun me/set-default-line-length-to (line-length)
+    "Set the default line length to LINE-LENGTH."
+    (setq-default fill-column line-length))
+
+  (me/set-default-line-length-to 80)
+
+
+  (transient-mark-mode t)
+  (delete-selection-mode t)
+  (setq require-final-newline t)
+  (setq confirm-kill-emacs 'y-or-n-p)
+  (setq inhibit-startup-message t)
+  (setq initial-scratch-message nil)
+  (setq-default dired-listing-switches "-alh")
+  (fset 'yes-or-no-p 'y-or-n-p)
+  (global-font-lock-mode t)
+  (global-auto-revert-mode t)
+  (show-paren-mode t)
+  (setq show-paren-delay 0.0)
+
+  (setq ns-pop-up-frames nil)
+  (setq mouse-yank-at-point t)
+  (global-set-key (kbd "M-;")
+                  'me/comment-or-uncomment-region-or-line)
+  (save-place-mode 1)
+  (show-paren-mode 1)
+  (setq save-interprogram-paste-before-kill t
+        apropos-do-all t
+        mouse-yank-at-point t
+        require-final-newline t
+        load-prefer-newer t)
+#+end_src
+
 * Custom Variables
 ** Custom.el
 #+begin_src emacs-lisp
@@ -115,15 +246,12 @@ You can also use =M-x auto-package-update-now= to update right now!
 ** Fonts
 
 #+begin_src emacs-lisp
+      (defvar me/default-font-size 160)
+      (defvar me/default-variable-font-size 160)
+      ;; You will most likely need to adjust this font size for your system!
+      (cond (IS-MAC (setq me/default-font-size 180) (setq me/default-variable-font-size 180))
+            (IS-WINDOWS (setq me/default-font-size 90) (setq me/default-variable-font-size 90)))
 
-  ;; You will most likely need to adjust this font size for your system!
-  (defvar me/default-font-size 160)
-  (defvar me/default-variable-font-size 160)
-
-  (when '(IS-WINDOWS)
-    (setq me/default-font-size 90)
-    (setq me/default-variable-font-size 90))
-  
 #+end_src
 
 ** Transparency
@@ -157,9 +285,9 @@ You can also use =M-x auto-package-update-now= to update right now!
 
 #+begin_src emacs-lisp
 
-  (setq inhibit-startup-message t)
-
   ;; Have to wrap all of these due to them not working inside Termux on Android or inside terminals
+  (when (fboundp 'horizontal-scroll-bar-mode)
+    (horizontal-scroll-bar-mode -1))
   (when (fboundp 'scroll-bar-mode)
     (scroll-bar-mode -1))
   (when (fboundp 'tool-bar-mode)
@@ -220,7 +348,7 @@ I am using the [[https://github.com/tonsky/FiraCode][Fira Code]] and [[https://f
 
 #+begin_src emacs-lisp
 
-  (defalias 'yes-or-no-p 'y-or-n-p)
+  ;(defalias 'yes-or-no-p 'y-or-n-p)
 
 #+end_src
 
@@ -233,6 +361,16 @@ I am using the [[https://github.com/tonsky/FiraCode][Fira Code]] and [[https://f
 
   (customize-set-variable 'even-window-sizes nil)     ; avoid resizing
 #+end_src
+** Tab Bar Mode
+
+#+begin_src emacs-lisp
+
+  (tab-bar-mode t)
+
+  (customize-set-variable 'tab-bar-new-tab-choice '"*scratch*")
+  (customize-set-variable 'tab-bar-show 't)
+#+end_src
+
 * Keybinding Configuration
 ** Escape Key
 
@@ -304,63 +442,6 @@ I am using the [[https://github.com/tonsky/FiraCode][Fira Code]] and [[https://f
   (global-set-key (kbd "M-v") 'me/scroll-half-page-up)
 #+end_src
 
-* Emacs Functionality
-** Completion
-
-#+begin_src emacs-lisp
-
-  (recentf-mode 1)
-  (setq recentf-max-menu-items 25)
-  (setq recentf-max-saved-items 25)
-
-  (setq read-file-name-completion-ignore-case t
-        read-buffer-completion-ignore-case t
-        completion-ignore-case t
-        completion-cycle-threshold 3
-        tab-always-indent 'complete)
-  ;; Use `consult-completion-in-region' if Vertico is enabled.
-  ;; Otherwise use the default `completion--in-region' function.
-  (setq completion-in-region-function
-        (lambda (&rest args)
-          (apply (if vertico-mode
-                     #'consult-completion-in-region
-                   #'completion--in-region)
-                 args)))
-#+end_src
-** Minibuffer
-
-#+begin_src emacs-lisp
-
-  ;; Do not allow the cursor in the minibuffer prompt
-  (setq minibuffer-prompt-properties
-        '(read-only t cursor-intangible t face minibuffer-prompt))
-  (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
-
-  ;; Emacs 28: Hide commands in M-x which do not work in the current mode.
-  ;; Vertico commands are hidden in normal buffers.
-  (setq read-extended-command-predicate
-        #'command-completion-default-include-p)
-
-  ;; Enable recursive minibuffers
-  (setq enable-recursive-minibuffers t)
-
-#+end_src
-** Winner Mode
-
-#+begin_src emacs-lisp
-
-  (winner-mode 1)
-
-#+end_src
-
-** UTF 8
-
-#+begin_src emacs-lisp
-
-  (set-language-environment "UTF-8")
-  
-#+end_src
-
 * Package Configuration
 ** Path Configuration (Mac Only)
 
@@ -373,7 +454,7 @@ I am using the [[https://github.com/tonsky/FiraCode][Fira Code]] and [[https://f
 
 #+end_src
 
-** Elisp Extensions 
+** Elisp Extensions
 *** Dash
 [[https://github.com/magnars/dash.el][Modern Elisp List API]]
 
@@ -383,7 +464,7 @@ I am using the [[https://github.com/tonsky/FiraCode][Fira Code]] and [[https://f
     :commands (global-dash-fontify-mode)
     :init (global-dash-fontify-mode)
     :config (dash-register-info-lookup))
-  
+
 #+end_src
 *** s.el
 [[https://github.com/magnars/s.el][The long lost Emacs string manipulation library.]]
@@ -396,7 +477,7 @@ I am using the [[https://github.com/tonsky/FiraCode][Fira Code]] and [[https://f
 
 ** Behavior
 *** Scratch Buffers
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   (use-package persistent-scratch
     :after (no-littering org)
     :custom ((persistent-scratch-autosave-interval 180))
@@ -424,6 +505,14 @@ We use the [[https://github.com/emacscollective/no-littering/blob/master/no-litt
           `((".*" ,(no-littering-expand-var-file-name "auto-save/") t))))
 
 #+end_src
+*** Workspaces
+
+#+begin_src emacs-lisp
+
+  (customize-set-variable 'desktop-save 't)
+  (desktop-save-mode 1)
+
+  #+end_src
 
 ** Keybindings
 *** Evil
@@ -435,7 +524,7 @@ We use the [[https://github.com/emacscollective/no-littering/blob/master/no-litt
     (setq evil-want-integration t
           evil-want-keybinding nil
           evil-want-C-u-scroll t
-          evil-want-C-i-jump nil
+          evil-want-C-i-jump t
           evil-respect-visual-line-mode t
           evil-undo-system 'undo-tree)
     :config
@@ -457,6 +546,8 @@ We use the [[https://github.com/emacscollective/no-littering/blob/master/no-litt
     (evil-global-set-key 'motion "L" 'evil-end-of-line-or-visual-line)
     (evil-global-set-key 'motion "H" 'evil-first-non-blank-of-visual-line)
 
+    (evil-global-set-key 'motion "gb" 'consult-buffer)
+
     ;; Initial states
     (evil-set-initial-state 'messages-buffer-mode 'normal)
     (evil-set-initial-state 'dashboard-mode 'normal)
@@ -475,8 +566,8 @@ We use the [[https://github.com/emacscollective/no-littering/blob/master/no-litt
 #+begin_src emacs-lisp
 
   (use-package evil-collection
-    :diminish evil-collection-unimpaired-mode
     :after evil
+    :diminish evil-collection-unimpaired-mode
     :config
     (evil-collection-init))
 
@@ -552,19 +643,19 @@ For smarter undo functionality inside Emacs
     :config
 
     (evil-global-set-key 'motion (kbd "C-:") 'avy-resume)
-    (evil-global-set-key 'motion (kbd "C-f") 'avy-goto-char)
-    (evil-global-set-key 'motion (kbd "C-'") 'avy-goto-char-2)
-    (evil-global-set-key 'motion (kbd "M-g g") 'avy-goto-line)
-    (evil-global-set-key 'motion (kbd "M-g w") 'avy-goto-word-1)
-    (evil-global-set-key 'motion (kbd "M-g e") 'avy-goto-word-0)
+    (evil-global-set-key 'motion (kbd "C-f") 'avy-goto-char-2)
+    (evil-global-set-key 'motion (kbd "C-'") 'avy-goto-char)
+    (evil-global-set-key 'motion (kbd "C-c s l") 'avy-goto-line)
+    (evil-global-set-key 'motion (kbd "C-c s w") 'avy-goto-word-1)
+    (evil-global-set-key 'motion (kbd "C-c s e") 'avy-goto-word-0)
 
 
     (global-set-key (kbd "C-:") 'avy-resume)
-    (global-set-key (kbd "C-f") 'avy-goto-char)
-    (global-set-key (kbd "C-'") 'avy-goto-char-2)
-    (global-set-key (kbd "M-g g") 'avy-goto-line)
-    (global-set-key (kbd "M-g w") 'avy-goto-word-1)
-    (global-set-key (kbd "M-g e") 'avy-goto-word-0))
+    (global-set-key (kbd "C-f") 'avy-goto-char-2)
+    (global-set-key (kbd "C-'") 'avy-goto-char)
+    (global-set-key (kbd "C-c s l") 'avy-goto-line)
+    (global-set-key (kbd "C-c s w") 'avy-goto-word-1)
+    (global-set-key (kbd "C-c s e") 'avy-goto-word-0))
 #+end_src
 ** UI
 *** Theme
@@ -573,8 +664,14 @@ For smarter undo functionality inside Emacs
 
 #+begin_src emacs-lisp
 
-(use-package doom-themes
-  :init (load-theme 'doom-vibrant t))
+  (use-package doom-themes
+    :init (load-theme 'doom-vibrant t)
+    :config
+    (setq doom-themes-enable-bold t
+          doom-themes-enable-italic t)
+    (setq doom-themes-treemacs-theme "doom-atom")
+    (doom-themes-treemacs-config)
+    (doom-themes-org-config))
 
 #+end_src
 
@@ -604,14 +701,12 @@ For smarter undo functionality inside Emacs
 
   (use-package doom-modeline
     :init (doom-modeline-mode 1)
-    :custom ((doom-modeline-height 15)
-             (doom-modeline-bar-width 6)
+    :custom ((doom-modeline-height 10)
+             (doom-modeline-bar-width 4)
+             (doom-modeline-bar-width 4)
              (doom-modeline-minor-modes t)
              (doom-modeline-buffer-file-name-style 'truncate-except-project)
              (doom-modeline-minor-modes nil)
-             (doom-modeline-persp-name t)
-             (doom-modeline-display-default-persp-name t)
-             (doom-modeline-persp-icon t)
              (doom-modeline-modal-icon t))
     ;; This configuration to is fix a bug where certain windows would not display
     ;; their full content due to the overlapping modeline
@@ -634,6 +729,32 @@ For smarter undo functionality inside Emacs
 
 #+end_src
 
+*** Vertico
+
+#+begin_src emacs-lisp
+
+  (use-package vertico
+    :init
+    (vertico-mode)
+    :bind (:map vertico-map
+                ("C-j" . vertico-next)
+                ("C-J" . vertico-next-group)
+                ("C-k" . vertico-previous)
+                ("C-K" . vertico-previous-group)
+                ("M-RET" . minibuffer-force-complete-and-exit)
+                ("M-TAB" . minibuffer-complete)))
+
+  (use-package vertico-directory
+    :after vertico
+    :ensure nil
+    :bind (:map vertico-map
+                ("RET" . vertico-directory-enter)
+                ("DEL" . vertico-directory-delete-char)
+                ("M-DEL" . vertico-directory-delete-word))
+    :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
+
+#+end_src
+
 *** Persist History on Restart
 
 #+begin_src emacs-lisp
@@ -644,20 +765,6 @@ For smarter undo functionality inside Emacs
 
 #+end_src
 
-*** Perspective
-#+begin_src emacs-lisp
-
-  (use-package perspective
-    :custom
-    (persp-mode-prefix-key (kbd "C-c w"))  ; pick your own prefix key here
-    :init
-    (setq persp-state-default-file (concat persp-save-dir "persp-state"))
-    (setq persp-modestring-short t)
-    :config
-    (unless (equal persp-mode t)
-      (persp-mode))
-    (add-hook 'kill-emacs-hook #'persp-state-save))
-#+end_src
 *** Completion
 **** Consult
 
@@ -739,8 +846,7 @@ For smarter undo functionality inside Emacs
     ;; Optionally configure preview. The default value
     ;; is 'any, such that any key triggers the preview.
     ;; (setq consult-preview-key 'any)
-    (setq consult-preview-key (kbd "M-."))
-    (setq consult-preview-key (list (kbd "<S-down>") (kbd "<S-up>")))
+    ;;(setq consult-preview-key (kbd "M-."))
     ;; For some commands and buffer sources it is useful to configure the
     ;; :preview-key on a per-command basis using the `consult-customize' macro.
     (consult-customize
@@ -751,9 +857,28 @@ For smarter undo functionality inside Emacs
      consult--source-bookmark consult--source-recent-file
      consult--source-project-recent-file
      :preview-key (kbd "M-."))
-    (consult-customize consult--source-buffer :hidden t :default nil)
-    (add-to-list 'consult-buffer-sources persp-consult-source)
+
+    (defvar-local consult-toggle-preview-orig nil)
+
+    (defun consult-toggle-preview ()
+      "Command to enable/disable preview."
+      (interactive)
+      (if consult-toggle-preview-orig
+          (setq consult--preview-function consult-toggle-preview-orig
+                consult-toggle-preview-orig nil)
+        (setq consult-toggle-preview-orig consult--preview-function
+              consult--preview-function #'ignore)))
+
+    ;; Bind to `vertico-map' or `selectrum-minibuffer-map'
+    (define-key vertico-map (kbd "M-P") #'consult-toggle-preview)
+
     (setq consult-narrow-key "<"))
+#+end_src
+***** Consult Projects
+#+begin_src emacs-lisp
+  (use-package consult-project-extra
+    :bind (("C-c p f" . consult-project-extra-find)
+           ("C-c p o" . consult-project-extra-find-other-window)))
 #+end_src
 
 **** Orderless Completion
@@ -923,32 +1048,6 @@ For smarter undo functionality inside Emacs
 
 #+end_src
 
-*** Vertico
-
-#+begin_src emacs-lisp
-
-  (use-package vertico
-    :init
-    (vertico-mode)
-    :bind (:map vertico-map
-                ("C-j" . vertico-next)
-                ("C-J" . vertico-next-group)
-                ("C-k" . vertico-previous)
-                ("C-K" . vertico-previous-group)
-                ("M-RET" . minibuffer-force-complete-and-exit)
-                ("M-TAB" . minibuffer-complete)))
-
-  (use-package vertico-directory
-    :after vertico
-    :ensure nil
-    :bind (:map vertico-map
-                ("RET" . vertico-directory-enter)
-                ("DEL" . vertico-directory-delete-char)
-                ("M-DEL" . vertico-directory-delete-word))
-    :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
-
-#+end_src
-
 *** Helpful Help Commands
 
 [[https://github.com/Wilfred/helpful][Helpful]] adds a lot of very helpful (get it?) information to Emacs' =describe-= command buffers.  For example, if you use =describe-function=, you will not only get the documentation about the function, you will also see the source code of the function and where it gets used in other places in the Emacs configuration.  It is very useful for figuring out how things work in Emacs.
@@ -1078,8 +1177,25 @@ This is an example of using [[https://github.com/abo-abo/hydra][Hydra]] to desig
 
 #+begin_src emacs-lisp
 
-  (use-package origami)
+  (use-package origami
+    :bind (:map org-super-agenda-header-map
+          ("<tab>" . origami-toggle-node))
+    :config
+    (defvar me/org-super-agenda-auto-show-groups
+      '("Group1" "Group2"))
 
+    (defun me/org-super-agenda-origami-fold-default ()
+      "Fold certain groups by default in Org Super Agenda buffer.
+       To enable:
+       `(add-hook 'org-agenda-finalize 'me/org-super-agenda-origami-fold-default)'"
+      (forward-line 3)
+      (cl-loop do (origami-forward-toggle-node (current-buffer) (point))
+               while (origami-forward-fold-same-level (current-buffer) (point)))
+      (--each ap/org-super-agenda-auto-show-groups
+        (goto-char (point-min))
+        (when (re-search-forward (rx-to-string `(seq bol " " ,it)) nil t)
+          (origami-show-node (current-buffer) (point)))))
+    :hook ((org-agenda-mode . origami-mode)))
 #+end_src
 
 ** Org Mode
@@ -1089,9 +1205,25 @@ This is an example of using [[https://github.com/abo-abo/hydra][Hydra]] to desig
 #+begin_src emacs-lisp
 
   (defun me/org-mode-initial-setup ()
+    (setq org-indent-mode-turns-on-hiding-stars t)
     (org-indent-mode)
     (variable-pitch-mode 1)
     (visual-line-mode 1))
+
+#+end_src
+
+**** Org Keybinds
+
+#+begin_src emacs-lisp
+
+  (defun me/insert-timestamp ()
+    (interactive)
+    (let ((current-prefix-arg '(16))) (call-interactively 'org-time-stamp-inactive))) ; Universal Argument x2 - 4*4
+
+  (defun me/org-keybinds-setup ()
+    (define-key org-mode-map (kbd "C-c o t") 'me/insert-timestamp)
+    (bind-key "C-c o c" 'org-clock-goto))
+
 
 #+end_src
 
@@ -1101,6 +1233,7 @@ This is an example of using [[https://github.com/abo-abo/hydra][Hydra]] to desig
 
   ;; Directories
   (defconst me/org-dir "~/Org/")
+  (defconst me/org-notes-dir "~/Org/notes/")
 
   ;; Files
   (defconst me/org-todo-file (concat me/org-dir "todo.org"))
@@ -1113,6 +1246,7 @@ This is an example of using [[https://github.com/abo-abo/hydra][Hydra]] to desig
   (defconst me/org-distractions-file (concat me/org-dir "distractions.org"))
   (defconst me/org-journal-file (concat me/org-dir "journal.org"))
   (defconst me/org-archive-file (concat me/org-dir "archive.org"))
+  (defconst me/org-emacs-note-file (concat me/org-notes-dir "emacs.org"))
   (defconst me/org-emacs-config-file (concat user-emacs-directory "README.org"))
 
   ;; Archive
@@ -1133,7 +1267,7 @@ This is an example of using [[https://github.com/abo-abo/hydra][Hydra]] to desig
       (setq org-archive-location me/org-archive-location)
 
       ;; Visuals
-      (setq org-ellipsis " ▾")
+      (setq org-ellipsis " ▼ ")
       (setq org-pretty-entities t)
 
       ;; Behavior
@@ -1142,12 +1276,14 @@ This is an example of using [[https://github.com/abo-abo/hydra][Hydra]] to desig
       (setq org-link-search-must-match-exact-headline nil)
       (setq org-log-done 'time)
       (setq org-log-into-drawer t)
+      (setq org-log-state-notes-into-drawer t)
       (setq org-extend-today-until 4)
       (setq org-duration-format 'h:mm)
       (setq-default org-enforce-todo-dependencies t)
 
       ;; Source Editing
       (setq org-edit-src-turn-on-auto-save t)
+      (setq org-src-window-setup 'current-window)
 
       ;; Time and Clock settings
       (setq org-clock-out-when-done t)
@@ -1181,24 +1317,7 @@ This is an example of using [[https://github.com/abo-abo/hydra][Hydra]] to desig
       (setq org-refile-targets '((org-refile-target-files :maxlevel . 5)))))
 #+end_src
 
-**** TODO [#C] Org Keybinds
-SCHEDULED: <2022-05-29 Sun>
-
-Need to fix this. Add hooks for mode specific keys and use =define-local?= to define said keys
-#+begin_src emacs-lisp
-  (defun me/insert-timestamp ()
-    (interactive)
-    (let ((current-prefix-arg '(16))) (call-interactively 'org-time-stamp-inactive))) ; Universal Argument x2 - 4*4
-  ; This should be org specific
-  (global-set-key (kbd "C-c o t") 'me/insert-timestamp)
-;  (global-set-key (kbd "C-c o c") 'org-clock-goto)
-;  (add-hook ')
-
-
-;  (global-set-key (kbd "C-c o c") 'org-clock-goto)
-;  (global-set-key (kbd "C-c o c") 'org-clock-goto)
-;  (define-key )
-#+end_src
+***** TODO Extract clocking into their own segment
 
 **** Org Habit Settings
 
@@ -1226,8 +1345,8 @@ Need to update colors and icons
   (defun me/org-todo-tag-setup ()
     (progn
       (setq org-todo-keywords
-            '((sequence "TODO(t)" "NEXT(n)" "PROG(p)" "INTR(i!)" "|" "DONE(d!)" "CANCELLED(c@)")
-              (sequence "APT(a)" "SOMEDAY(s)" "NOTE(N)" "PROJ(P)" "IDEA(I)" "DEPR(D)")
+            '((sequence "TODO(t)" "NEXT(n)" "PROG(p!)" "INTR(i!)" "|" "DONE(d!)" "CANCELLED(c!)")
+              (sequence "|" "APT(a)" "SOMEDAY(s)" "NOTE(N)" "PROJ(P)" "IDEA(I)" "DEPR(D)")
               (sequence "[ ](x)" "[-](-)" "|" "[X](X)")))
 
       (setq org-todo-keyword-faces
@@ -1278,21 +1397,14 @@ Need to update colors and icons
 
 #+end_src
 
-**** TODO Agenda
-
-- [ ] Move the keybinds out of this section
+**** Agenda
+***** Configuration
 
 #+begin_src emacs-lisp
 
   (defun me/org-agenda-setup ()
     (progn
-      (evil-define-key 'motion org-agenda-mode-map (kbd "sf") 'org-agenda-filter)
-      (evil-define-key 'motion org-agenda-mode-map (kbd "zc") 'evil-close-fold)
-      (evil-define-key 'motion org-agenda-mode-map (kbd "zo") 'evil-open-fold)
-      (evil-define-key 'motion org-agenda-mode-map (kbd "zr") 'evil-open-folds)
-      (evil-define-key 'motion org-agenda-mode-map (kbd "zm") 'evil-close-folds)
-      (evil-define-key 'motion org-agenda-mode-map (kbd "zO") 'evil-open-fold-rec)
-      (evil-define-key 'motion org-agenda-mode-map (kbd "za") 'evil-toggle-fold)
+      (me/org-agenda-keybinds)
       (setq org-agenda-files me/org-agenda-files)
       (setq org-agenda-start-with-log-mode nil)
       (setq org-agenda-use-time-grid nil)
@@ -1313,22 +1425,28 @@ Need to update colors and icons
                                           (search category-keep)))
       (setq org-agenda-tags-todo-honor-ignore-options t)
 
-      ;; (setq org-agenda-prefix-format '((agenda  . " %i %-12:c%?-12t% s")
-      ;;                                     ;(agenda  . " %i %-12:c%?-12t% s") ;; file name + org-agenda-entry-type
-      ;;                                  (timeline  . "  % s")
-      ;;                                  (todo  . " %i %-12:c")
-      ;;                                  (tags  . " %i %-12:c")
-      ;;                                  (search . " %i %-12:c")))
-                                          ; https://emacs.stackexchange.com/questions/18179/org-agenda-command-with-org-agenda-filter-by-tag-not-working
-
       (defun me/org-agenda-place-point ()
         (goto-char (point-min)))
 
-                                          ;(add-hook 'org-agenda-finalize-hook (lambda () (goto-char (point-min))) 90)
-                                          ;(remove-hook 'org-agenda-finalize-hook 'me/org-agenda-place-at-point)
+      (add-hook 'org-agenda-finalize-hook #'me/org-agenda-place-point 90)))
 
-      (add-hook 'org-agenda-finalize-hook #'me/org-agenda-place-point 90)
+#+end_src
+
+***** Keybinds
+
+#+begin_src emacs-lisp
+
+  (defun me/org-agenda-keybinds ()
+    (progn
+      (evil-define-key 'motion org-agenda-mode-map (kbd "sf") 'org-agenda-filter)
+      (evil-define-key 'motion org-agenda-mode-map (kbd "zc") 'evil-close-fold)
+      (evil-define-key 'motion org-agenda-mode-map (kbd "zo") 'evil-open-fold)
+      (evil-define-key 'motion org-agenda-mode-map (kbd "zr") 'evil-open-folds)
+      (evil-define-key 'motion org-agenda-mode-map (kbd "zm") 'evil-close-folds)
+      (evil-define-key 'motion org-agenda-mode-map (kbd "zO") 'evil-open-fold-rec)
+      (evil-define-key 'motion org-agenda-mode-map (kbd "za") 'evil-toggle-fold)
       ))
+
 #+end_src
 
 **** Capture
@@ -1338,7 +1456,9 @@ Need to update colors and icons
   (defun me/org-capture-setup ()
     (progn
       (setq org-capture-templates
-            '(
+            '(("c" "Current" entry
+               (file+headline me/org-todo-file "Personal Inbox")
+               "* PROG %?\n%U\n" :prepend t :clock-in t :clock-keep t :clock-resume t)
               ;; Personal ;;
               ("d" "Distraction" entry
                (file+olp+datetree me/org-distractions-file)
@@ -1347,14 +1467,18 @@ Need to update colors and icons
               ("n" "Note" entry
                (file me/org-note-inbox-file)
                "* NOTE %?\n%U\n" :prepend t)
-              
-              ("e" "Emacs" entry
+
+              ("e" "Emacs Task" entry
                (file+headline me/org-todo-file "Emacs")
-               "* TODO %?\n%T\n" :prepend t)
+               "* TODO %?\n%U\n" :prepend t)
+
+              ("E" "Emacs Note" entry
+               (file+headline me/org-note-inbox-file "Inbox")
+               "* NOTE %?\n%U\n" :prepend t)
 
               ("t" "Task" entry
                (file+headline me/org-todo-file "Personal Inbox")
-               "* TODO %?\n%T\n" :prepend t)
+               "* TODO %?\n%U\n" :prepend t)
 
               ("T" "Task (Scheduled)" entry
                (file+headline me/org-todo-file "Personal Inbox")
@@ -1385,7 +1509,7 @@ Need to update colors and icons
 
               ("wt" "Work Task" entry
                (file+headline me/org-todo-file "Work Inbox")
-               "* TODO %?\n%T\n" :prepend t)
+               "* TODO %?\n%U\n" :prepend t)
 
               ("wT" "Work Task (Scheduled)" entry
                (file+headline me/org-todo-file "Work Inbox")
@@ -1401,15 +1525,15 @@ Need to update colors and icons
 
               ("wf" "Family Office Task" entry
                (file+headline me/org-projects-file "Family Office")
-               "* TODO %?\n%T\n" :prepend t)
+               "* TODO %?\n%U\n" :prepend t)
 
               ("ws" "Shareholder Task" entry
                (file+headline me/org-projects-file "Shareholder")
-               "* TODO %?\n%T\n" :prepend t)
+               "* TODO %?\n%U\n" :prepend t)
 
               ("wa" "Architecture Task" entry
                (file+headline me/org-projects-file "Architecture")
-               "* TODO %?\n%T\n" :prepend t)
+               "* TODO %?\n%U\n" :prepend t)
               ))))
 #+end_src
 
@@ -1424,15 +1548,14 @@ Need to update colors and icons
                                (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
 
     ;; Set faces for heading levels
-    (dolist (face '((org-level-1 . 1.1)
-                    (org-level-2 . 1.05)
-                    (org-level-3 . 1.00)
-                    (org-level-4 . 0.95)
-                    (org-level-5 . 0.9)
-                    (org-level-6 . 0.85)
-                    (org-level-7 . 0.80)
-                    (org-level-8 . 0.75)))
-      (set-face-attribute (car face) nil :font "Cantarell" :weight 'regular :height (cdr face)))
+    (dolist (face '((org-level-1 . 1.2)
+                    (org-level-2 . 1.1)
+                    (org-level-3 . 1.05)
+                    (org-level-4 . 1.0)
+                    (org-level-5 . 1.0)
+                    (org-level-6 . 1.0)
+                    (org-level-7 . 1.0)
+                    (org-level-8 . 1.0))))
 
     ;; Ensure that anything that should be fixed-pitch in Org files appears that way
     (set-face-attribute 'org-block nil    :foreground nil :inherit 'fixed-pitch)
@@ -1447,7 +1570,6 @@ Need to update colors and icons
     (set-face-attribute 'line-number nil :inherit 'fixed-pitch)
     (set-face-attribute 'line-number-current-line nil :inherit 'fixed-pitch)
     (set-face-attribute 'org-hide nil :inherit 'fixed-pitch))
-
 #+end_src
 
 *** Org Setup
@@ -1469,12 +1591,13 @@ Need to update colors and icons
            ("C-c o l" . org-agenda-log-mode))
     :config
     (me/org-settings-setup)
+    (me/org-keybinds-setup)
     (me/org-habit-setup)
     (me/org-todo-tag-setup)
     (me/org-agenda-setup)
+    (me/org-agenda-keybinds)
     (me/org-capture-setup)
-    (me/org-font-setup)
-    (require 'org-protocol))
+    (me/org-font-setup))
 #+end_src
 
 **** Org Contrib
@@ -1487,41 +1610,40 @@ Need to update colors and icons
 #+end_src
 
 *** Appearance
-**** TODO Superstar
+**** Superstar
 
-Clean this up. First bullet is way smaller than the rest
 #+begin_src emacs-lisp
 
   (use-package org-superstar
     :after org
     :hook (org-mode . org-superstar-mode)
     :config
-    (set-face-attribute 'org-superstar-header-bullet nil :inherit 'fixed-pitched :height 180)
 
-    (when '(IS-WINDOWS)
-      (set-face-attribute 'org-superstar-header-bullet nil :inherit 'fixed-pitched :height 90))
+    (cond (IS-MAC (set-face-attribute 'org-superstar-header-bullet nil :inherit 'fixed-pitched :height 200))
+          (IS-WINDOWS (set-face-attribute 'org-superstar-header-bullet nil :inherit 'fixed-pitched :height 90)))
 
-    :custom
-    ((org-superstar-todo-bullet-alist
-     '(("TODO" . ?λ)
-       ("NEXT" . ?✰)
-       ("PROG" . ?∞)
-       ("INTR" . ?‼)
-       ("DONE" . ?✔)
-       ("CANCELLED" . ?✘)
-       ("NOTE" . ?✎)
-       ("PROJ" . ?⚙)
-       ("IDEA" . ?⚛)
-       ("DEPR" . ?✘)))
+    (setq org-superstar-todo-bullet-alist
+      '(("TODO" . ?λ)
+        ("NEXT" . ?✰)
+        ("PROG" . ?∞)
+        ("INTR" . ?‼)
+        ("DONE" . ?✔)
+        ("CANCELLED" . ?✘)
+        ("NOTE" . ?✎)
+        ("PROJ" . ?⚙)
+        ("IDEA" . ?⚛)
+        ("DEPR" . ?✘)))
 
-    (org-superstar-item-bullet-alist
-     '((?* . ?•)
-       (?+ . ?➤)
-       (?- . ?•)))
+     (setq org-superstar-item-bullet-alist
+      '((?* . ?•)
+        (?+ . ?➤)
+        (?- . ?•)))
 
-    (org-superstar-headline-bullets-list '("◉" "○" "●" "○" "●" "○" "●"))
-    (org-superstar-special-todo-items t)
-    (org-superstar-leading-bullet "")))
+     (setq org-superstar-headline-bullets-list '("◉" "○" "●" "○" "●" "○" "●"))
+     (setq org-superstar-special-todo-items t)
+     (setq org-superstar-leading-bullet " ")
+     (org-superstar-restart))
+
 #+end_src
 
 **** Center Org Buffers
@@ -1564,76 +1686,84 @@ Disabled
 
 #+begin_src emacs-lisp
 
-  (use-package org-super-agenda
-    :after org
-    :config
-    (org-super-agenda-mode)
-    (setq org-agenda-custom-commands
-          '(("A" "Archive"
-             ((todo "DONE|CANCELLED")
-              ))
-            ("a" "POG AGENDA"
-             ((agenda "" ((org-agenda-span 'day)
-                          (org-super-agenda-groups
-                           '((:discard (:todo ("DONE" "CANCELLED")))
-                             (:name "In Progress" :todo "PROG" :order 1)
-                             (:name "Habits" :habit t :order 98)
-                             (:name "Today"
-                                    :time-grid t
-                                    :date t
-                                    :order 2)))))
-              (alltodo "" ((org-agenda-todo-ignore-scheduled nil)
-                           (org-agenda-show-inherited-tags nil)
-                           (org-agenda-overriding-header "")
-                           (org-super-agenda-groups
-                            '((:name "Habits" :habit t :order 99)
-                              (:name "In Progress"
-                                     :todo "PROG")
-                              (:name "Next to do"
-                                     :todo "NEXT"
-                                     :order 1)
-                              (:name "Interupts"
-                                     :todo "INTR"
-                                     :order 2)
-                              (:name "Due Today"
-                                     :deadline today
-                                     :order 3)
-                              (:name "Due Soon"
-                                     :deadline future
-                                     :order 4)
-                              (:name "Overdue"
-                                     :deadline past
-                                     :order 5)
-                              (:name "Projects"
-                                     :todo "PROJ"
-                                     :order 6)
-                              (:name "Home Tasks"
-                                     :tag "@home"
-                                     :order 7)
-                              (:name "Errands"
-                                     :tag "@errand"
-                                     :order 8)
-                              (:name "Emacs"
-                                     :tag "@emacs"
-                                     :order 9)
-                              (:name "Ideas"
-                                     :tag "idea"
-                                     :todo "IDEA"
-                                     :order 10)
-                              (:name "Bookmarks"
-                                     :tag "bookmark"
-                                     :order 11)
-                              (:name "Work"
-                                     :tag "@work"
-                                     :order 12)
-                              (:name "Future"
-                                     :scheduled future
-                                     :order 13)
-                              (:auto-category t :order 98))))))
-             ((org-agenda-show-inherited-tags nil)
-              (org-agenda-compact-blocks t))
-             )))
-    (setq org-super-agenda-header-map nil))
+    (use-package org-super-agenda
+      :after (evil evil-collection evil-org org)
+      :init (me/org-agenda-keybinds)
+      :config
+      (org-super-agenda-mode)
+      (setq org-agenda-custom-commands
+            '(("A" "Archive"
+               ((todo "DONE|CANCELLED")
+                ))
+              ("a" "POG AGENDA"
+               ((agenda "" ((org-agenda-span 'day)
+                            (org-super-agenda-groups
+                             '((:discard (:todo ("DONE" "CANCELLED")))
+                               (:name "In Progress" :todo "PROG" :order 1)
+                               (:name "Habits" :habit t :order 98)
+                               (:name "Today"
+                                      :time-grid t
+                                      :date t
+                                      :order 2)))))
+                (alltodo "" ((org-agenda-todo-ignore-scheduled nil)
+                             (org-agenda-show-inherited-tags nil)
+                             (org-agenda-overriding-header "")
+                             (org-super-agenda-groups
+                              '((:name "Habits" :habit t :order 99)
+                                (:name "In Progress"
+                                       :todo "PROG")
+                                (:name "Next to do"
+                                       :todo "NEXT"
+                                       :order 1)
+                                (:name "Interupts"
+                                       :todo "INTR"
+                                       :order 2)
+                                (:name "Due Today"
+                                       :deadline today
+                                       :order 3)
+                                (:name "Due Soon"
+                                       :deadline future
+                                       :order 4)
+                                (:name "Overdue"
+                                       :deadline past
+                                       :order 5)
+                                (:name "Projects"
+                                       :todo "PROJ"
+                                       :order 6)
+                                (:name "Home Tasks"
+                                       :tag "@home"
+                                       :order 7)
+                                (:name "Errands"
+                                       :tag "@errand"
+                                       :order 8)
+                                (:name "Emacs"
+                                       :tag "@emacs"
+                                       :order 9)
+                                (:name "Ideas"
+                                       :tag "idea"
+                                       :todo "IDEA"
+                                       :order 10)
+                                (:name "Bookmarks"
+                                       :tag "bookmark"
+                                       :order 11)
+                                (:name "Work"
+                                       :tag "@work"
+                                       :order 12)
+                                (:name "Future"
+                                       :scheduled future
+                                       :order 13)
+                                (:auto-category t :order 98))))))
+               ((org-agenda-show-inherited-tags nil)
+                (org-agenda-compact-blocks t))
+               )))
+
+     ;(setq org-super-agenda-header-map (copy-keymap org-agenda-mode-map))
+     (define-key org-super-agenda-header-map (kbd "z") nil)
+     (define-key org-super-agenda-header-map (kbd "j") nil)
+     (define-key org-super-agenda-header-map (kbd "k") nil)
+
+      ;(setq org-super-agenda-header-map nil)
+      )
 #+end_src
 
 *** Org QL
@@ -1682,7 +1812,6 @@ This snippet adds a hook to =org-mode= buffers so that =me/org-babel-tangle-conf
 ** Development
 *** Languages
 **** IDE Features with lsp-mode
-Currently disabled
 ***** lsp-mode
 
 We use the excellent [[https://emacs-lsp.github.io/lsp-mode/][lsp-mode]] to enable IDE-like functionality for many different programming languages via "language servers" that speak the [[https://microsoft.github.io/language-server-protocol/][Language Server Protocol]].  Before trying to set up =lsp-mode= for a particular language, check out the [[https://emacs-lsp.github.io/lsp-mode/page/languages/][documentation for your language]] so that you can learn which language servers are available and how to install them.
@@ -1691,7 +1820,7 @@ The =lsp-keymap-prefix= setting enables you to define a prefix for where =lsp-mo
 
 The =which-key= integration adds helpful descriptions of the various keys so you should be able to learn a lot just by pressing =C-c l= in a =lsp-mode= buffer and trying different things that you find there.
 
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
 
   (defun me/lsp-mode-setup ()
     (setq lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
@@ -1711,7 +1840,7 @@ The =which-key= integration adds helpful descriptions of the various keys so you
 
 [[https://emacs-lsp.github.io/lsp-ui/][lsp-ui]] is a set of UI enhancements built on top of =lsp-mode= which make Emacs feel even more like an IDE.  Check out the screenshots on the =lsp-ui= homepage (linked at the beginning of this paragraph) to see examples of what it can do.
 
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
 
   (use-package lsp-ui
     :hook (lsp-mode . lsp-ui-mode)
@@ -1732,7 +1861,7 @@ Try these commands with =M-x=:
 
 This package is built on the [[https://github.com/Alexander-Miller/treemacs][treemacs]] package which might be of some interest to you if you like to have a file browser at the left side of your screen in your editor.
 
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
 
   (use-package lsp-treemacs
     :after lsp)
@@ -1857,30 +1986,6 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
     :hook (company-mode . company-box-mode))
 #+end_src
 
-*** Projectile
-
-[[https://projectile.mx/][Projectile]] is a project management library for Emacs which makes it a lot easier to navigate around code projects for various languages.  Many packages integrate with Projectile so it's a good idea to have it installed even if you don't use its commands directly.
-
-#+begin_src emacs-lisp
-
-  (use-package projectile
-    :diminish projectile-mode
-    :config (projectile-mode)
-    :custom ((projectile-completion-system 'ivy))
-    :bind-keymap
-    ("C-c p" . projectile-command-map)
-    :init
-    ;; NOTE: Set this to the folder where you keep your Git repos!
-    (when (file-directory-p "~/Projects/Code")
-      (setq projectile-project-search-path '("~/Projects/Code")))
-    (setq projectile-switch-project-action #'projectile-dired))
-
-  (use-package counsel-projectile
-    :after projectile
-    :config (counsel-projectile-mode))
-
-#+end_src
-
 *** Magit
 
 [[https://magit.vc/][Magit]] is the best Git interface I've ever used.  Common Git operations are easy to execute quickly using Magit's command panel system.
@@ -1897,8 +2002,8 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
   ;; - https://magit.vc/manual/forge/Token-Creation.html#Token-Creation
   ;; - https://magit.vc/manual/ghub/Getting-Started.html#Getting-Started
   (use-package forge
-    :after magit)
-
+    :after magit
+    :init (setq forge-add-default-bindings t))
 #+end_src
 
 *** Commenting
@@ -1989,8 +2094,7 @@ Make sure that you have the [[https://github.com/akermu/emacs-libvterm/#requirem
     :config
     (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *")  ;; Set this to match your custom shell prompt
     (setq vterm-shell "fish")                       ;; Set this to customize the shell to launch
-    (setq vterm-max-scrollback 10000)
-    )
+    (setq vterm-max-scrollback 10000))
 
 #+end_src
 
@@ -2074,11 +2178,10 @@ For more thoughts on Eshell, check out these articles by Pierre Neidhardt:
 #+begin_src emacs-lisp
 
   (use-package fish-mode)
-  
+
 #+end_src
 
 ** File Management
-
 *** Dired
 
 Dired is a built-in file manager for Emacs that does some pretty amazing things!  Here are some key bindings you should try out:
@@ -2189,6 +2292,22 @@ Dired is a built-in file manager for Emacs that does some pretty amazing things!
       "H" 'dired-hide-dotfiles-mode))
 
 #+end_src
+*** Auto commit files
+**** Template
+
+#+begin_src emacs-lisp :noweb-ref auto-commit :tangle no
+
+  ((nil . ((eval git-auto-commit-mode 1))))
+
+#+end_src
+**** Org Directory
+#+begin_src emacs-lisp :noweb yes :tangle ~/Org/.dir_locals.el
+  <<auto-commit>>
+#+end_src
+**** Emacs Directory
+#+begin_src emacs-lisp :noweb yes :tangle ~/.emacs.d/.dir_locals.el
+  <<auto-commit>>
+#+end_src
 
 ** Applications
 
@@ -2207,7 +2326,7 @@ Dired is a built-in file manager for Emacs that does some pretty amazing things!
         ;; Stop displaying channels in the mode line for no good reason.
         erc-track-exclude-type '("JOIN" "KICK" "NICK" "PART" "QUIT" "MODE" "333" "353")
         erc-hide-list '("JOIN" "PART" "QUIT" "KICK" "NICK" "MODE" "333" "353"))
-  
+
 #+end_src
 *** Some App
 
@@ -2235,6 +2354,5 @@ Dial the GC threshold back down so that garbage collection happens more frequent
 #+begin_src emacs-lisp
 
   ;; Make gc pauses faster by decreasing the threshold.
-  (setq gc-cons-threshold (* 2 1000 1000))
-
+  (setq gc-cons-threshold 200000000)
 #+end_src

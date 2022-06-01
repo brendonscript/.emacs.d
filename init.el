@@ -45,6 +45,103 @@
   (auto-package-update-maybe)
   (auto-package-update-at-time "09:00"))
 
+(recentf-mode 1)
+(setq recentf-max-menu-items 25)
+(setq recentf-max-saved-items 25)
+
+(setq read-file-name-completion-ignore-case t
+      read-buffer-completion-ignore-case t
+      completion-ignore-case t
+      completion-cycle-threshold 3
+      tab-always-indent 'complete)
+;; Use `consult-completion-in-region' if Vertico is enabled.
+;; Otherwise use the default `completion--in-region' function.
+(setq completion-in-region-function
+      (lambda (&rest args)
+        (apply (if vertico-mode
+                   #'consult-completion-in-region
+                 #'completion--in-region)
+               args)))
+
+;; Do not allow the cursor in the minibuffer prompt
+(setq minibuffer-prompt-properties
+      '(read-only t cursor-intangible t face minibuffer-prompt))
+(add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
+
+;; Emacs 28: Hide commands in M-x which do not work in the current mode.
+;; Vertico commands are hidden in normal buffers.
+(setq read-extended-command-predicate
+      #'command-completion-default-include-p)
+
+;; Enable recursive minibuffers
+(setq enable-recursive-minibuffers t)
+
+(winner-mode 1)
+
+(set-language-environment "UTF-8")
+
+(defun me/comment-or-uncomment-region-or-line ()
+  "Comments or uncomments the region or the current line if
+there's no active region."
+  (interactive)
+  (let (beg end)
+    (if (region-active-p)
+        (setq beg (region-beginning) end (region-end))
+      (setq beg (line-beginning-position) end (line-end-position)))
+    (comment-or-uncomment-region beg end)))
+
+(defun me/reset-text-size ()
+  (interactive)
+  (text-scale-set 0))
+
+(setq default-directory "~/")
+(add-hook 'before-save-hook 'delete-trailing-whitespace)
+(add-hook 'prog-mode-hook 'subword-mode)
+(setq vc-follow-symlinks t)
+(add-hook 'after-save-hook
+          'executable-make-buffer-file-executable-if-script-p)
+
+(setq sentence-end-double-space nil)
+
+(add-hook 'before-save-hook
+          (lambda ()
+            (when buffer-file-name
+              (let ((dir (file-name-directory buffer-file-name)))
+                (when (and (not (file-exists-p dir))
+                           (y-or-n-p (format "Directory %s does not exist. Create it?" dir)))
+                  (make-directory dir t))))))
+(defun me/set-default-line-length-to (line-length)
+  "Set the default line length to LINE-LENGTH."
+  (setq-default fill-column line-length))
+
+(me/set-default-line-length-to 80)
+
+
+(transient-mark-mode t)
+(delete-selection-mode t)
+(setq require-final-newline t)
+(setq confirm-kill-emacs 'y-or-n-p)
+(setq inhibit-startup-message t)
+(setq initial-scratch-message nil)
+(setq-default dired-listing-switches "-alh")
+(fset 'yes-or-no-p 'y-or-n-p)
+(global-font-lock-mode t)
+(global-auto-revert-mode t)
+(show-paren-mode t)
+(setq show-paren-delay 0.0)
+
+(setq ns-pop-up-frames nil)
+(setq mouse-yank-at-point t)
+(global-set-key (kbd "M-;")
+                'me/comment-or-uncomment-region-or-line)
+(save-place-mode 1)
+(show-paren-mode 1)
+(setq save-interprogram-paste-before-kill t
+      apropos-do-all t
+      mouse-yank-at-point t
+      require-final-newline t
+      load-prefer-newer t)
+
 (setq custom-file "~/.emacs.d/custom.el")
 
 (defconst IS-MAC     (eq system-type 'darwin)
@@ -56,13 +153,11 @@
 (defconst IS-BSD     (or IS-MAC (eq system-type 'berkeley-unix))
   "If the host is running BSD return true")
 
-;; You will most likely need to adjust this font size for your system!
 (defvar me/default-font-size 160)
 (defvar me/default-variable-font-size 160)
-
-(when '(IS-WINDOWS)
-  (setq me/default-font-size 90)
-  (setq me/default-variable-font-size 90))
+;; You will most likely need to adjust this font size for your system!
+(cond (IS-MAC (setq me/default-font-size 180) (setq me/default-variable-font-size 180))
+      (IS-WINDOWS (setq me/default-font-size 90) (setq me/default-variable-font-size 90)))
 
 ;; Make frame transparency overridable
 (defvar me/frame-transparency '(95 . 95))
@@ -79,9 +174,9 @@
   (add-hook 'focus-out-hook 'me/save-all-unsaved)
   (setq after-focus-change-function 'me/save-all-unsaved)
 
-(setq inhibit-startup-message t)
-
 ;; Have to wrap all of these due to them not working inside Termux on Android or inside terminals
+(when (fboundp 'horizontal-scroll-bar-mode)
+  (horizontal-scroll-bar-mode -1))
 (when (fboundp 'scroll-bar-mode)
   (scroll-bar-mode -1))
 (when (fboundp 'tool-bar-mode)
@@ -125,13 +220,18 @@
 
 (me/set-fonts)
 
-(defalias 'yes-or-no-p 'y-or-n-p)
+;(defalias 'yes-or-no-p 'y-or-n-p)
 
 (customize-set-variable 'display-buffer-base-action
                         '((display-buffer-reuse-window display-buffer-same-window)
                           (reusable-frames . t)))
 
 (customize-set-variable 'even-window-sizes nil)     ; avoid resizing
+
+(tab-bar-mode t)
+
+(customize-set-variable 'tab-bar-new-tab-choice '"*scratch*")
+(customize-set-variable 'tab-bar-show 't)
 
 ;; Make ESC quit prompts
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
@@ -151,41 +251,6 @@
 
 (global-set-key (kbd "C-c e q") 'save-buffers-kill-emacs)
 
-(recentf-mode 1)
-(setq recentf-max-menu-items 25)
-(setq recentf-max-saved-items 25)
-
-(setq read-file-name-completion-ignore-case t
-      read-buffer-completion-ignore-case t
-      completion-ignore-case t
-      completion-cycle-threshold 3
-      tab-always-indent 'complete)
-;; Use `consult-completion-in-region' if Vertico is enabled.
-;; Otherwise use the default `completion--in-region' function.
-(setq completion-in-region-function
-      (lambda (&rest args)
-        (apply (if vertico-mode
-                   #'consult-completion-in-region
-                 #'completion--in-region)
-               args)))
-
-;; Do not allow the cursor in the minibuffer prompt
-(setq minibuffer-prompt-properties
-      '(read-only t cursor-intangible t face minibuffer-prompt))
-(add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
-
-;; Emacs 28: Hide commands in M-x which do not work in the current mode.
-;; Vertico commands are hidden in normal buffers.
-(setq read-extended-command-predicate
-      #'command-completion-default-include-p)
-
-;; Enable recursive minibuffers
-(setq enable-recursive-minibuffers t)
-
-(winner-mode 1)
-
-(set-language-environment "UTF-8")
-
 (use-package exec-path-from-shell
   :config
   (when (memq window-system '(mac ns x))
@@ -197,12 +262,6 @@
   :config (dash-register-info-lookup))
 
 (use-package s)
-
-(use-package persistent-scratch
-  :after (no-littering org)
-  :custom ((persistent-scratch-autosave-interval 180))
-  :config
-  (add-hook 'after-init-hook 'persistent-scratch-setup-default))
 
 ;; NOTE: If you want to move everything out of the ~/.emacs.d folder
 ;; reliably, set `user-emacs-directory` before loading no-littering!
@@ -218,12 +277,15 @@
   (setq auto-save-file-name-transforms
         `((".*" ,(no-littering-expand-var-file-name "auto-save/") t))))
 
+(customize-set-variable 'desktop-save 't)
+(desktop-save-mode 1)
+
 (use-package evil
   :init
   (setq evil-want-integration t
         evil-want-keybinding nil
         evil-want-C-u-scroll t
-        evil-want-C-i-jump nil
+        evil-want-C-i-jump t
         evil-respect-visual-line-mode t
         evil-undo-system 'undo-tree)
   :config
@@ -245,6 +307,8 @@
   (evil-global-set-key 'motion "L" 'evil-end-of-line-or-visual-line)
   (evil-global-set-key 'motion "H" 'evil-first-non-blank-of-visual-line)
 
+  (evil-global-set-key 'motion "gb" 'consult-buffer)
+
   ;; Initial states
   (evil-set-initial-state 'messages-buffer-mode 'normal)
   (evil-set-initial-state 'dashboard-mode 'normal)
@@ -258,8 +322,8 @@
   )
 
 (use-package evil-collection
-  :diminish evil-collection-unimpaired-mode
   :after evil
+  :diminish evil-collection-unimpaired-mode
   :config
   (evil-collection-init))
 
@@ -298,22 +362,28 @@
   :config
 
   (evil-global-set-key 'motion (kbd "C-:") 'avy-resume)
-  (evil-global-set-key 'motion (kbd "C-f") 'avy-goto-char)
-  (evil-global-set-key 'motion (kbd "C-'") 'avy-goto-char-2)
-  (evil-global-set-key 'motion (kbd "M-g g") 'avy-goto-line)
-  (evil-global-set-key 'motion (kbd "M-g w") 'avy-goto-word-1)
-  (evil-global-set-key 'motion (kbd "M-g e") 'avy-goto-word-0)
+  (evil-global-set-key 'motion (kbd "C-f") 'avy-goto-char-2)
+  (evil-global-set-key 'motion (kbd "C-'") 'avy-goto-char)
+  (evil-global-set-key 'motion (kbd "C-c s l") 'avy-goto-line)
+  (evil-global-set-key 'motion (kbd "C-c s w") 'avy-goto-word-1)
+  (evil-global-set-key 'motion (kbd "C-c s e") 'avy-goto-word-0)
 
 
   (global-set-key (kbd "C-:") 'avy-resume)
-  (global-set-key (kbd "C-f") 'avy-goto-char)
-  (global-set-key (kbd "C-'") 'avy-goto-char-2)
-  (global-set-key (kbd "M-g g") 'avy-goto-line)
-  (global-set-key (kbd "M-g w") 'avy-goto-word-1)
-  (global-set-key (kbd "M-g e") 'avy-goto-word-0))
+  (global-set-key (kbd "C-f") 'avy-goto-char-2)
+  (global-set-key (kbd "C-'") 'avy-goto-char)
+  (global-set-key (kbd "C-c s l") 'avy-goto-line)
+  (global-set-key (kbd "C-c s w") 'avy-goto-word-1)
+  (global-set-key (kbd "C-c s e") 'avy-goto-word-0))
 
 (use-package doom-themes
-  :init (load-theme 'doom-vibrant t))
+  :init (load-theme 'doom-vibrant t)
+  :config
+  (setq doom-themes-enable-bold t
+        doom-themes-enable-italic t)
+  (setq doom-themes-treemacs-theme "doom-atom")
+  (doom-themes-treemacs-config)
+  (doom-themes-org-config))
 
 (use-package all-the-icons)
 
@@ -327,14 +397,12 @@
 
 (use-package doom-modeline
   :init (doom-modeline-mode 1)
-  :custom ((doom-modeline-height 15)
-           (doom-modeline-bar-width 6)
+  :custom ((doom-modeline-height 10)
+           (doom-modeline-bar-width 4)
+           (doom-modeline-bar-width 4)
            (doom-modeline-minor-modes t)
            (doom-modeline-buffer-file-name-style 'truncate-except-project)
            (doom-modeline-minor-modes nil)
-           (doom-modeline-persp-name t)
-           (doom-modeline-display-default-persp-name t)
-           (doom-modeline-persp-icon t)
            (doom-modeline-modal-icon t))
   ;; This configuration to is fix a bug where certain windows would not display
   ;; their full content due to the overlapping modeline
@@ -347,20 +415,29 @@
   (setq which-key-use-C-h-commands nil)
   (setq which-key-idle-delay 0.5))
 
+(use-package vertico
+  :init
+  (vertico-mode)
+  :bind (:map vertico-map
+              ("C-j" . vertico-next)
+              ("C-J" . vertico-next-group)
+              ("C-k" . vertico-previous)
+              ("C-K" . vertico-previous-group)
+              ("M-RET" . minibuffer-force-complete-and-exit)
+              ("M-TAB" . minibuffer-complete)))
+
+(use-package vertico-directory
+  :after vertico
+  :ensure nil
+  :bind (:map vertico-map
+              ("RET" . vertico-directory-enter)
+              ("DEL" . vertico-directory-delete-char)
+              ("M-DEL" . vertico-directory-delete-word))
+  :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
+
 (use-package savehist
   :init
   (savehist-mode))
-
-(use-package perspective
-  :custom
-  (persp-mode-prefix-key (kbd "C-c w"))  ; pick your own prefix key here
-  :init
-  (setq persp-state-default-file (concat persp-save-dir "persp-state"))
-  (setq persp-modestring-short t)
-  :config
-  (unless (equal persp-mode t)
-    (persp-mode))
-  (add-hook 'kill-emacs-hook #'persp-state-save))
 
 (use-package consult
   ;; Replace bindings. Lazily loaded due by `use-package'.
@@ -439,8 +516,7 @@
   ;; Optionally configure preview. The default value
   ;; is 'any, such that any key triggers the preview.
   ;; (setq consult-preview-key 'any)
-  (setq consult-preview-key (kbd "M-."))
-  (setq consult-preview-key (list (kbd "<S-down>") (kbd "<S-up>")))
+  ;;(setq consult-preview-key (kbd "M-."))
   ;; For some commands and buffer sources it is useful to configure the
   ;; :preview-key on a per-command basis using the `consult-customize' macro.
   (consult-customize
@@ -451,9 +527,26 @@
    consult--source-bookmark consult--source-recent-file
    consult--source-project-recent-file
    :preview-key (kbd "M-."))
-  (consult-customize consult--source-buffer :hidden t :default nil)
-  (add-to-list 'consult-buffer-sources persp-consult-source)
+
+  (defvar-local consult-toggle-preview-orig nil)
+
+  (defun consult-toggle-preview ()
+    "Command to enable/disable preview."
+    (interactive)
+    (if consult-toggle-preview-orig
+        (setq consult--preview-function consult-toggle-preview-orig
+              consult-toggle-preview-orig nil)
+      (setq consult-toggle-preview-orig consult--preview-function
+            consult--preview-function #'ignore)))
+
+  ;; Bind to `vertico-map' or `selectrum-minibuffer-map'
+  (define-key vertico-map (kbd "M-P") #'consult-toggle-preview)
+
   (setq consult-narrow-key "<"))
+
+(use-package consult-project-extra
+  :bind (("C-c p f" . consult-project-extra-find)
+         ("C-c p o" . consult-project-extra-find-other-window)))
 
 (use-package orderless
   :demand t
@@ -599,26 +692,6 @@
 :init
 (global-corfu-mode))
 
-(use-package vertico
-  :init
-  (vertico-mode)
-  :bind (:map vertico-map
-              ("C-j" . vertico-next)
-              ("C-J" . vertico-next-group)
-              ("C-k" . vertico-previous)
-              ("C-K" . vertico-previous-group)
-              ("M-RET" . minibuffer-force-complete-and-exit)
-              ("M-TAB" . minibuffer-complete)))
-
-(use-package vertico-directory
-  :after vertico
-  :ensure nil
-  :bind (:map vertico-map
-              ("RET" . vertico-directory-enter)
-              ("DEL" . vertico-directory-delete-char)
-              ("M-DEL" . vertico-directory-delete-word))
-  :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
-
 (use-package helpful
   :commands (helpful-callable helpful-variable helpful-command helpful-key helpful-at-point)
   ;;:custom
@@ -710,15 +783,43 @@
 
 (global-set-key (kbd "C-c W") 'me/hydra-windows/body)
 
-(use-package origami)
+(use-package origami
+  :bind (:map org-super-agenda-header-map
+        ("<tab>" . origami-toggle-node))
+  :config
+  (defvar me/org-super-agenda-auto-show-groups
+    '("Group1" "Group2"))
+
+  (defun me/org-super-agenda-origami-fold-default ()
+    "Fold certain groups by default in Org Super Agenda buffer.
+     To enable:
+     `(add-hook 'org-agenda-finalize 'me/org-super-agenda-origami-fold-default)'"
+    (forward-line 3)
+    (cl-loop do (origami-forward-toggle-node (current-buffer) (point))
+             while (origami-forward-fold-same-level (current-buffer) (point)))
+    (--each ap/org-super-agenda-auto-show-groups
+      (goto-char (point-min))
+      (when (re-search-forward (rx-to-string `(seq bol " " ,it)) nil t)
+        (origami-show-node (current-buffer) (point)))))
+  :hook ((org-agenda-mode . origami-mode)))
 
 (defun me/org-mode-initial-setup ()
+  (setq org-indent-mode-turns-on-hiding-stars t)
   (org-indent-mode)
   (variable-pitch-mode 1)
   (visual-line-mode 1))
 
+(defun me/insert-timestamp ()
+  (interactive)
+  (let ((current-prefix-arg '(16))) (call-interactively 'org-time-stamp-inactive))) ; Universal Argument x2 - 4*4
+
+(defun me/org-keybinds-setup ()
+  (define-key org-mode-map (kbd "C-c o t") 'me/insert-timestamp)
+  (bind-key "C-c o c" 'org-clock-goto))
+
 ;; Directories
 (defconst me/org-dir "~/Org/")
+(defconst me/org-notes-dir "~/Org/notes/")
 
 ;; Files
 (defconst me/org-todo-file (concat me/org-dir "todo.org"))
@@ -731,6 +832,7 @@
 (defconst me/org-distractions-file (concat me/org-dir "distractions.org"))
 (defconst me/org-journal-file (concat me/org-dir "journal.org"))
 (defconst me/org-archive-file (concat me/org-dir "archive.org"))
+(defconst me/org-emacs-note-file (concat me/org-notes-dir "emacs.org"))
 (defconst me/org-emacs-config-file (concat user-emacs-directory "README.org"))
 
 ;; Archive
@@ -746,7 +848,7 @@
     (setq org-archive-location me/org-archive-location)
 
     ;; Visuals
-    (setq org-ellipsis " ▾")
+    (setq org-ellipsis " ▼ ")
     (setq org-pretty-entities t)
 
     ;; Behavior
@@ -755,12 +857,14 @@
     (setq org-link-search-must-match-exact-headline nil)
     (setq org-log-done 'time)
     (setq org-log-into-drawer t)
+    (setq org-log-state-notes-into-drawer t)
     (setq org-extend-today-until 4)
     (setq org-duration-format 'h:mm)
     (setq-default org-enforce-todo-dependencies t)
 
     ;; Source Editing
     (setq org-edit-src-turn-on-auto-save t)
+    (setq org-src-window-setup 'current-window)
 
     ;; Time and Clock settings
     (setq org-clock-out-when-done t)
@@ -793,19 +897,6 @@
     (setq org-refile-target-files me/org-refile-files)
     (setq org-refile-targets '((org-refile-target-files :maxlevel . 5)))))
 
-(defun me/insert-timestamp ()
-    (interactive)
-    (let ((current-prefix-arg '(16))) (call-interactively 'org-time-stamp-inactive))) ; Universal Argument x2 - 4*4
-  ; This should be org specific
-  (global-set-key (kbd "C-c o t") 'me/insert-timestamp)
-;  (global-set-key (kbd "C-c o c") 'org-clock-goto)
-;  (add-hook ')
-
-
-;  (global-set-key (kbd "C-c o c") 'org-clock-goto)
-;  (global-set-key (kbd "C-c o c") 'org-clock-goto)
-;  (define-key )
-
 (defun me/org-habit-setup ()
   (progn
     (require 'org-habit)
@@ -820,8 +911,8 @@
 (defun me/org-todo-tag-setup ()
   (progn
     (setq org-todo-keywords
-          '((sequence "TODO(t)" "NEXT(n)" "PROG(p)" "INTR(i!)" "|" "DONE(d!)" "CANCELLED(c@)")
-            (sequence "APT(a)" "SOMEDAY(s)" "NOTE(N)" "PROJ(P)" "IDEA(I)" "DEPR(D)")
+          '((sequence "TODO(t)" "NEXT(n)" "PROG(p!)" "INTR(i!)" "|" "DONE(d!)" "CANCELLED(c!)")
+            (sequence "|" "APT(a)" "SOMEDAY(s)" "NOTE(N)" "PROJ(P)" "IDEA(I)" "DEPR(D)")
             (sequence "[ ](x)" "[-](-)" "|" "[X](X)")))
 
     (setq org-todo-keyword-faces
@@ -872,13 +963,7 @@
 
 (defun me/org-agenda-setup ()
   (progn
-    (evil-define-key 'motion org-agenda-mode-map (kbd "sf") 'org-agenda-filter)
-    (evil-define-key 'motion org-agenda-mode-map (kbd "zc") 'evil-close-fold)
-    (evil-define-key 'motion org-agenda-mode-map (kbd "zo") 'evil-open-fold)
-    (evil-define-key 'motion org-agenda-mode-map (kbd "zr") 'evil-open-folds)
-    (evil-define-key 'motion org-agenda-mode-map (kbd "zm") 'evil-close-folds)
-    (evil-define-key 'motion org-agenda-mode-map (kbd "zO") 'evil-open-fold-rec)
-    (evil-define-key 'motion org-agenda-mode-map (kbd "za") 'evil-toggle-fold)
+    (me/org-agenda-keybinds)
     (setq org-agenda-files me/org-agenda-files)
     (setq org-agenda-start-with-log-mode nil)
     (setq org-agenda-use-time-grid nil)
@@ -899,27 +984,28 @@
                                         (search category-keep)))
     (setq org-agenda-tags-todo-honor-ignore-options t)
 
-    ;; (setq org-agenda-prefix-format '((agenda  . " %i %-12:c%?-12t% s")
-    ;;                                     ;(agenda  . " %i %-12:c%?-12t% s") ;; file name + org-agenda-entry-type
-    ;;                                  (timeline  . "  % s")
-    ;;                                  (todo  . " %i %-12:c")
-    ;;                                  (tags  . " %i %-12:c")
-    ;;                                  (search . " %i %-12:c")))
-                                        ; https://emacs.stackexchange.com/questions/18179/org-agenda-command-with-org-agenda-filter-by-tag-not-working
-
     (defun me/org-agenda-place-point ()
       (goto-char (point-min)))
 
-                                        ;(add-hook 'org-agenda-finalize-hook (lambda () (goto-char (point-min))) 90)
-                                        ;(remove-hook 'org-agenda-finalize-hook 'me/org-agenda-place-at-point)
+    (add-hook 'org-agenda-finalize-hook #'me/org-agenda-place-point 90)))
 
-    (add-hook 'org-agenda-finalize-hook #'me/org-agenda-place-point 90)
+(defun me/org-agenda-keybinds ()
+  (progn
+    (evil-define-key 'motion org-agenda-mode-map (kbd "sf") 'org-agenda-filter)
+    (evil-define-key 'motion org-agenda-mode-map (kbd "zc") 'evil-close-fold)
+    (evil-define-key 'motion org-agenda-mode-map (kbd "zo") 'evil-open-fold)
+    (evil-define-key 'motion org-agenda-mode-map (kbd "zr") 'evil-open-folds)
+    (evil-define-key 'motion org-agenda-mode-map (kbd "zm") 'evil-close-folds)
+    (evil-define-key 'motion org-agenda-mode-map (kbd "zO") 'evil-open-fold-rec)
+    (evil-define-key 'motion org-agenda-mode-map (kbd "za") 'evil-toggle-fold)
     ))
 
 (defun me/org-capture-setup ()
   (progn
     (setq org-capture-templates
-          '(
+          '(("c" "Current" entry
+             (file+headline me/org-todo-file "Personal Inbox")
+             "* PROG %?\n%U\n" :prepend t :clock-in t :clock-keep t :clock-resume t)
             ;; Personal ;;
             ("d" "Distraction" entry
              (file+olp+datetree me/org-distractions-file)
@@ -929,13 +1015,17 @@
              (file me/org-note-inbox-file)
              "* NOTE %?\n%U\n" :prepend t)
 
-            ("e" "Emacs" entry
+            ("e" "Emacs Task" entry
              (file+headline me/org-todo-file "Emacs")
-             "* TODO %?\n%T\n" :prepend t)
+             "* TODO %?\n%U\n" :prepend t)
+
+            ("E" "Emacs Note" entry
+             (file+headline me/org-note-inbox-file "Inbox")
+             "* NOTE %?\n%U\n" :prepend t)
 
             ("t" "Task" entry
              (file+headline me/org-todo-file "Personal Inbox")
-             "* TODO %?\n%T\n" :prepend t)
+             "* TODO %?\n%U\n" :prepend t)
 
             ("T" "Task (Scheduled)" entry
              (file+headline me/org-todo-file "Personal Inbox")
@@ -966,7 +1056,7 @@
 
             ("wt" "Work Task" entry
              (file+headline me/org-todo-file "Work Inbox")
-             "* TODO %?\n%T\n" :prepend t)
+             "* TODO %?\n%U\n" :prepend t)
 
             ("wT" "Work Task (Scheduled)" entry
              (file+headline me/org-todo-file "Work Inbox")
@@ -982,15 +1072,15 @@
 
             ("wf" "Family Office Task" entry
              (file+headline me/org-projects-file "Family Office")
-             "* TODO %?\n%T\n" :prepend t)
+             "* TODO %?\n%U\n" :prepend t)
 
             ("ws" "Shareholder Task" entry
              (file+headline me/org-projects-file "Shareholder")
-             "* TODO %?\n%T\n" :prepend t)
+             "* TODO %?\n%U\n" :prepend t)
 
             ("wa" "Architecture Task" entry
              (file+headline me/org-projects-file "Architecture")
-             "* TODO %?\n%T\n" :prepend t)
+             "* TODO %?\n%U\n" :prepend t)
             ))))
 
 (defun me/org-font-setup ()
@@ -1000,15 +1090,14 @@
                              (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
 
   ;; Set faces for heading levels
-  (dolist (face '((org-level-1 . 1.1)
-                  (org-level-2 . 1.05)
-                  (org-level-3 . 1.00)
-                  (org-level-4 . 0.95)
-                  (org-level-5 . 0.9)
-                  (org-level-6 . 0.85)
-                  (org-level-7 . 0.80)
-                  (org-level-8 . 0.75)))
-    (set-face-attribute (car face) nil :font "Cantarell" :weight 'regular :height (cdr face)))
+  (dolist (face '((org-level-1 . 1.2)
+                  (org-level-2 . 1.1)
+                  (org-level-3 . 1.05)
+                  (org-level-4 . 1.0)
+                  (org-level-5 . 1.0)
+                  (org-level-6 . 1.0)
+                  (org-level-7 . 1.0)
+                  (org-level-8 . 1.0))))
 
   ;; Ensure that anything that should be fixed-pitch in Org files appears that way
   (set-face-attribute 'org-block nil    :foreground nil :inherit 'fixed-pitch)
@@ -1038,12 +1127,13 @@
          ("C-c o l" . org-agenda-log-mode))
   :config
   (me/org-settings-setup)
+  (me/org-keybinds-setup)
   (me/org-habit-setup)
   (me/org-todo-tag-setup)
   (me/org-agenda-setup)
+  (me/org-agenda-keybinds)
   (me/org-capture-setup)
-  (me/org-font-setup)
-  (require 'org-protocol))
+  (me/org-font-setup))
 
 (use-package org-contrib
   :after org)
@@ -1052,32 +1142,31 @@
   :after org
   :hook (org-mode . org-superstar-mode)
   :config
-  (set-face-attribute 'org-superstar-header-bullet nil :inherit 'fixed-pitched :height 180)
 
-  (when '(IS-WINDOWS)
-    (set-face-attribute 'org-superstar-header-bullet nil :inherit 'fixed-pitched :height 90))
+  (cond (IS-MAC (set-face-attribute 'org-superstar-header-bullet nil :inherit 'fixed-pitched :height 200))
+        (IS-WINDOWS (set-face-attribute 'org-superstar-header-bullet nil :inherit 'fixed-pitched :height 90)))
 
-  :custom
-  ((org-superstar-todo-bullet-alist
-   '(("TODO" . ?λ)
-     ("NEXT" . ?✰)
-     ("PROG" . ?∞)
-     ("INTR" . ?‼)
-     ("DONE" . ?✔)
-     ("CANCELLED" . ?✘)
-     ("NOTE" . ?✎)
-     ("PROJ" . ?⚙)
-     ("IDEA" . ?⚛)
-     ("DEPR" . ?✘)))
+  (setq org-superstar-todo-bullet-alist
+    '(("TODO" . ?λ)
+      ("NEXT" . ?✰)
+      ("PROG" . ?∞)
+      ("INTR" . ?‼)
+      ("DONE" . ?✔)
+      ("CANCELLED" . ?✘)
+      ("NOTE" . ?✎)
+      ("PROJ" . ?⚙)
+      ("IDEA" . ?⚛)
+      ("DEPR" . ?✘)))
 
-  (org-superstar-item-bullet-alist
-   '((?* . ?•)
-     (?+ . ?➤)
-     (?- . ?•)))
+   (setq org-superstar-item-bullet-alist
+    '((?* . ?•)
+      (?+ . ?➤)
+      (?- . ?•)))
 
-  (org-superstar-headline-bullets-list '("◉" "○" "●" "○" "●" "○" "●"))
-  (org-superstar-special-todo-items t)
-  (org-superstar-leading-bullet "")))
+   (setq org-superstar-headline-bullets-list '("◉" "○" "●" "○" "●" "○" "●"))
+   (setq org-superstar-special-todo-items t)
+   (setq org-superstar-leading-bullet " ")
+   (org-superstar-restart))
 
 (defun me/org-mode-visual-fill ()
   (setq visual-fill-column-width 100
@@ -1088,7 +1177,8 @@
   :hook (org-mode . me/org-mode-visual-fill))
 
 (use-package org-super-agenda
-  :after org
+  :after (evil evil-collection evil-org org)
+  :init (me/org-agenda-keybinds)
   :config
   (org-super-agenda-mode)
   (setq org-agenda-custom-commands
@@ -1156,7 +1246,14 @@
            ((org-agenda-show-inherited-tags nil)
             (org-agenda-compact-blocks t))
            )))
-  (setq org-super-agenda-header-map nil))
+
+ ;(setq org-super-agenda-header-map (copy-keymap org-agenda-mode-map))
+ (define-key org-super-agenda-header-map (kbd "z") nil)
+ (define-key org-super-agenda-header-map (kbd "j") nil)
+ (define-key org-super-agenda-header-map (kbd "k") nil)
+
+  ;(setq org-super-agenda-header-map nil)
+  )
 
 (use-package org-ql)
 
@@ -1179,6 +1276,26 @@
       (org-babel-tangle))))
 
 (add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'me/org-babel-tangle-config)))
+
+(defun me/lsp-mode-setup ()
+  (setq lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
+  (lsp-headerline-breadcrumb-mode))
+
+(use-package lsp-mode
+  :commands (lsp lsp-deferred)
+  :hook (lsp-mode . me/lsp-mode-setup)
+  :init
+  ;(setq lsp-keymap-prefix "C-c l")  ;; Or 'C-l', 's-l'
+  :config
+  (lsp-enable-which-key-integration t))
+
+(use-package lsp-ui
+  :hook (lsp-mode . lsp-ui-mode)
+  :custom
+  (lsp-ui-doc-position 'bottom))
+
+(use-package lsp-treemacs
+  :after lsp)
 
 (use-package typescript-mode
   :mode "\\.ts\\'"
@@ -1204,22 +1321,6 @@
 
 (use-package json-mode)
 
-(use-package projectile
-  :diminish projectile-mode
-  :config (projectile-mode)
-  :custom ((projectile-completion-system 'ivy))
-  :bind-keymap
-  ("C-c p" . projectile-command-map)
-  :init
-  ;; NOTE: Set this to the folder where you keep your Git repos!
-  (when (file-directory-p "~/Projects/Code")
-    (setq projectile-project-search-path '("~/Projects/Code")))
-  (setq projectile-switch-project-action #'projectile-dired))
-
-(use-package counsel-projectile
-  :after projectile
-  :config (counsel-projectile-mode))
-
 (use-package magit
   :bind (("C-c g s" . magit))
   :commands magit-status
@@ -1230,7 +1331,8 @@
 ;; - https://magit.vc/manual/forge/Token-Creation.html#Token-Creation
 ;; - https://magit.vc/manual/ghub/Getting-Started.html#Getting-Started
 (use-package forge
-  :after magit)
+  :after magit
+  :init (setq forge-add-default-bindings t))
 
 (use-package evil-nerd-commenter
   :bind ("M-/" . evilnc-comment-or-uncomment-lines))
@@ -1261,8 +1363,7 @@
   :config
   (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *")  ;; Set this to match your custom shell prompt
   (setq vterm-shell "fish")                       ;; Set this to customize the shell to launch
-  (setq vterm-max-scrollback 10000)
-  )
+  (setq vterm-max-scrollback 10000))
 
 (when (eq system-type 'windows-nt)
   (setq explicit-shell-file-name "powershell.exe")
@@ -1350,4 +1451,4 @@
       erc-hide-list '("JOIN" "PART" "QUIT" "KICK" "NICK" "MODE" "333" "353"))
 
 ;; Make gc pauses faster by decreasing the threshold.
-(setq gc-cons-threshold (* 2 1000 1000))
+(setq gc-cons-threshold 200000000)
