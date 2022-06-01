@@ -2289,15 +2289,6 @@ Dired is a built-in file manager for Emacs that does some pretty amazing things!
   ((nil . ((eval git-auto-commit-mode 1))))
 
 #+end_src
-**** Org Directory
-#+begin_src emacs-lisp :noweb yes :tangle ~/Org/.dir_locals.el
-  <<auto-commit>>
-#+end_src
-**** Emacs Directory
-#+begin_src emacs-lisp :noweb yes :tangle ~/.emacs.d/.dir_locals.el
-  <<auto-commit>>
-#+end_src
-
 ** Applications
 
 *** IRC
