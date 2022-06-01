@@ -289,7 +289,6 @@ there's no active region."
         evil-respect-visual-line-mode t
         evil-undo-system 'undo-tree)
   :config
-
   (evil-mode 1)
 
   ;; Rebind Universal Argument
@@ -950,7 +949,7 @@ there's no active region."
 (defun me/org-todo-tag-setup ()
   (progn
     (setq org-todo-keywords
-          '((sequence "TODO(t)" "NEXT(n)" "PROG(p!)" "INTR(i!)" "|" "DONE(d!)" "CANCELLED(c!)")
+          '((sequence "TODO(t)" "REVEIW(r)" "NEXT(n)" "PROG(p!)" "INTR(i!)" "|" "DONE(d!)" "CANCELLED(c!)")
             (sequence "|" "APT(a)" "SOMEDAY(s)" "NOTE(N)" "PROJ(P)" "IDEA(I)" "DEPR(D)")
             (sequence "[ ](x)" "[-](-)" "|" "[X](X)")))
 
@@ -978,27 +977,26 @@ there's no active region."
 
     (setq org-tag-persistent-alist
           '((:startgroup)
-            ("@errand" . ?E)
+            ("@errand" . ?e)
             ("@home" . ?h)
             ("@work" . ?w)
-            ("@emacs" . ?e)
             (:endgroup)
-            ("inbox" . ?I)
-            ("routine" . ?r)
+            ("ARCHIVE" . ?A)
+            ("interuption" . ?i)
+            ("distraction" . ?d)
             ("bookmark" . ?b)
-            ("backlog" . ?B)
-            ("idea" . ?i)
-            ("distraction" . ?d)))
+            ("health" . ?h)
+            ("fun" . ?f)
+            ("emacs" . ?E)
+            ("goal" . ?g)
+            ("routine" . ?r)))
+
     (setq org-tag-faces
           '(("@errand" . (:foreground "mediumPurple1" :weight bold))
             ("@home" . (:foreground "royalblue1" :weight bold))
             ("@work" . (:foreground "#1CC436" :weight bold))
-            ("@emacs" . (:foreground "forest green" :weight bold))
-            ("routine" . (:foreground "#CFE2F3" :weight regular))
-            ("inbox" . (:foreground "#CFE2F3" :weight regular))
-            ("bookmark" . (:foreground "yellow1" :weight bold))
-            ("idea" . (:foreground "pink" :weight bold))
-            ("distraction" . (:foreground "red1" :weight bold))))))
+
+            ))))
 
 (defun me/org-agenda-setup ()
   (progn
@@ -1082,9 +1080,9 @@ there's no active region."
              (file+headline me/org-snippet-file "Snippet Inbox")
              "* %?\n%U\n%i\n" :prepend t)
 
-            ("i" "Interuptions" entry
+            ("i" "Interuption" entry
              (file+headline me/org-todo-file "Interuptions")
-             "* INTR %?\n%T\n" :prepend t :clock-in t :clock-resume t)
+             "* INTR [#A] %?\n%T\n" :prepend t :clock-in t :clock-resume t)
 
             ("j" "Journal" entry
              (file+olp+datetree "~/Org/journal.org")
@@ -1120,6 +1118,9 @@ there's no active region."
             ("wa" "Architecture Task" entry
              (file+headline me/org-projects-file "Architecture")
              "* TODO %?\n%U\n" :prepend t)
+            ("wr" "Code Review" entry
+             (file+headline me/org-projects-file "Admin")
+             "* TODO %? :review:\nSCHEDULED: %^T\n" :prepend t)
             ))))
 
 (defun me/org-font-setup ()
