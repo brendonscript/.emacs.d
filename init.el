@@ -2,12 +2,10 @@
 ;; NOTE: init.el is now generated from Emacs.org.  Please edit that file
 ;;       in Emacs and init.el will be generated automatically!
 
-;; Disable warnings
+(setq gc-cons-threshold 200000000)
+
 (setq native-comp-async-report-warnings-errors 'silent)
 (setq warning-minimum-level :error)
-
-;; The default is 800 kilobytes.  Measured in bytes.
-(setq gc-cons-threshold 200000000)
 
 (defun me/display-startup-time ()
   (message "Emacs loaded in %s with %d garbage collections."
@@ -45,15 +43,35 @@
   (auto-package-update-maybe)
   (auto-package-update-at-time "09:00"))
 
+(when (fboundp 'horizontal-scroll-bar-mode)
+  (horizontal-scroll-bar-mode -1))
+(when (fboundp 'scroll-bar-mode)
+  (scroll-bar-mode -1))
+(when (fboundp 'tool-bar-mode)
+  (tool-bar-mode -1))
+(when (fboundp 'tooltip-mode)
+  (tooltip-mode -1))
+(when (fboundp 'menu-bar-mode)
+  (menu-bar-mode -1))
+(when (fboundp 'set-fringe-mode)
+  (set-fringe-mode 10))
+
+(set-frame-parameter (selected-frame) 'fullscreen 'maximized)
+(add-to-list 'default-frame-alist '(fullscreen . maximized))
+
+(setq visible-bell nil)
+(setq ring-bell-function #'ignore)
+
 (recentf-mode 1)
-(setq recentf-max-menu-items 25)
-(setq recentf-max-saved-items 25)
+(setq recentf-max-menu-items 20)
+(setq recentf-max-saved-items 50)
 
 (setq read-file-name-completion-ignore-case t
       read-buffer-completion-ignore-case t
       completion-ignore-case t
       completion-cycle-threshold 3
       tab-always-indent 'complete)
+
 ;; Use `consult-completion-in-region' if Vertico is enabled.
 ;; Otherwise use the default `completion--in-region' function.
 (setq completion-in-region-function
@@ -78,7 +96,15 @@
 
 (winner-mode 1)
 
-(set-language-environment "UTF-8")
+(prefer-coding-system 'utf-8)
+(set-default-coding-systems 'utf-8)
+(set-terminal-coding-system 'utf-8)
+(set-keyboard-coding-system 'utf-8)
+(set-selection-coding-system 'utf-8)
+(set-file-name-coding-system 'utf-8)
+(set-clipboard-coding-system 'utf-8)
+(set-w32-system-coding-system 'utf-8)
+(set-buffer-file-coding-system 'utf-8)
 
 (defun me/comment-or-uncomment-region-or-line ()
   "Comments or uncomments the region or the current line if
@@ -155,12 +181,22 @@ there's no active region."
 
 (defvar me/default-font-size 160)
 (defvar me/default-variable-font-size 160)
-;; You will most likely need to adjust this font size for your system!
+
 (cond (IS-MAC (setq me/default-font-size 180) (setq me/default-variable-font-size 180))
       (IS-WINDOWS (setq me/default-font-size 90) (setq me/default-variable-font-size 90)))
 
-;; Make frame transparency overridable
+(defun me/set-fonts ()
+  (set-face-attribute 'default nil :font "Fira Code Retina" :height me/default-font-size)
+  (set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height me/default-font-size)
+  ;; Set the variable pitch face
+  (set-face-attribute 'variable-pitch nil :font "Cantarell" :height me/default-variable-font-size :weight 'regular))
+
+(me/set-fonts)
+
 (defvar me/frame-transparency '(95 . 95))
+
+(set-frame-parameter (selected-frame) 'alpha me/frame-transparency)
+(add-to-list 'default-frame-alist `(alpha . ,me/frame-transparency))
 
 (defun me/alternate-buffer ()
   (interactive)
@@ -173,30 +209,6 @@ there's no active region."
 
   (add-hook 'focus-out-hook 'me/save-all-unsaved)
   (setq after-focus-change-function 'me/save-all-unsaved)
-
-;; Have to wrap all of these due to them not working inside Termux on Android or inside terminals
-(when (fboundp 'horizontal-scroll-bar-mode)
-  (horizontal-scroll-bar-mode -1))
-(when (fboundp 'scroll-bar-mode)
-  (scroll-bar-mode -1))
-(when (fboundp 'tool-bar-mode)
-  (tool-bar-mode -1))
-(when (fboundp 'tooltip-mode)
-  (tooltip-mode -1))
-(when (fboundp 'menu-bar-mode)
-  (menu-bar-mode -1))
-(when (fboundp 'set-fringe-mode)
-  (set-fringe-mode 10))
-
-(setq visible-bell nil)            ;; Set up the visible bell
-(setq ring-bell-function #'ignore) ;; Disable the annoying bell sound
-
-;; Set frame transparency
-(set-frame-parameter (selected-frame) 'alpha me/frame-transparency)
-(add-to-list 'default-frame-alist `(alpha . ,me/frame-transparency))
-(set-frame-parameter (selected-frame) 'fullscreen 'maximized)
-(add-to-list 'default-frame-alist '(fullscreen . maximized))
-(setq resize-mini-windows t)
 
 ;; Line and column numbers
 (column-number-mode)
@@ -212,16 +224,6 @@ there's no active region."
                 vterm-mode-hook))
   (add-hook mode (lambda () (display-line-numbers-mode 0))))
 
-(defun me/set-fonts ()
-  (set-face-attribute 'default nil :font "Fira Code Retina" :height me/default-font-size)
-  (set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height me/default-font-size)
-  ;; Set the variable pitch face
-  (set-face-attribute 'variable-pitch nil :font "Cantarell" :height me/default-variable-font-size :weight 'regular))
-
-(me/set-fonts)
-
-;(defalias 'yes-or-no-p 'y-or-n-p)
-
 (customize-set-variable 'display-buffer-base-action
                         '((display-buffer-reuse-window display-buffer-same-window)
                           (reusable-frames . t)))
@@ -233,15 +235,21 @@ there's no active region."
 (customize-set-variable 'tab-bar-new-tab-choice '"*scratch*")
 (customize-set-variable 'tab-bar-show 't)
 
-;; Make ESC quit prompts
-(global-set-key (kbd "<escape>") 'keyboard-escape-quit)
+(setq resize-mini-windows t)
 
-(setq mac-command-modifier 'control
+(defun me/kbd-escape-quit ()
+
+  ;; Make ESC quit prompts
+  (global-set-key (kbd "<escape>") 'keyboard-escape-quit))
+
+(defun me/kbd-mac-modifiers ()
+
+  (setq mac-command-modifier 'control
         mac-option-modifier 'meta
         mac-control-modifier 'super
         mac-right-command-modifier 'control
         mac-right-option-modifier 'meta
-        ns-function-modifier 'hyper)
+        ns-function-modifier 'hyper))
 
 (defun me/open-config ()
   (interactive)
@@ -250,6 +258,9 @@ there's no active region."
 (global-set-key (kbd "C-c e e") 'me/open-config)
 
 (global-set-key (kbd "C-c e q") 'save-buffers-kill-emacs)
+
+(use-package emacs
+  :ensure nil)
 
 (use-package exec-path-from-shell
   :config
@@ -426,19 +437,6 @@ there's no active region."
               ("M-RET" . minibuffer-force-complete-and-exit)
               ("M-TAB" . minibuffer-complete))
   :config
-
-  (defun vertico-resize--minibuffer ()
-    (add-hook 'window-size-change-functions
-              (lambda (win)
-                (let ((height (window-height win)))
-                  (when (/= (1- height) vertico-count)
-                    (setq-local vertico-count (1- height))
-                    (vertico--exhibit))))
-              t t))
-
-  (advice-add #'vertico--setup :before #'vertico-resize--minibuffer)
-
-
   (advice-add #'vertico--format-candidate :around
               (lambda (orig cand prefix suffix index _start)
                 (setq cand (funcall orig cand prefix suffix index _start))
@@ -446,10 +444,7 @@ there's no active region."
                  (if (= vertico--index index)
                      (propertize "» " 'face 'vertico-current)
                    "  ")
-                 cand)))
-
-
-  )
+                 cand))))
 
 (use-package vertico-directory
   :after vertico
