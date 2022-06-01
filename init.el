@@ -97,14 +97,14 @@
 (winner-mode 1)
 
 (prefer-coding-system 'utf-8)
-(set-default-coding-systems 'utf-8)
-(set-terminal-coding-system 'utf-8)
-(set-keyboard-coding-system 'utf-8)
-(set-selection-coding-system 'utf-8)
-(set-file-name-coding-system 'utf-8)
-(set-clipboard-coding-system 'utf-8)
-(set-w32-system-coding-system 'utf-8)
-(set-buffer-file-coding-system 'utf-8)
+  (set-default-coding-systems 'utf-8)
+  (set-terminal-coding-system 'utf-8)
+  (set-keyboard-coding-system 'utf-8)
+  (set-selection-coding-system 'utf-8)
+  (set-file-name-coding-system 'utf-8)
+  (set-clipboard-coding-system 'utf-8)
+;  (set-w32-system-coding-system 'utf-8)
+  (set-buffer-file-coding-system 'utf-8)
 
 (defun me/comment-or-uncomment-region-or-line ()
   "Comments or uncomments the region or the current line if
@@ -241,6 +241,7 @@ there's no active region."
 
   ;; Make ESC quit prompts
   (global-set-key (kbd "<escape>") 'keyboard-escape-quit))
+(me/kbd-escape-quit)
 
 (defun me/kbd-mac-modifiers ()
 
@@ -250,6 +251,7 @@ there's no active region."
         mac-right-command-modifier 'control
         mac-right-option-modifier 'meta
         ns-function-modifier 'hyper))
+(me/kbd-mac-modifiers)
 
 (defun me/open-config ()
   (interactive)
