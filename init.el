@@ -7,7 +7,7 @@
 (setq warning-minimum-level :error)
 
 ;; The default is 800 kilobytes.  Measured in bytes.
-(setq gc-cons-threshold (* 50 1000 1000))
+(setq gc-cons-threshold 200000000)
 
 (defun me/display-startup-time ()
   (message "Emacs loaded in %s with %d garbage collections."
@@ -424,7 +424,32 @@ there's no active region."
               ("C-k" . vertico-previous)
               ("C-K" . vertico-previous-group)
               ("M-RET" . minibuffer-force-complete-and-exit)
-              ("M-TAB" . minibuffer-complete)))
+              ("M-TAB" . minibuffer-complete))
+  :config
+
+  (defun vertico-resize--minibuffer ()
+    (add-hook 'window-size-change-functions
+              (lambda (win)
+                (let ((height (window-height win)))
+                  (when (/= (1- height) vertico-count)
+                    (setq-local vertico-count (1- height))
+                    (vertico--exhibit))))
+              t t))
+
+  (advice-add #'vertico--setup :before #'vertico-resize--minibuffer)
+
+
+  (advice-add #'vertico--format-candidate :around
+              (lambda (orig cand prefix suffix index _start)
+                (setq cand (funcall orig cand prefix suffix index _start))
+                (concat
+                 (if (= vertico--index index)
+                     (propertize "» " 'face 'vertico-current)
+                   "  ")
+                 cand)))
+
+
+  )
 
 (use-package vertico-directory
   :after vertico
@@ -655,7 +680,21 @@ there's no active region."
   (add-to-list 'display-buffer-alist
                '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
                  nil
-                 (window-parameters (mode-line-format . none)))))
+                 (window-parameters (mode-line-format . none))))
+
+  (defun +embark-live-vertico ()
+    "Shrink Vertico minibuffer when `embark-live' is active."
+    (when-let (win (and (string-prefix-p "*Embark Live" (buffer-name))
+                        (active-minibuffer-window)))
+      (with-selected-window win
+        (when (and (bound-and-true-p vertico--input)
+                   (fboundp 'vertico-multiform-unobtrusive))
+          (vertico-multiform-unobtrusive)))))
+
+  (add-hook 'embark-collect-mode-hook #'+embark-live-vertico)
+
+
+  )
 
 ;; Consult users will also want the embark-consult package.
 (use-package embark-consult
@@ -1449,6 +1488,3 @@ there's no active region."
       ;; Stop displaying channels in the mode line for no good reason.
       erc-track-exclude-type '("JOIN" "KICK" "NICK" "PART" "QUIT" "MODE" "333" "353")
       erc-hide-list '("JOIN" "PART" "QUIT" "KICK" "NICK" "MODE" "333" "353"))
-
-;; Make gc pauses faster by decreasing the threshold.
-(setq gc-cons-threshold 200000000)
