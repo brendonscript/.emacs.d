@@ -531,16 +531,8 @@ there's no active region."
   (setq xref-show-xrefs-function #'consult-xref
         xref-show-definitions-function #'consult-xref)
 
-  ;; Configure other variables and modes in the :config section,
-  ;; after lazily loading the package.
   :config
 
-  ;; Optionally configure preview. The default value
-  ;; is 'any, such that any key triggers the preview.
-  ;; (setq consult-preview-key 'any)
-  ;;(setq consult-preview-key (kbd "M-."))
-  ;; For some commands and buffer sources it is useful to configure the
-  ;; :preview-key on a per-command basis using the `consult-customize' macro.
   (consult-customize
    consult-theme
    :preview-key '(:debounce 0.2 any)
@@ -948,7 +940,7 @@ there's no active region."
   (progn
     (setq org-todo-keywords
           '((sequence "TODO(t)" "NEXT(n)" "PROG(p!)" "INTR(i!)" "|" "DONE(d!)" "CANCELLED(c!)")
-            (sequence "|" "APT(a)" "SOMEDAY(s)" "NOTE(N)" "PROJ(P)" "IDEA(I)" "DEPR(D)")
+            (sequence "BLOCK(b)" "APT(a)" "SOMEDAY(s)" "NOTE(N)" "PROJ(P)" "IDEA(I)" "|" "COMPLETE(C!)" "DEPR(D)")
             (sequence "[ ](x)" "[-](-)" "|" "[X](X)")))
 
     (setq org-todo-keyword-faces
@@ -980,6 +972,7 @@ there's no active region."
             ("@work" . ?w)
             ("@emacs" . ?e)
             (:endgroup)
+            ("block" . ?t)
             ("inbox" . ?I)
             ("routine" . ?r)
             ("bookmark" . ?b)
@@ -1038,6 +1031,13 @@ there's no active region."
 
 (defun me/org-capture-setup ()
   (progn
+    (defun my-org-capture-place-template-dont-delete-windows (oldfun args)
+      (cl-letf (((symbol-function 'delete-other-windows) 'ignore))
+        (apply oldfun args)))
+
+    (with-eval-after-load "org-capture"
+      (advice-add 'org-capture-place-template :around 'my-org-capture-place-template-dont-delete-windows))
+
     (setq org-capture-templates
           '(("c" "Current" entry
              (file+headline me/org-todo-file "Personal Inbox")
@@ -1050,6 +1050,10 @@ there's no active region."
             ("n" "Note" entry
              (file me/org-note-inbox-file)
              "* NOTE %?\n%U\n" :prepend t)
+
+            ("b" "Time Block" entry
+             (file+headline me/org-todo-file "Time Blocking")
+             "* BLOCK %?\n%^{Start Block}T--%^{End Block}T\n" :prepend t)
 
             ("e" "Emacs Task" entry
              (file+headline me/org-todo-file "Emacs")
@@ -1219,8 +1223,7 @@ there's no active region."
   (org-super-agenda-mode)
   (setq org-agenda-custom-commands
         '(("A" "Archive"
-           ((todo "DONE|CANCELLED")
-            ))
+           ((todo "DONE|CANCELLED")))
           ("a" "POG AGENDA"
            ((agenda "" ((org-agenda-span 'day)
                         (org-super-agenda-groups
