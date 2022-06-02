@@ -3,8 +3,9 @@ elpa/
 etc/
 var/
 
-.last-package-update-day
 *.txt
-custom.el
-places
-recentf
+/.org-id-locations
+/.emacs.desktop
+/recentf
+/custom.el
+/.last-package-update-day
