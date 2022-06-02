@@ -6,3 +6,5 @@ var/
 .last-package-update-day
 *.txt
 custom.el
+places
+recentf
