@@ -1,7 +1,8 @@
 #+TITLE: Brendon's Emacs Config
 #+PROPERTY: header-args:emacs-lisp :tangle ./init.el :mkdirp yes :results silent :noweb yes
-#+PROPERTY: CATEGORY emacs
 #+STARTUP: content
+#+FILETAGS: :emacs:config:
+#+CATEGORY: emacs
 
 * Readme
 - [[file:~/Code/dotfiles/.config/emacs/config/scratch/config.org::*Consult][Old Configuration]]
@@ -274,7 +275,6 @@ Start the Emacs server if it is not already running. Currently *disabled*
   (global-auto-revert-mode t)
   (show-paren-mode t)
   (setq show-paren-delay 0.0)
-
   (setq ns-pop-up-frames nil)
   (setq mouse-yank-at-point t)
   (global-set-key (kbd "M-;")
@@ -736,13 +736,13 @@ For smarter undo functionality inside Emacs
   (use-package all-the-icons)
 
   (use-package all-the-icons-completion
-    :after all-the-icons
+    :after (all-the-icons marginalia)
+    :hook (marginalia-mode . all-the-icons-completion-marginalia-setup)
     :init
     (all-the-icons-completion-mode))
 
   (use-package all-the-icons-dired
     :after all-the-icons)
-
 #+end_src
 
 *** Doom Modeline
@@ -1030,11 +1030,13 @@ For smarter undo functionality inside Emacs
            :map minibuffer-local-map
            ("M-A" . marginalia-cycle))
 
+    :custom
+    (marginalia-max-relative-age 0)
+    (marginalia-align 'left)
     :init
     (marginalia-mode)
     :config
     (add-hook 'marginalia-mode-hook #'all-the-icons-completion-marginalia-setup))
-
 #+end_src
 
 **** Embark
@@ -1087,32 +1089,73 @@ For smarter undo functionality inside Emacs
 #+begin_src emacs-lisp
 
   (use-package corfu
-  ;; Optional customizations
-   :custom
-   (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
-   (corfu-auto t)                 ;; Enable auto completion
-   (corfu-separator ?\s)          ;; Orderless field separator
-  ;; (corfu-quit-at-boundary nil)   ;; Never quit at completion boundary
-  ;; (corfu-quit-no-match nil)      ;; Never quit, even if there is no match
-  ;; (corfu-preview-current nil)    ;; Disable current candidate preview
-  ;; (corfu-preselect-first nil)    ;; Disable candidate preselection
-  ;; (corfu-on-exact-match nil)     ;; Configure handling of exact matches
-  ;; (corfu-echo-documentation nil) ;; Disable documentation in the echo area
-  ;; (corfu-scroll-margin 5)        ;; Use scroll margin
+    ;; Optional customizations
+    :custom
+    (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
+    (corfu-auto t)                 ;; Enable auto completion
+    (corfu-separator ?\s)          ;; Orderless field separator
+    (corfu-quit-at-boundary nil)   ;; Never quit at completion boundary
+    (corfu-quit-no-match t)      ;; Never quit, even if there is no match
+    ;; (corfu-preview-current nil)    ;; Disable current candidate preview
+    ;; (corfu-preselect-first nil)    ;; Disable candidate preselection
+    ;; (corfu-on-exact-match nil)     ;; Configure handling of exact matches
+    ;; (corfu-echo-documentation nil) ;; Disable documentation in the echo area
+    ;; (corfu-scroll-margin 5)        ;; Use scroll margin
 
-  ;; Enable Corfu only for certain modes.
-  ;; :hook ((prog-mode . corfu-mode)
-  ;;        (shell-mode . corfu-mode)
-  ;;        (eshell-mode . corfu-mode))
+    ;; Enable Corfu only for certain modes.
+    ;; :hook ((prog-mode . corfu-mode)
+    ;;        (shell-mode . corfu-mode)
+    ;;        (eshell-mode . corfu-mode))
 
-  ;; Recommended: Enable Corfu globally.
-  ;; This is recommended since Dabbrev can be used globally (M-/).
-  ;; See also `corfu-excluded-modes'.
-  :init
-  (global-corfu-mode))
+    ;; Recommended: Enable Corfu globally.
+    ;; This is recommended since Dabbrev can be used globally (M-/).
+    ;; See also `corfu-excluded-modes'.
+    :init
+    (global-corfu-mode))
 
+  (use-package corfu-doc
+    ;; NOTE 2022-02-05: At the time of writing, `corfu-doc' is not yet on melpa
+    :after corfu
+    :hook (corfu-mode . corfu-doc-mode)
+    :bind (:map corfu-map
+                ([remap corfu-show-documentation] . corfu-doc-toggle)
+                ("M-n" . corfu-doc-scroll-up)
+                ("M-p" . corfu-doc-scroll-down))
+    :custom
+    (corfu-doc-delay 0.75)
+    (corfu-doc-max-width 70)
+    (corfu-doc-max-height 20)
+    (corfu-doc-display-within-parent-frame t)
+    (corfu-echo-documentation nil))
 #+end_src
 
+**** Kind Icon
+#+begin_src emacs-lisp
+  (use-package kind-icon
+    :after corfu
+    :custom
+    (kind-icon-use-icons t)
+    (kind-icon-default-face 'corfu-default) ; Have background color be the same as `corfu' face background
+    (kind-icon-blend-background nil)  ; Use midpoint color between foreground and background colors ("blended")?
+    (kind-icon-blend-frac 0.08)
+
+    ;; NOTE 2022-02-05: `kind-icon' depends `svg-lib' which creates a cache
+    ;; directory that defaults to the `user-emacs-directory'. Here, I change that
+    ;; directory to a location appropriate to `no-littering' conventions, a
+    ;; package which moves directories of other packages to sane locations.
+    (svg-lib-icons-dir (no-littering-expand-var-file-name "svg-lib/cache/")) ; Change cache dir
+    :config
+    (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter) ; Enable `kind-icon'
+
+    ;; Add hook to reset cache so the icon colors match my theme
+    ;; NOTE 2022-02-05: This is a hook which resets the cache whenever I switch
+    ;; the theme using my custom defined command for switching themes. If I don't
+    ;; do this, then the backgound color will remain the same, meaning it will not
+    ;; match the background color corresponding to the current theme. Important
+    ;; since I have a light theme and dark theme I switch between. This has no
+    ;; function unless you use something similar
+    (add-hook 'kb/themes-hooks #'(lambda () (interactive) (kind-icon-reset-cache))))
+#+end_src
 *** Helpful Help Commands
 
 [[https://github.com/Wilfred/helpful][Helpful]] adds a lot of very helpful (get it?) information to Emacs' =describe-= command buffers.  For example, if you use =describe-function=, you will not only get the documentation about the function, you will also see the source code of the function and where it gets used in other places in the Emacs configuration.  It is very useful for figuring out how things work in Emacs.
@@ -1246,20 +1289,19 @@ This is an example of using [[https://github.com/abo-abo/hydra][Hydra]] to desig
     :bind (:map org-super-agenda-header-map
           ("<tab>" . origami-toggle-node))
     :config
-    (defvar me/org-super-agenda-auto-show-groups
-      '("Group1" "Group2"))
+    (defvar me/org-super-agenda-auto-hide-groups
+      '("Habits" "Done Today" "Clocked Today"))
 
     (defun me/org-super-agenda-origami-fold-default ()
       "Fold certain groups by default in Org Super Agenda buffer.
        To enable:
        `(add-hook 'org-agenda-finalize 'me/org-super-agenda-origami-fold-default)'"
       (forward-line 3)
-      (cl-loop do (origami-forward-toggle-node (current-buffer) (point))
-               while (origami-forward-fold-same-level (current-buffer) (point)))
-      (--each ap/org-super-agenda-auto-show-groups
+      (--each me/org-super-agenda-auto-hide-groups
         (goto-char (point-min))
         (when (re-search-forward (rx-to-string `(seq bol " " ,it)) nil t)
-          (origami-show-node (current-buffer) (point)))))
+          (origami-close-node (current-buffer) (point)))))
+    (add-hook 'org-agenda-finalize-hook 'me/org-super-agenda-origami-fold-default)
     :hook ((org-agenda-mode . origami-mode)))
 #+end_src
 
@@ -1318,7 +1360,7 @@ This is an example of using [[https://github.com/abo-abo/hydra][Hydra]] to desig
   (defconst me/org-archive-location (concat me/org-archive-file "::* From %s"))
 
   (defvar me/org-agenda-files (list me/org-todo-file me/org-projects-file me/org-mobile-file me/org-distractions-file me/org-journal-file me/org-emacs-config-file me/org-archive-file))
-  (defvar me/org-refile-files (list me/org-todo-file me/org-projects-file me/org-mobile-file me/org-distractions-file me/org-journal-file me/org-archive-file))
+  (defvar me/org-refile-files (list me/org-todo-file me/org-projects-file me/org-mobile-file me/org-distractions-file me/org-journal-file me/org-archive-file me/org-emacs-note-file))
 #+end_src
 
 **** Org Settings
@@ -1352,7 +1394,7 @@ This is an example of using [[https://github.com/abo-abo/hydra][Hydra]] to desig
 
       ;; Time and Clock settings
       (setq org-clock-out-when-done t)
-      (setq org-clock-idle-time nil)
+                                          ;(setq org-clock-idle-time nil)
 
       ;; Sometimes I change tasks I'm clocking quickly - this removes clocked tasks with 0:00 duration
       (setq org-clock-out-remove-zero-time-clocks t)
@@ -1378,6 +1420,9 @@ This is an example of using [[https://github.com/abo-abo/hydra][Hydra]] to desig
       (setq org-clock-persist t)
 
       ;; Refile
+
+      (setq org-refile-use-outline-path 'file)
+      (setq org-refile-allow-creating-parent-nodes 'confirm)
       (setq org-refile-target-files me/org-refile-files)
       (setq org-refile-targets '((org-refile-target-files :maxlevel . 5)))))
 #+end_src
@@ -1406,10 +1451,7 @@ This is an example of using [[https://github.com/abo-abo/hydra][Hydra]] to desig
 Need to update colors and icons
 I think I want to move around categories and tags
 Category would be
-- Inbox
 - Emacs
-- Personal
-- Work
 - Appointment
 - Backlog
 - Meeting
@@ -1420,8 +1462,8 @@ Category would be
   (defun me/org-todo-tag-setup ()
     (progn
       (setq org-todo-keywords
-            '((sequence "TODO(t)" "REVIEW(r)" "NEXT(n)" "PROG(p!)" "INTR(i!)" "|" "DONE(d!)" "CANCELLED(c!)")
-              (sequence "BLOCK(b)" "APT(a)" "SOMEDAY(s)" "NOTE(N)" "PROJ(P)" "IDEA(I)" "|" "COMPLETE(C!)" "DEPR(D)")
+            '((sequence "TODO(t)" "REVIEW(r)" "PROJ(P)" "NEXT(n)" "PROG(p!)" "INTR(i!)" "|" "DONE(d!)" "CANCELLED(c!)")
+              (sequence "APT(a)" "SOMEDAY(s)" "NOTE(N)" "IDEA(I)" "|" "COMPLETE(C!)" "DEPR(D)")
               (sequence "[ ](x)" "[-](-)" "|" "[X](X)")))
 
       (setq org-todo-keyword-faces
@@ -1453,7 +1495,8 @@ Category would be
               ("@work" . ?w)
               (:endgroup)
               ("ARCHIVE" . ?A)
-              ("block" . ?t)
+              ("personal" . ?p)
+              ("inbox" . ?I)
               ("interuption" . ?i)
               ("distraction" . ?d)
               ("bookmark" . ?b)
@@ -1478,8 +1521,6 @@ Category would be
     (progn
       (me/org-agenda-keybinds)
       (setq org-agenda-files me/org-agenda-files)
-      (setq org-agenda-start-with-log-mode nil)
-      (setq org-agenda-use-time-grid nil)
       (setq org-agenda-start-on-weekday nil)
       (setq org-agenda-start-day nil)
       (setq org-agenda-span 7)
@@ -1491,17 +1532,38 @@ Category would be
       (setq org-agenda-compact-blocks t)
       (setq org-agenda-window-setup 'current-window)
       (setq org-agenda-restore-windows-after-quit t)
-      (setq org-agenda-sorting-strategy '((agenda habit-down time-up priority-down category-keep)
-                                          (todo priority-down category-keep)
-                                          (tags priority-down category-keep)
-                                          (search category-keep)))
-      (setq org-agenda-tags-todo-honor-ignore-options t)
+      (setq org-agenda-start-with-log-mode t)
+      (setq org-agenda-use-time-grid nil)
+      (setq org-agenda-sorting-strategy
+            '((agenda todo-state-down habit-down time-up priority-down category-keep)
+              (todo priority-down category-keep)
+              (tags priority-down category-keep)
+              (search category-keep)))
+      (setq org-agenda-current-time-string "⏰ ┈┈┈┈┈┈┈┈┈┈┈ now"
+            org-agenda-time-grid '((weekly today require-timed)
+                                   (800 1000 1200 1400 1600 1800 2000)
+                                   "---" "┈┈┈┈┈┈┈┈┈┈┈┈┈")
+            org-agenda-prefix-format '((agenda . "%i %?-12T%?-12t% s")
+                                       (todo . " %i  ")
+                                       (tags . " %i  ")
+                                       (search . " %i  ")))
+      (setq org-agenda-hide-tags-regexp
+            (concat org-agenda-hide-tags-regexp "\\|sometag"))
+
+      (setq org-agenda-format-date (lambda (date) (concat "\n" (make-string (window-width) 9472)
+                                                          "\n"
+                                                          (org-agenda-format-date-aligned date))))
+      (setq org-cycle-separator-lines 2)
+      (setq org-agenda-category-icon-alist
+            `(("work" ,(list (all-the-icons-faicon "cogs")) nil nil :ascent center)
+              ("personal" ,(list (all-the-icons-material "person")) nil nil :ascent center)
+              ("emacs" ,(list (all-the-icons-material "computer")) nil nil :ascent center)
+              ("calendar" ,(list (all-the-icons-faicon "calendar")) nil nil :ascent center)))
 
       (defun me/org-agenda-place-point ()
         (goto-char (point-min)))
 
       (add-hook 'org-agenda-finalize-hook #'me/org-agenda-place-point 90)))
-
 #+end_src
 
 ***** Keybinds
@@ -1547,16 +1609,12 @@ Category would be
                (file me/org-note-inbox-file)
                "* NOTE %?\n%U\n" :prepend t)
 
-              ("b" "Time Block" entry
-               (file+headline me/org-todo-file "Time Blocking")
-               "* BLOCK %?\n%^{Start Block}T--%^{End Block}T\n" :prepend t)
-
               ("e" "Emacs Task" entry
                (file+headline me/org-todo-file "Emacs")
                "* TODO %?\n%U\n" :prepend t)
 
               ("E" "Emacs Note" entry
-               (file+headline me/org-note-inbox-file "Inbox")
+               (file+headline me/org-emacs-note-file "Inbox")
                "* NOTE %?\n%U\n" :prepend t)
 
               ("t" "Task" entry
@@ -1771,90 +1829,124 @@ Disabled
 *** Org Super Agenda
 
 #+begin_src emacs-lisp
+  (use-package org-super-agenda
+    :after (evil evil-collection evil-org org)
+    :init (me/org-agenda-keybinds)
+    :config
+    (org-super-agenda-mode)
+    (defvar me/org-agenda-custom-main nil)
+    (defvar me/org-agenda-custom-work nil)
+    (defvar me/org-agenda-custom-archive nil)
+    (setq me/org-agenda-custom-main '("a" "POG AGENDA"
+                                      ((agenda "" ((org-agenda-span 'day)
+                                                   (org-super-agenda-groups
+                                                    '((:order-multi (99 (:name "Done Today"
+                                                                               :and (:regexp "State \"DONE\""
+                                                                                             :log t))
+                                                                        (:name "Clocked Today"
+                                                                               :log t)))
+                                                      (:name "Habits" :habit t :order 98)
+                                                      (:name "Work" :tag "@work" :order 97)
+                                                      (:name "Interupts" :todo "INTR")
+                                                      (:name "In Progress" :todo "PROG")
+                                                      (:name "Next" :todo "NEXT")
+                                                      (:name "Overdue" :deadline past)
+                                                      (:name "Due Today" :deadline today)
+                                                      (:name "Scheduled Earlier" :scheduled past)
+                                                      (:name "Today"
+                                                             :time-grid t
+                                                             :date today
+                                                             :scheduled today)))))
+                                       (alltodo "" ((org-agenda-overriding-header "\nLater")
+                                                    (org-super-agenda-groups
+                                                     '((:discard (:habit t))
+                                                       (:name "In Progress"
+                                                              :todo "PROG")
+                                                       (:name "Next to do"
+                                                              :todo "NEXT")
+                                                       (:name "Interupts"
+                                                              :todo "INTR")
+                                                       (:name "Due Today"
+                                                              :deadline today)
+                                                       (:name "Due Soon"
+                                                              :deadline future)
+                                                       (:name "Overdue"
+                                                              :deadline past)
+                                                       (:name "Projects"
+                                                              :todo "PROJ")
+                                                       (:name "Future"
+                                                              :scheduled future)
+                                                       (:name "Work"
+                                                              :tag "@work"
+                                                              :order 97)
+                                                       (:name "Inbox"
+                                                              :tag ("inbox" "mobile"))
+                                                       (:name "Appointments"
+                                                              :tag "appointment")
+                                                       (:name "Emacs"
+                                                              :tag "emacs")
+                                                       (:name "Grocery List"
+                                                              :tag "groceries")
+                                                       (:name "Health"
+                                                              :tag "health")
+                                                       (:name "Errands"
+                                                              :tag "@errand")
+                                                       (:auto-tags t :order 98)
+                                                       (:auto-category t :order 99))))))))
 
-    (use-package org-super-agenda
-      :after (evil evil-collection evil-org org)
-      :init (me/org-agenda-keybinds)
-      :config
-      (org-super-agenda-mode)
-      (setq org-agenda-custom-commands
-            '(("A" "Archive"
-               ((todo "DONE|CANCELLED")))
-              ("a" "POG AGENDA"
-               ((agenda "" ((org-agenda-span 'day)
-                            (org-super-agenda-groups
-                             '((:discard (:todo ("DONE" "CANCELLED")))
-                               (:name "In Progress" :todo "PROG" :order 1)
-                               (:name "Habits" :habit t :order 98)
-                               (:name "Today"
-                                      :time-grid t
-                                      :date t
-                                      :order 2)))))
-                (alltodo "" ((org-agenda-todo-ignore-scheduled nil)
-                             (org-agenda-show-inherited-tags nil)
-                             (org-agenda-overriding-header "")
-                             (org-super-agenda-groups
-                              '((:name "Habits" :habit t :order 99)
-                                (:name "In Progress"
-                                       :todo "PROG")
-                                (:name "Next to do"
-                                       :todo "NEXT"
-                                       :order 1)
-                                (:name "Interupts"
-                                       :todo "INTR"
-                                       :order 2)
-                                (:name "Due Today"
-                                       :deadline today
-                                       :order 3)
-                                (:name "Due Soon"
-                                       :deadline future
-                                       :order 4)
-                                (:name "Overdue"
-                                       :deadline past
-                                       :order 5)
-                                (:name "Projects"
-                                       :todo "PROJ"
-                                       :order 6)
-                                (:name "Home Tasks"
-                                       :tag "@home"
-                                       :order 7)
-                                (:name "Errands"
-                                       :tag "@errand"
-                                       :order 8)
-                                (:name "Emacs"
-                                       :tag "@emacs"
-                                       :order 9)
-                                (:name "Ideas"
-                                       :tag "idea"
-                                       :todo "IDEA"
-                                       :order 10)
-                                (:name "Bookmarks"
-                                       :tag "bookmark"
-                                       :order 11)
-                                (:name "Work"
-                                       :tag "@work"
-                                       :order 12)
-                                (:name "Future"
-                                       :scheduled future
-                                       :order 13)
-                                (:auto-category t :order 98))))))
-               ((org-agenda-show-inherited-tags nil)
-                (org-agenda-compact-blocks t))
-               )))
+    (setq me/org-agenda-custom-archive '("A" "Archive"
+                                         ((todo "DONE|CANCELLED|COMPLETE"))))
 
-     ;(setq org-super-agenda-header-map (copy-keymap org-agenda-mode-map))
-     (define-key org-super-agenda-header-map (kbd "z") nil)
-     (define-key org-super-agenda-header-map (kbd "j") nil)
-     (define-key org-super-agenda-header-map (kbd "k") nil)
+    (setq me/org-agenda-custom-work '("w" "Work Agenda"
+                                      ((agenda "" ((org-agenda-span 'day)
+                                                   (org-super-agenda-groups
+                                                    '((:discard (:not (:tag "@work" :category "Work")))
+                                                      (:order-multi (2 (:name "Done Today"
+                                                                              :and (:regexp "State \"DONE\""
+                                                                                            :log t))
+                                                                       (:name "Clocked Today"
+                                                                              :log t)))
+                                                      (:order-multi (1 (:name "In Progress"
+                                                                              :todo "PROG")
+                                                                       (:name "Next"
+                                                                              :todo "NEXT")
+                                                                       (:name "Interupts"
+                                                                              :todo "INTR")
+                                                                       (:name "Overdue"
+                                                                              :deadline past)
+                                                                       (:name "Due Today"
+                                                                              :deadline today)
+                                                                       (:name "Scheduled Today"
+                                                                              :scheduled today)
+                                                                       (:name "Due Soon"
+                                                                              :deadline future)
+                                                                       (:name "Future"
+                                                                              :scheduled future)))))))
+                                       (alltodo "" ((org-agenda-overriding-header "\nBacklog")
+                                                    (org-super-agenda-groups
+                                                     '((:discard (:not (:tag "@work" :category "Work")))
+                                                       (:anything t))))))))
 
-      ;(setq org-super-agenda-header-map nil)
-      )
+    (add-to-list 'org-agenda-custom-commands me/org-agenda-custom-main)
+    (add-to-list 'org-agenda-custom-commands me/org-agenda-custom-work)
+    (add-to-list 'org-agenda-custom-commands me/org-agenda-custom-archive)
+
+    (define-key org-super-agenda-header-map (kbd "z") nil)
+    (define-key org-super-agenda-header-map (kbd "j") nil)
+    (define-key org-super-agenda-header-map (kbd "k") nil)
+    (define-key org-super-agenda-header-map (kbd "g") nil))
 #+end_src
 
 *** Org QL
 
 #+begin_src emacs-lisp
   (use-package org-ql)
+#+end_src
+
+*** Org Wild Notifier
+[[https://github.com/akhramov/org-wild-notifier.el][Org Wild Notifier]]
+
+#+begin_src emacs-lisp
 #+end_src
 
 *** Babel
