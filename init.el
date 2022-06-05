@@ -889,7 +889,9 @@ there's no active region."
 ;; Directories
 (defconst me/org-dir "~/Org/")
 (defconst me/org-notes-dir "~/Org/notes/")
-
+(defconst me/org-roam-dir "~/Org/roam/")
+(defconst me/org-roam-notes-dir (concat me/org-roam-dir "notes/"))
+(defconst me/org-roam-bookmarks-dir (concat me/org-roam-dir "bookmarks/"))
 ;; Files
 (defconst me/org-todo-file (concat me/org-dir "todo.org"))
 (defconst me/org-note-inbox-file (concat me/org-dir "notes/inbox.org"))
@@ -907,7 +909,7 @@ there's no active region."
 ;; Archive
 (defconst me/org-archive-location (concat me/org-archive-file "::* From %s"))
 
-(defvar me/org-agenda-files (list me/org-todo-file me/org-projects-file me/org-mobile-file me/org-distractions-file me/org-journal-file me/org-emacs-config-file me/org-archive-file))
+(defvar me/org-agenda-files (list me/org-todo-file me/org-projects-file me/org-mobile-file me/org-distractions-file me/org-journal-file me/org-emacs-config-file me/org-archive-file me/org-roam-notes-dir))
 (defvar me/org-refile-files (list me/org-todo-file me/org-projects-file me/org-mobile-file me/org-distractions-file me/org-journal-file me/org-archive-file me/org-emacs-note-file))
 
 (defun me/org-settings-setup ()
@@ -936,6 +938,7 @@ there's no active region."
     (setq org-src-window-setup 'current-window)
 
     ;; Time and Clock settings
+    (org-clock-persistence-insinuate)
     (setq org-clock-out-when-done t)
                                         ;(setq org-clock-idle-time nil)
 
@@ -954,20 +957,20 @@ there's no active region."
         task-state))
 
     (setq org-clock-in-switch-to-state #'me/switch-task-on-clock-start)
-    (setq org-clock-out-switch-to-state #'me/switch-task-on-clock-out)
 
     ;; Resume clocking task on clock-in if the clock is open
     (setq org-clock-in-resume t)
 
     ;; Save the running clock and all clock history when exiting Emacs, load it on startup
     (setq org-clock-persist t)
+    (setq org-clock-report-include-clocking-task t)
 
     ;; Refile
 
-    (setq org-refile-use-outline-path 'file)
+    (setq org-refile-use-outline-path nil)
     (setq org-refile-allow-creating-parent-nodes 'confirm)
     (setq org-refile-target-files me/org-refile-files)
-    (setq org-refile-targets '((org-refile-target-files :maxlevel . 5)))))
+    (setq org-refile-targets '((org-refile-target-files :maxlevel . 6)))))
 
 (defun me/org-habit-setup ()
   (progn
@@ -1017,12 +1020,11 @@ there's no active region."
             (:endgroup)
             ("ARCHIVE" . ?A)
             ("personal" . ?p)
-            ("inbox" . ?I)
-            ("interuption" . ?i)
-            ("distraction" . ?d)
+            ("health" . ?I)
             ("bookmark" . ?b)
             ("health" . ?h)
             ("fun" . ?f)
+            ("computer" . ?c)
             ("emacs" . ?E)
             ("goal" . ?g)
             ("routine" . ?r)))
@@ -1058,7 +1060,7 @@ there's no active region."
           org-agenda-time-grid '((weekly today require-timed)
                                  (800 1000 1200 1400 1600 1800 2000)
                                  "---" "┈┈┈┈┈┈┈┈┈┈┈┈┈")
-          org-agenda-prefix-format '((agenda . "%i %?-12T%?-12t% s")
+          org-agenda-prefix-format '((agenda . "%i %T  %?-12t% s")
                                      (todo . " %i  ")
                                      (tags . " %i  ")
                                      (search . " %i  ")))
@@ -1072,7 +1074,7 @@ there's no active region."
     (setq org-agenda-category-icon-alist
           `(("work" ,(list (all-the-icons-faicon "cogs")) nil nil :ascent center)
             ("personal" ,(list (all-the-icons-material "person")) nil nil :ascent center)
-            ("emacs" ,(list (all-the-icons-material "computer")) nil nil :ascent center)
+            ("computer" ,(list (all-the-icons-material "computer")) nil nil :ascent center)
             ("calendar" ,(list (all-the-icons-faicon "calendar")) nil nil :ascent center)))
 
     (defun me/org-agenda-place-point ()
@@ -1093,7 +1095,7 @@ there's no active region."
 
 (defun me/org-capture-setup ()
   (progn
-    (defun my-org-capture-place-template-dont-delete-windows (oldfun args)
+    (defun my-org-capture-place-template-dont-delete-windows (oldfun &rest args)
       (cl-letf (((symbol-function 'delete-other-windows) 'ignore))
         (apply oldfun args)))
 
@@ -1329,17 +1331,20 @@ there's no active region."
                                                             :order 97)
                                                      (:name "Inbox"
                                                             :tag ("inbox" "mobile"))
+
+                                                     (:name "Home" :tag "@home")
                                                      (:name "Appointments"
                                                             :tag "appointment")
-                                                     (:name "Emacs"
-                                                            :tag "emacs")
                                                      (:name "Grocery List"
                                                             :tag "groceries")
+                                                     (:name "Emacs"
+                                                            :tag "emacs")
                                                      (:name "Health"
                                                             :tag "health")
                                                      (:name "Errands"
                                                             :tag "@errand")
-                                                     (:auto-tags t :order 98)
+                                                     (:name "Computer"
+                                                            :category "computer")
                                                      (:auto-category t :order 99))))))))
 
   (setq me/org-agenda-custom-archive '("A" "Archive"
@@ -1387,6 +1392,64 @@ there's no active region."
 (use-package org-ql)
 
 
+
+(use-package org-roam
+  :custom
+  (org-roam-directory (file-truename me/org-roam-dir))
+  :bind (("C-c n l" . org-roam-buffer-toggle)
+         ("C-c n f" . org-roam-node-find)
+         ("C-c n g" . org-roam-graph)
+         ("C-c n i" . org-roam-node-insert)
+         ("C-c n c" . org-roam-capture)
+         ("C-c n j" . org-roam-dailies-capture-today)
+         :map org-roam-dailies-map
+         ("Y" . org-roam-dailies-capture-yesterday)
+         ("T" . org-roam-dailies-capture-tomorrow))
+  :bind-keymap
+  ("C-c n d" . org-roam-dailies-map)
+  :config
+  (require 'org-roam-dailies)
+
+  (setq org-id-link-to-org-use-id t)
+
+  (setq org-id-extra-files (org-roam--list-files me/org-roam-dir))
+
+  (setq org-roam-completion-everywhere t)
+
+  (setq org-roam-dailies-capture-templates
+        '(("d" "default" entry "* %<%I:%M %p>: %?"
+           :if-new (file+head "%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d>\n"))))
+
+  (setq org-roam-capture-templates
+        '(("d" "default" plain
+           "\n%?"
+           :target (file+head "notes/%<%Y%m%d%H%M%S>-${slug}.org" "#+TITLE: ${title}\n")
+           :unnarrowed t)
+          ("f" "Fleeting Note" plain
+           "\n%?"
+           :target (file+head "fleeting/%<%Y%m%d-%H%M%S>.org"
+                              "#+TITLE: %<%Y%m%d-%H%M%S>--${title}\n")
+           :unnarrowed t)
+          ("p" "project" plain "* Goals\n\n%?\n\n* Tasks\n\n** TODO Add initial tasks\n\n* Dates\n\n"
+           :if-new (file+head "notes/%<%Y%m%d%H%M%S>-${slug}.org" "#+TITLE: ${title}\n#+FILETAGS: :project:")
+           :unnarrowed t)
+          ("b" "bookmark" plain "%c%?"
+           :if-new (file+head "bookmarks/%<%Y%m%d%H%M%S>-${slug}.org" "#+TITLE: ${title}\n#+FILETAGS: :bookmark:")
+           :unnarrowed t)
+          ))
+  (setq org-roam-node-display-template
+        (concat "${title:*} "
+                (propertize "${tags:10}" 'face 'org-tag)))
+  (setq org-roam-mode-sections '(org-roam-backlinks-section org-roam-reflinks-section org-roam-unlinked-references-section))
+  (add-to-list 'display-buffer-alist
+               '("\\*org-roam\\*"
+                 (display-buffer-in-side-window)
+                 (side . right)
+                 (slot . 0)
+                 (window-width . 0.33)
+                 (window-parameters . ((no-other-window . t)
+                                       (no-delete-other-windows . t)))))
+  (org-roam-db-autosync-mode))
 
 (setq org-confirm-babel-evaluate nil)
 
