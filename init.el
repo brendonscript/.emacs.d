@@ -43,6 +43,19 @@
   (auto-package-update-maybe)
   (auto-package-update-at-time "09:00"))
 
+(defconst IS-MAC     (eq system-type 'darwin)
+  "If the host is running MacOS return true")
+(defconst IS-LINUX   (eq system-type 'gnu/linux)
+  "If the host is running Linux return true")
+(defconst IS-WINDOWS (memq system-type '(cygwin windows-nt ms-dos))
+  "If the host is running Windows return true")
+(defconst IS-BSD     (or IS-MAC (eq system-type 'berkeley-unix))
+  "If the host is running BSD return true")
+
+(setq custom-file (concat user-emacs-directory "custom.el"))
+(when (file-exists-p custom-file)
+  (load custom-file))
+
 (when (fboundp 'horizontal-scroll-bar-mode)
   (horizontal-scroll-bar-mode -1))
 (when (fboundp 'scroll-bar-mode)
@@ -65,6 +78,20 @@
 (recentf-mode 1)
 (setq recentf-max-menu-items 20)
 (setq recentf-max-saved-items 50)
+
+;; NOTE: If you want to move everything out of the ~/.emacs.d folder
+;; reliably, set `user-emacs-directory` before loading no-littering!
+                                        ;(setq user-emacs-directory "~/.cache/emacs")
+
+(use-package no-littering
+  :config
+  (add-to-list 'recentf-exclude no-littering-var-directory)
+  (add-to-list 'recentf-exclude no-littering-etc-directory)
+
+  ;; no-littering doesn't set this by default so we must place
+  ;; auto save files in the same path as it uses for sessions
+  (setq auto-save-file-name-transforms
+        `((".*" ,(no-littering-expand-var-file-name "auto-save/") t))))
 
 (setq read-file-name-completion-ignore-case t
       read-buffer-completion-ignore-case t
@@ -105,6 +132,37 @@
   (set-clipboard-coding-system 'utf-8)
 ;  (set-w32-system-coding-system 'utf-8)
   (set-buffer-file-coding-system 'utf-8)
+
+(defvar me/default-font-size 160)
+(defvar me/default-variable-font-size 160)
+
+(cond (IS-MAC (setq me/default-font-size 180) (setq me/default-variable-font-size 180))
+      (IS-WINDOWS (setq me/default-font-size 90) (setq me/default-variable-font-size 90)))
+
+(defun me/set-fonts ()
+  (set-face-attribute 'default nil :font "Fira Code Retina" :height me/default-font-size)
+  (set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height me/default-font-size)
+  ;; Set the variable pitch face
+  (set-face-attribute 'variable-pitch nil :font "Cantarell" :height me/default-variable-font-size :weight 'regular))
+
+(me/set-fonts)
+
+(defvar me/frame-transparency '(95 . 95))
+
+(set-frame-parameter (selected-frame) 'alpha me/frame-transparency)
+(add-to-list 'default-frame-alist `(alpha . ,me/frame-transparency))
+
+(defun me/alternate-buffer ()
+  (interactive)
+  (switch-to-buffer (other-buffer)))
+
+(defun me/save-all-unsaved ()
+  "Save all unsaved files. no ask."
+  (interactive)
+  (save-some-buffers t))
+
+  (add-hook 'focus-out-hook 'me/save-all-unsaved)
+  (setq after-focus-change-function 'me/save-all-unsaved)
 
 (defun me/comment-or-uncomment-region-or-line ()
   "Comments or uncomments the region or the current line if
@@ -167,47 +225,11 @@ there's no active region."
       require-final-newline t
       load-prefer-newer t)
 
-(setq custom-file "~/.emacs.d/custom.el")
+(customize-set-variable 'display-buffer-base-action
+                        '((display-buffer-reuse-window display-buffer-same-window)
+                          (reusable-frames . t)))
 
-(defconst IS-MAC     (eq system-type 'darwin)
-  "If the host is running MacOS return true")
-(defconst IS-LINUX   (eq system-type 'gnu/linux)
-  "If the host is running Linux return true")
-(defconst IS-WINDOWS (memq system-type '(cygwin windows-nt ms-dos))
-  "If the host is running Windows return true")
-(defconst IS-BSD     (or IS-MAC (eq system-type 'berkeley-unix))
-  "If the host is running BSD return true")
-
-(defvar me/default-font-size 160)
-(defvar me/default-variable-font-size 160)
-
-(cond (IS-MAC (setq me/default-font-size 180) (setq me/default-variable-font-size 180))
-      (IS-WINDOWS (setq me/default-font-size 90) (setq me/default-variable-font-size 90)))
-
-(defun me/set-fonts ()
-  (set-face-attribute 'default nil :font "Fira Code Retina" :height me/default-font-size)
-  (set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height me/default-font-size)
-  ;; Set the variable pitch face
-  (set-face-attribute 'variable-pitch nil :font "Cantarell" :height me/default-variable-font-size :weight 'regular))
-
-(me/set-fonts)
-
-(defvar me/frame-transparency '(95 . 95))
-
-(set-frame-parameter (selected-frame) 'alpha me/frame-transparency)
-(add-to-list 'default-frame-alist `(alpha . ,me/frame-transparency))
-
-(defun me/alternate-buffer ()
-  (interactive)
-  (switch-to-buffer (other-buffer)))
-
-(defun me/save-all-unsaved ()
-  "Save all unsaved files. no ask."
-  (interactive)
-  (save-some-buffers t))
-
-  (add-hook 'focus-out-hook 'me/save-all-unsaved)
-  (setq after-focus-change-function 'me/save-all-unsaved)
+(customize-set-variable 'even-window-sizes nil)     ; avoid resizing
 
 ;; Line and column numbers
 (column-number-mode)
@@ -223,12 +245,6 @@ there's no active region."
                 vterm-mode-hook))
   (add-hook mode (lambda () (display-line-numbers-mode 0))))
 
-(customize-set-variable 'display-buffer-base-action
-                        '((display-buffer-reuse-window display-buffer-same-window)
-                          (reusable-frames . t)))
-
-(customize-set-variable 'even-window-sizes nil)     ; avoid resizing
-
 (tab-bar-mode t)
 
 (customize-set-variable 'tab-bar-new-tab-choice '"*scratch*")
@@ -236,73 +252,47 @@ there's no active region."
 
 (setq resize-mini-windows t)
 
-(defun me/kbd-escape-quit ()
-
-  ;; Make ESC quit prompts
-  (global-set-key (kbd "<escape>") 'keyboard-escape-quit))
-(me/kbd-escape-quit)
-
-(defun me/kbd-mac-modifiers ()
-
-  (setq mac-command-modifier 'control
-        mac-option-modifier 'meta
-        mac-control-modifier 'super
-        mac-right-command-modifier 'control
-        mac-right-option-modifier 'meta
-        ns-function-modifier 'hyper))
-(me/kbd-mac-modifiers)
-
-(defun me/open-config ()
-  (interactive)
-  (find-file (expand-file-name "~/.emacs.d/README.org")))
-
-(global-set-key (kbd "C-c e e") 'me/open-config)
-
-(global-set-key (kbd "C-c e q") 'save-buffers-kill-emacs)
-
-(use-package emacs
-  :ensure nil)
-
-(use-package exec-path-from-shell
-  :config
-  (when (memq window-system '(mac ns x))
-    (exec-path-from-shell-initialize)))
-
-(use-package dash
-  :commands (global-dash-fontify-mode)
-  :init (global-dash-fontify-mode)
-  :config (dash-register-info-lookup))
-
-(use-package s)
-
-;; NOTE: If you want to move everything out of the ~/.emacs.d folder
-;; reliably, set `user-emacs-directory` before loading no-littering!
-                                        ;(setq user-emacs-directory "~/.cache/emacs")
-
-(use-package no-littering
-  :config
-  (add-to-list 'recentf-exclude no-littering-var-directory)
-  (add-to-list 'recentf-exclude no-littering-etc-directory)
-
-  ;; no-littering doesn't set this by default so we must place
-  ;; auto save files in the same path as it uses for sessions
-  (setq auto-save-file-name-transforms
-        `((".*" ,(no-littering-expand-var-file-name "auto-save/") t))))
-
 (customize-set-variable 'desktop-save 't)
 (desktop-save-mode 1)
 
-(use-package evil
-  :init
-  (setq evil-want-integration t
-        evil-want-keybinding nil
-        evil-want-C-u-scroll t
-        evil-want-C-i-jump t
-        evil-respect-visual-line-mode t
-        evil-undo-system 'undo-tree)
-  :config
-  (evil-mode 1)
+(defun me/open-config ()
+    (interactive)
+    (find-file (expand-file-name (concat user-emacs-directory "README.org"))))
 
+(defun me/scroll-half-page (direction)
+  "Scrolls half page up if `direction' is non-nil, otherwise will scroll half page down."
+  (let ((opos (cdr (nth 6 (posn-at-point)))))
+    ;; opos = original position line relative to window
+    (move-to-window-line nil)  ;; Move cursor to middle line
+    (if direction
+        (recenter-top-bottom -1)  ;; Current line becomes last
+      (recenter-top-bottom 0))  ;; Current line becomes first
+    (move-to-window-line opos)))  ;; Restore cursor/point position
+
+(defun me/scroll-half-page-down ()
+  "Scrolls exactly half page down keeping cursor/point position."
+  (interactive)
+  (me/scroll-half-page nil))
+
+(defun me/scroll-half-page-up ()
+  "Scrolls exactly half page up keeping cursor/point position."
+  (interactive)
+  (me/scroll-half-page t))
+
+(setq mac-command-modifier 'control
+      mac-option-modifier 'meta
+      mac-control-modifier 'super
+      mac-right-command-modifier 'control
+      mac-right-option-modifier 'meta
+      ns-function-modifier 'hyper)
+
+(global-set-key (kbd "<escape>") 'keyboard-escape-quit)
+(global-set-key (kbd "C-c e e") 'me/open-config)
+(global-set-key (kbd "C-c e q") 'save-buffers-kill-emacs)
+(global-set-key (kbd "C-v") 'me/scroll-half-page-down)
+(global-set-key (kbd "M-v") 'me/scroll-half-page-up)
+
+(defun me/evil-keybinds ()
   ;; Rebind Universal Argument
   (define-key evil-motion-state-map (kbd "M-u") 'universal-argument)
   (define-key evil-insert-state-map (kbd "C-u") 'universal-argument)
@@ -319,125 +309,134 @@ there's no active region."
   (evil-global-set-key 'motion "H" 'evil-first-non-blank-of-visual-line)
 
   (evil-global-set-key 'motion "gb" 'consult-buffer)
+  (define-key evil-normal-state-map (kbd "q") 'my-evil-record-macro))
+
+(defun me/avy-keybinds ()
+  (evil-global-set-key 'motion (kbd "C-:") 'avy-resume)
+  (evil-global-set-key 'motion (kbd "C-f") 'avy-goto-char-timer)
+  (bind-key "C-:" 'avy-resume)
+  (bind-key "C-f" 'avy-goto-char-timer))
+
+(defun me/vertico-keybinds ()
+  (bind-key "C-j" 'vertico-next 'vertico-map)
+  (bind-key "C-J" 'vertico-next-group 'vertico-map)
+  (bind-key "C-k" 'vertico-previous 'vertico-map)
+  (bind-key "C-K" 'vertico-previous-group 'vertico-map)
+  (bind-key "M-RET" 'minibuffer-force-complete-and-exit 'vertico-map)
+  (bind-key "M-TAB" 'minibuffer-complete 'vertico-map))
+
+(defun me/vertico-directory-keybinds ()
+  (bind-key "RET" 'vertico-directory-enter 'vertico-map)
+  (bind-key "DEL" 'vertico-directory-delete-char 'vertico-map)
+  (bind-key "M-DEL" 'vertico-directory-delete-word 'vertico-map))
+
+(defun me/consult-keybinds ()
+  (bind-key "C-c s a" 'consult-org-agenda)
+  (bind-key "C-c s o" 'consult-outline)
+  (bind-key "C-c s s" 'consult-org-heading)
+  (bind-key "C-c r" 'consult-recent-file)
+  (bind-key "C-c h" 'consult-history)
+  (bind-key "C-c m" 'consult-mode-command)
+  (bind-key "C-c k" 'consult-kmacro)
+  (bind-key "C-x M-:" 'consult-complex-command)     ;; orig. repeat-complex-command
+  (bind-key "C-x b" 'consult-buffer)                ;; orig. switch-to-buffer
+  (bind-key "C-x 4 b" 'consult-buffer-other-window) ;; orig. switch-to-buffer-other-window
+  (bind-key "C-x 5 b" 'consult-buffer-other-frame)  ;; orig. switch-to-buffer-other-frame
+  (bind-key "C-x r b" 'consult-bookmark)            ;; orig. bookmark-jump
+  (bind-key "C-x p b" 'consult-project-buffer)      ;; orig. project-switch-to-buffer
+  (bind-key "M-#" 'consult-register-load)
+  (bind-key "M-'" 'consult-register-store)          ;; orig. abbrev-prefix-mark (unrelated)
+  (bind-key "C-M-#" 'consult-register)
+  (bind-key "M-y" 'consult-yank-pop)                ;; orig. yank-pop
+  (bind-key "<help> a" 'consult-apropos)            ;; orig. apropos-command
+  (bind-key "M-g e" 'consult-compile-error)
+  (bind-key "M-g f" 'consult-flymake)               ;; Alternative: consult-flycheck
+  (bind-key "M-g g" 'consult-goto-line)             ;; orig. goto-line
+  (bind-key "M-g M-g" 'consult-goto-line)           ;; orig. goto-line
+  (bind-key "M-g o" 'consult-outline)               ;; Alternative: consult-org-heading
+  (bind-key "M-g m" 'consult-mark)
+  (bind-key "M-g k" 'consult-global-mark)
+  (bind-key "M-g i" 'consult-imenu)
+  (bind-key "M-g I" 'consult-imenu-multi)
+  (bind-key "M-s d" 'consult-find)
+  (bind-key "M-s D" 'consult-locate)
+  (bind-key "M-s g" 'consult-grep)
+  (bind-key "M-s G" 'consult-git-grep)
+  (bind-key "M-s r" 'consult-ripgrep)
+  (bind-key "C-s" 'consult-line)
+  (bind-key "M-s L" 'consult-line-multi)
+  (bind-key "M-s m" 'consult-multi-occur)
+  (bind-key "M-s k" 'consult-keep-lines)
+  (bind-key "M-s u" 'consult-focus-lines)
+
+  (bind-key "M-s e" 'consult-isearch-history)
+  (bind-key "M-e" 'consult-isearch-history 'isearch-mode-map)         ;; orig. isearch-edit-string
+  (bind-key "M-s e" 'consult-isearch-history 'isearch-mode-map)       ;; orig. isearch-edit-string
+  (bind-key "M-s l" 'consult-line 'isearch-mode-map)                  ;; needed by consult-line to detect isearch
+  (bind-key "M-s L" 'consult-line-multi 'isearch-mode-map)            ;; needed by consult-line to detect isearch
+
+  (bind-key "M-s" 'consult-history 'minibuffer-local-map)                 ;; orig. next-matching-history-element
+  (bind-key "M-r" 'consult-history 'minibuffer-local-map))
+
+(defun me/exec-path-from-shell-config ()
+  (when (memq window-system '(mac ns x))
+    (exec-path-from-shell-initialize)))
+
+(defun me/evil-init ()
+  (setq evil-want-integration t
+        evil-want-keybinding nil
+        evil-want-C-u-scroll t
+        evil-want-C-i-jump t
+        evil-respect-visual-line-mode t
+        evil-undo-system 'undo-tree))
+
+(defun me/evil-config ()
+  (evil-mode 1)
 
   ;; Initial states
   (evil-set-initial-state 'messages-buffer-mode 'normal)
   (evil-set-initial-state 'dashboard-mode 'normal)
+
   (defun my-evil-record-macro ()
     (interactive)
     (if buffer-read-only
         (quit-window)
       (call-interactively 'evil-record-macro)))
+  (me/evil-keybinds))
 
-  (define-key evil-normal-state-map (kbd "q") 'my-evil-record-macro)
-  )
+(defun me/evil-escape-config ()
+  (evil-escape-mode)
+  (setq-default evil-escape-key-sequence "jk")
+  (setq evil-escape-delay 0.15)
 
-(use-package evil-collection
-  :after evil
-  :diminish evil-collection-unimpaired-mode
-  :config
-  (evil-collection-init))
+  (add-hook 'evil-escape-inhibit-functions
+            (defun +evil-inhibit-escape-in-minibuffer-fn ()
+              (and (minibufferp)
+                   (or (not (bound-and-true-p evil-collection-setup-minibuffer))
+                       (evil-normal-state-p))))))
 
-(use-package evil-escape
-  :after evil
-  :config
-  (progn
-    (evil-escape-mode)
-    (setq-default evil-escape-key-sequence "jk")
-    (setq evil-escape-delay 0.15)
-    (add-hook 'evil-escape-inhibit-functions
-              (defun +evil-inhibit-escape-in-minibuffer-fn ()
-                (and (minibufferp)
-                     (or (not (bound-and-true-p evil-collection-setup-minibuffer))
-                         (evil-normal-state-p)))))))
-
-(use-package evil-org
-  :after org
-  :config
+(defun me/evil-org-config ()
   (add-hook 'org-mode-hook 'evil-org-mode)
   (add-hook 'evil-org-mode-hook
             (lambda () (evil-org-set-key-theme)))
   (require 'evil-org-agenda)
   (evil-org-agenda-set-keys))
 
-(use-package god-mode
-   ;; :bind (("C-S-g" . god-mode))
-   :defer t)
+(defun me/avy-config ()
+  (setq avy-timeout-seconds 0.2)
+  (me/avy-keybinds))
 
-(use-package undo-tree
-  :diminish undo-tree-mode
-  :init
-  (global-undo-tree-mode))
+(defun me/doom-themes-init ()
+  (load-theme 'doom-vibrant t))
 
-(use-package avy
-  :config
-
-  (evil-global-set-key 'motion (kbd "C-:") 'avy-resume)
-  (evil-global-set-key 'motion (kbd "C-f") 'avy-goto-char-2)
-  (evil-global-set-key 'motion (kbd "C-'") 'avy-goto-char)
-  (evil-global-set-key 'motion (kbd "C-c s l") 'avy-goto-line)
-  (evil-global-set-key 'motion (kbd "C-c s w") 'avy-goto-word-1)
-  (evil-global-set-key 'motion (kbd "C-c s e") 'avy-goto-word-0)
-
-
-  (global-set-key (kbd "C-:") 'avy-resume)
-  (global-set-key (kbd "C-f") 'avy-goto-char-2)
-  (global-set-key (kbd "C-'") 'avy-goto-char)
-  (global-set-key (kbd "C-c s l") 'avy-goto-line)
-  (global-set-key (kbd "C-c s w") 'avy-goto-word-1)
-  (global-set-key (kbd "C-c s e") 'avy-goto-word-0))
-
-(use-package doom-themes
-  :init (load-theme 'doom-vibrant t)
-  :config
+(defun me/doom-themes-config ()
   (setq doom-themes-enable-bold t
         doom-themes-enable-italic t)
   (setq doom-themes-treemacs-theme "doom-atom")
   (doom-themes-treemacs-config)
   (doom-themes-org-config))
 
-(use-package all-the-icons)
-
-(use-package all-the-icons-completion
-  :after (all-the-icons marginalia)
-  :hook (marginalia-mode . all-the-icons-completion-marginalia-setup)
-  :init
-  (all-the-icons-completion-mode))
-
-(use-package all-the-icons-dired
-  :after all-the-icons)
-
-(use-package doom-modeline
-  :init (doom-modeline-mode 1)
-  :custom ((doom-modeline-height 10)
-           (doom-modeline-bar-width 4)
-           (doom-modeline-bar-width 4)
-           (doom-modeline-minor-modes t)
-           (doom-modeline-buffer-file-name-style 'truncate-except-project)
-           (doom-modeline-minor-modes nil)
-           (doom-modeline-modal-icon t))
-  ;; This configuration to is fix a bug where certain windows would not display
-  ;; their full content due to the overlapping modeline
-  :config (advice-add #'fit-window-to-buffer :before (lambda (&rest _) (redisplay t))))
-
-(use-package which-key
-  :init (which-key-mode)
-  :diminish which-key-mode
-  :config
-  (setq which-key-use-C-h-commands nil)
-  (setq which-key-idle-delay 0.5))
-
-(use-package vertico
-  :init
-  (vertico-mode)
-  :bind (:map vertico-map
-              ("C-j" . vertico-next)
-              ("C-J" . vertico-next-group)
-              ("C-k" . vertico-previous)
-              ("C-K" . vertico-previous-group)
-              ("M-RET" . minibuffer-force-complete-and-exit)
-              ("M-TAB" . minibuffer-complete))
-  :config
+(defun me/vertico-config ()
   (advice-add #'vertico--format-candidate :around
               (lambda (orig cand prefix suffix index _start)
                 (setq cand (funcall orig cand prefix suffix index _start))
@@ -445,77 +444,13 @@ there's no active region."
                  (if (= vertico--index index)
                      (propertize "» " 'face 'vertico-current)
                    "  ")
-                 cand))))
+                 cand)))
+  (me/vertico-keybinds))
 
-(use-package vertico-directory
-  :after vertico
-  :ensure nil
-  :bind (:map vertico-map
-              ("RET" . vertico-directory-enter)
-              ("DEL" . vertico-directory-delete-char)
-              ("M-DEL" . vertico-directory-delete-word))
-  :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
+(defun me/vertico-directory-config ()
+  (me/vertico-directory-keybinds))
 
-(use-package savehist
-  :init
-  (savehist-mode))
-
-(use-package consult
-  ;; Replace bindings. Lazily loaded due by `use-package'.
-  :bind (("C-c s a" . consult-org-agenda)
-         ("C-c s o" . consult-outline)
-         ("C-c s s" . consult-org-heading)
-         ("C-c r" . consult-recent-file)
-         ("C-c h" . consult-history)
-         ("C-c m" . consult-mode-command)
-         ("C-c k" . consult-kmacro)
-         ("C-x M-:" . consult-complex-command)     ;; orig. repeat-complex-command
-         ("C-x b" . consult-buffer)                ;; orig. switch-to-buffer
-         ("C-x 4 b" . consult-buffer-other-window) ;; orig. switch-to-buffer-other-window
-         ("C-x 5 b" . consult-buffer-other-frame)  ;; orig. switch-to-buffer-other-frame
-         ("C-x r b" . consult-bookmark)            ;; orig. bookmark-jump
-         ("C-x p b" . consult-project-buffer)      ;; orig. project-switch-to-buffer
-         ("M-#" . consult-register-load)
-         ("M-'" . consult-register-store)          ;; orig. abbrev-prefix-mark (unrelated)
-         ("C-M-#" . consult-register)
-         ("M-y" . consult-yank-pop)                ;; orig. yank-pop
-         ("<help> a" . consult-apropos)            ;; orig. apropos-command
-         ("M-g e" . consult-compile-error)
-         ("M-g f" . consult-flymake)               ;; Alternative: consult-flycheck
-         ("M-g g" . consult-goto-line)             ;; orig. goto-line
-         ("M-g M-g" . consult-goto-line)           ;; orig. goto-line
-         ("M-g o" . consult-outline)               ;; Alternative: consult-org-heading
-         ("M-g m" . consult-mark)
-         ("M-g k" . consult-global-mark)
-         ("M-g i" . consult-imenu)
-         ("M-g I" . consult-imenu-multi)
-         ("M-s d" . consult-find)
-         ("M-s D" . consult-locate)
-         ("M-s g" . consult-grep)
-         ("M-s G" . consult-git-grep)
-         ("M-s r" . consult-ripgrep)
-         ("C-s" . consult-line)
-         ("M-s L" . consult-line-multi)
-         ("M-s m" . consult-multi-occur)
-         ("M-s k" . consult-keep-lines)
-         ("M-s u" . consult-focus-lines)
-         ("M-s e" . consult-isearch-history)
-         :map isearch-mode-map
-         ("M-e" . consult-isearch-history)         ;; orig. isearch-edit-string
-         ("M-s e" . consult-isearch-history)       ;; orig. isearch-edit-string
-         ("M-s l" . consult-line)                  ;; needed by consult-line to detect isearch
-         ("M-s L" . consult-line-multi)            ;; needed by consult-line to detect isearch
-         :map minibuffer-local-map
-         ("M-s" . consult-history)                 ;; orig. next-matching-history-element
-         ("M-r" . consult-history))                ;; orig. previous-matching-history-element
-
-  ;; Enable automatic preview at point in the *Completions* buffer. This is
-  ;; relevant when you use the default completion UI.
-  ;;:hook (completion-list-mode . consult-preview-at-point-mode)
-
-  ;; The :init configuration is always executed (Not lazy)
-  :init
-
+(defun me/consult-init ()
   ;; Optionally configure the register formatting. This improves the register
   ;; preview for `consult-register', `consult-register-load',
   ;; `consult-register-store' and the Emacs built-ins.
@@ -528,10 +463,9 @@ there's no active region."
 
   ;; Use Consult to select xref locations with preview
   (setq xref-show-xrefs-function #'consult-xref
-        xref-show-definitions-function #'consult-xref)
+        xref-show-definitions-function #'consult-xref))
 
-  :config
-
+(defun me/consult-config ()
   (consult-customize
    consult-theme
    :preview-key '(:debounce 0.2 any)
@@ -551,15 +485,212 @@ there's no active region."
               consult-toggle-preview-orig nil)
       (setq consult-toggle-preview-orig consult--preview-function
             consult--preview-function #'ignore)))
+  (bind-key "M-P" #'consult-toggle-preview 'vertico-map)
+  (setq consult-narrow-key "<")
+  (me/consult-keybinds))
 
-  ;; Bind to `vertico-map' or `selectrum-minibuffer-map'
-  (define-key vertico-map (kbd "M-P") #'consult-toggle-preview)
+(defun me/consult-project-extra-keybinds ()
+  (bind-key "C-c p f" 'consult-project-extra-find)
+  (bind-key "C-c p o" 'consult-project-extra-find-other-window))
 
-  (setq consult-narrow-key "<"))
+(use-package exec-path-from-shell
+  :config
+  (me/exec-path-from-shell-config))
+
+(use-package dash
+  :commands (global-dash-fontify-mode)
+  :init (global-dash-fontify-mode)
+  :config (dash-register-info-lookup))
+
+(use-package s)
+
+(use-package persistent-scratch
+  :after (no-littering org)
+  :custom ((persistent-scratch-autosave-interval 180))
+  :config
+  (add-hook 'after-init-hook 'persistent-scratch-setup-default))
+
+(use-package evil
+  :init (me/evil-init)
+  :config (me/evil-config))
+
+(use-package evil-collection
+  :after evil
+  :diminish evil-collection-unimpaired-mode
+  :config
+  (evil-collection-init))
+
+(use-package evil-escape
+  :after evil
+  :config (me/evil-escape-config))
+
+(use-package evil-org
+  :after org
+  :config (me/evil-org-config))
+
+(use-package god-mode
+  ;; :bind (("C-S-g" . god-mode))
+  :defer t)
+
+(use-package undo-tree
+  :diminish undo-tree-mode
+  :init
+  (global-undo-tree-mode))
+
+(use-package avy
+  :config (me/avy-config))
+
+(use-package doom-themes
+  :init (me/doom-themes-init)
+  :config (me/doom-themes-config))
+
+(use-package doom-modeline
+  :init (doom-modeline-mode 1)
+  :custom ((doom-modeline-height 10)
+           (doom-modeline-bar-width 4)
+           (doom-modeline-bar-width 4)
+           (doom-modeline-minor-modes t)
+           (doom-modeline-buffer-file-name-style 'truncate-except-project)
+           (doom-modeline-minor-modes nil)
+           (doom-modeline-modal-icon t))
+  ;; This configuration to is fix a bug where certain windows would not display
+  ;; their full content due to the overlapping modeline
+  :config (advice-add #'fit-window-to-buffer :before (lambda (&rest _) (redisplay t))))
+
+(use-package all-the-icons)
+
+(use-package all-the-icons-completion
+  :after (all-the-icons marginalia)
+  :hook (marginalia-mode . all-the-icons-completion-marginalia-setup)
+  :init
+  (all-the-icons-completion-mode))
+
+(use-package all-the-icons-dired
+  :after all-the-icons)
+
+(use-package which-key
+  :init (which-key-mode)
+  :diminish which-key-mode
+  :config
+  (setq which-key-use-C-h-commands nil)
+  (setq which-key-idle-delay 0.5))
+
+(use-package vertico
+  :init (vertico-mode)
+  :config (me/vertico-config))
+
+(use-package vertico-directory
+  :after vertico
+  :ensure nil
+  :config (me/vertico-directory-config)
+  :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
+
+(use-package savehist
+  :init
+  (savehist-mode))
+
+(use-package consult
+  :init (me/consult-init)
+  :config (me/consult-config))
 
 (use-package consult-project-extra
-  :bind (("C-c p f" . consult-project-extra-find)
-         ("C-c p o" . consult-project-extra-find-other-window)))
+  :config (me/consult-project-extra-keybinds))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 (use-package orderless
   :demand t
@@ -1057,13 +1188,14 @@ there's no active region."
             (tags priority-down category-keep)
             (search category-keep)))
     (setq org-agenda-current-time-string "⏰ ┈┈┈┈┈┈┈┈┈┈┈ now"
-          org-agenda-time-grid '((weekly today require-timed)
+          org-agenda-time-grid '((daily today require-timed)
                                  (800 1000 1200 1400 1600 1800 2000)
                                  "---" "┈┈┈┈┈┈┈┈┈┈┈┈┈")
           org-agenda-prefix-format '((agenda . "%i %T  %?-12t% s")
                                      (todo . " %i  ")
                                      (tags . " %i  ")
                                      (search . " %i  ")))
+
     (setq org-agenda-hide-tags-regexp
           (concat org-agenda-hide-tags-regexp "\\|sometag"))
 
