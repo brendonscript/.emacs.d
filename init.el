@@ -989,7 +989,7 @@ there's no active region."
         ("<tab>" . origami-toggle-node))
   :config
   (defvar me/org-super-agenda-auto-hide-groups
-    '("Habits" "Done Today" "Clocked Today"))
+    '("Done Today" "Clocked Today"))
 
   (defun me/org-super-agenda-origami-fold-default ()
     "Fold certain groups by default in Org Super Agenda buffer.
@@ -1427,6 +1427,7 @@ there's no active region."
                                                                                            :log t))
                                                                       (:name "Clocked Today"
                                                                              :log t)))
+                                                    (:discard (:todo ("DONE" "CANCELLED" "COMPLETE")))
                                                     (:name "Habits" :habit t :order 98)
                                                     (:name "Work" :tag "@work" :order 97)
                                                     (:name "Interupts" :todo "INTR")
@@ -1438,7 +1439,9 @@ there's no active region."
                                                     (:name "Today"
                                                            :time-grid t
                                                            :date today
-                                                           :scheduled today)))))
+                                                           :scheduled today
+                                                           :not
+                                                           )))))
                                      (alltodo "" ((org-agenda-overriding-header "\nLater")
                                                   (org-super-agenda-groups
                                                    '((:discard (:habit t))
@@ -1628,17 +1631,6 @@ there's no active region."
   :hook (typescript-mode . lsp-deferred)
   :config
   (setq typescript-indent-level 2))
-
-(use-package python-mode
-  :ensure t
-  :hook (python-mode . lsp-deferred)
-  :custom
-  ;; NOTE: Set these if Python 3 is called "python3" on your system!
-  ;; (python-shell-interpreter "python3")
-  ;; (dap-python-executable "python3")
-  (dap-python-debugger 'debugpy)
-  :config
-  (require 'dap-python))
 
 (use-package pyvenv
   :after python-mode
