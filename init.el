@@ -378,6 +378,94 @@ there's no active region."
   (bind-key "M-s" 'consult-history 'minibuffer-local-map)                 ;; orig. next-matching-history-element
   (bind-key "M-r" 'consult-history 'minibuffer-local-map))
 
+(defun me/meow-keybinds ()
+  (setq meow-cheatsheet-layout meow-cheatsheet-layout-qwerty)
+
+  (meow-motion-overwrite-define-key
+   '("j" . meow-next)
+   '("k" . meow-prev)
+   '("<escape>" . ignore))
+
+  (meow-leader-define-key
+   ;; SPC j/k will run the original command in MOTION state.
+   '("j" . "H-j")
+   '("k" . "H-k")
+   ;; Use SPC (0-9) for digit arguments.
+   '("1" . meow-digit-argument)
+   '("2" . meow-digit-argument)
+   '("3" . meow-digit-argument)
+   '("4" . meow-digit-argument)
+   '("5" . meow-digit-argument)
+   '("6" . meow-digit-argument)
+   '("7" . meow-digit-argument)
+   '("8" . meow-digit-argument)
+   '("9" . meow-digit-argument)
+   '("0" . meow-digit-argument)
+   '("/" . meow-keypad-describe-key)
+   '("?" . meow-cheatsheet))
+  (meow-normal-define-key
+   '("0" . meow-expand-0)
+   '("9" . meow-expand-9)
+   '("8" . meow-expand-8)
+   '("7" . meow-expand-7)
+   '("6" . meow-expand-6)
+   '("5" . meow-expand-5)
+   '("4" . meow-expand-4)
+   '("3" . meow-expand-3)
+   '("2" . meow-expand-2)
+   '("1" . meow-expand-1)
+   '("-" . negative-argument)
+   '(";" . meow-reverse)
+   '("," . meow-inner-of-thing)
+   '("." . meow-bounds-of-thing)
+   '("[" . meow-beginning-of-thing)
+   '("]" . meow-end-of-thing)
+   '("a" . meow-append)
+   '("A" . meow-open-below)
+   '("b" . meow-back-word)
+   '("B" . meow-back-symbol)
+   '("c" . meow-change)
+   '("d" . meow-delete)
+   '("D" . meow-backward-delete)
+   '("e" . meow-next-word)
+   '("E" . meow-next-symbol)
+   '("f" . meow-find)
+   '("g" . meow-cancel-selection)
+   '("G" . meow-grab)
+   '("h" . meow-left)
+   '("H" . meow-left-expand)
+   '("i" . meow-insert)
+   '("I" . meow-open-above)
+   '("j" . meow-next)
+   '("J" . meow-next-expand)
+   '("k" . meow-prev)
+   '("K" . meow-prev-expand)
+   '("l" . meow-right)
+   '("L" . meow-right-expand)
+   '("m" . meow-join)
+   '("n" . meow-search)
+   '("o" . meow-block)
+   '("O" . meow-to-block)
+   '("p" . meow-yank)
+   '("q" . meow-quit)
+   '("Q" . meow-goto-line)
+   '("r" . meow-replace)
+   '("R" . meow-swap-grab)
+   '("s" . meow-kill)
+   '("t" . meow-till)
+   '("u" . meow-undo)
+   '("U" . meow-undo-in-selection)
+   '("v" . meow-visit)
+   '("w" . meow-mark-word)
+   '("W" . meow-mark-symbol)
+   '("x" . meow-line)
+   '("X" . meow-goto-line)
+   '("y" . meow-save)
+   '("Y" . meow-sync-grab)
+   '("z" . meow-pop-selection)
+   '("'" . repeat)
+   '("<escape>" . ignore)))
+
 (defun me/exec-path-from-shell-config ()
   (when (memq window-system '(mac ns x))
     (exec-path-from-shell-initialize)))
@@ -391,7 +479,7 @@ there's no active region."
         evil-undo-system 'undo-tree))
 
 (defun me/evil-config ()
-  (evil-mode 1)
+  ;(evil-mode 1)
 
   ;; Initial states
   (evil-set-initial-state 'messages-buffer-mode 'normal)
@@ -423,7 +511,7 @@ there's no active region."
   (evil-org-agenda-set-keys))
 
 (defun me/avy-config ()
-  (setq avy-timeout-seconds 0.2)
+  (setq avy-timeout-seconds 0.5)
   (me/avy-keybinds))
 
 (defun me/doom-themes-init ()
@@ -493,6 +581,12 @@ there's no active region."
   (bind-key "C-c p f" 'consult-project-extra-find)
   (bind-key "C-c p o" 'consult-project-extra-find-other-window))
 
+(defun me/meow-init ())
+(defun me/meow-config ()
+
+  (me/meow-keybinds)
+  (meow-global-mode 1))
+
 (use-package exec-path-from-shell
   :config
   (me/exec-path-from-shell-config))
@@ -509,6 +603,10 @@ there's no active region."
   :custom ((persistent-scratch-autosave-interval 180))
   :config
   (add-hook 'after-init-hook 'persistent-scratch-setup-default))
+
+(use-package meow
+  :init (me/meow-init)
+  :config (me/meow-config))
 
 (use-package evil
   :init (me/evil-init)
@@ -1117,9 +1215,7 @@ there's no active region."
 (defun me/org-todo-tag-setup ()
   (progn
     (setq org-todo-keywords
-          '((sequence "TODO(t)" "REVIEW(r)" "PROJ(P)" "NEXT(n)" "PROG(p!)" "INTR(i!)" "|" "DONE(d!)" "CANCELLED(c!)")
-            (sequence "APT(a)" "SOMEDAY(s)" "NOTE(N)" "IDEA(I)" "|" "COMPLETE(C!)" "DEPR(D)")
-            (sequence "[ ](x)" "[-](-)" "|" "[X](X)")))
+          '((sequence "TODO(t)" "REVIEW(r)" "PROJ(P)" "NEXT(n)" "PROG(p!)" "INTR(i!)" "|" "DONE(d!)" "CANCELLED(c!)" "DEPR(D)")))
 
     (setq org-todo-keyword-faces
           '(
@@ -1150,10 +1246,13 @@ there's no active region."
             ("@work" . ?w)
             (:endgroup)
             ("ARCHIVE" . ?A)
+            ("appointment" . ?a)
+            ("someday" . ?s)
+            ("note" . ?n)
+            ("idea" . ?i)
             ("personal" . ?p)
-            ("health" . ?I)
             ("bookmark" . ?b)
-            ("health" . ?h)
+            ("health" . ?H)
             ("fun" . ?f)
             ("computer" . ?c)
             ("emacs" . ?E)
@@ -1170,28 +1269,20 @@ there's no active region."
     (me/org-agenda-keybinds)
     (setq org-agenda-files me/org-agenda-files)
     (setq org-agenda-start-on-weekday nil)
+    (setq org-agenda-start-with-log-mode t)
     (setq org-agenda-start-day nil)
-    (setq org-agenda-span 7)
     (setq org-agenda-todo-ignore-scheduled 'future)
     (setq org-agenda-skip-scheduled-if-deadline-is-shown t)
-    (setq org-agenda-skip-scheduled-if-done t)
-    (setq org-agenda-skip-deadline-if-done t)
-    (setq org-deadline-warning-days 0)
     (setq org-agenda-compact-blocks t)
     (setq org-agenda-window-setup 'current-window)
     (setq org-agenda-restore-windows-after-quit t)
-    (setq org-agenda-start-with-log-mode t)
     (setq org-agenda-use-time-grid nil)
-    (setq org-agenda-sorting-strategy
-          '((agenda todo-state-down habit-down time-up priority-down category-keep)
-            (todo priority-down category-keep)
-            (tags priority-down category-keep)
-            (search category-keep)))
     (setq org-agenda-current-time-string "⏰ ┈┈┈┈┈┈┈┈┈┈┈ now"
           org-agenda-time-grid '((daily today require-timed)
                                  (800 1000 1200 1400 1600 1800 2000)
                                  "---" "┈┈┈┈┈┈┈┈┈┈┈┈┈")
-          org-agenda-prefix-format '((agenda . "%i %T  %?-12t% s")
+          org-agenda-prefix-format '(
+                                     (agenda . " %i %-12:c%?-12t% s")
                                      (todo . " %i  ")
                                      (tags . " %i  ")
                                      (search . " %i  ")))
@@ -1352,7 +1443,7 @@ there's no active region."
   :commands (org-capture org-agenda)
   :hook (org-mode . me/org-mode-initial-setup)
   :bind (("C-c c" . org-capture)
-         ("C-c a" . org-agenda)
+         ;("C-c a" . org-agenda)
          ("C-c l" . org-store-link)
          ("C-c o s" . org-save-all-org-buffers)
          :map org-mode-map
@@ -1416,115 +1507,171 @@ there's no active region."
   :init (me/org-agenda-keybinds)
   :config
   (org-super-agenda-mode)
-  (defvar me/org-agenda-custom-main nil)
-  (defvar me/org-agenda-custom-work nil)
-  (defvar me/org-agenda-custom-archive nil)
-  (setq me/org-agenda-custom-main '("a" "POG AGENDA"
-                                    ((agenda "" ((org-agenda-span 'day)
-                                                 (org-super-agenda-groups
-                                                  '((:order-multi (99 (:name "Done Today"
-                                                                             :and (:regexp "State \"DONE\""
-                                                                                           :log t))
-                                                                      (:name "Clocked Today"
-                                                                             :log t)))
-                                                    (:discard (:todo ("DONE" "CANCELLED" "COMPLETE")))
-                                                    (:name "Habits" :habit t :order 98)
-                                                    (:name "Work" :tag "@work" :order 97)
-                                                    (:name "Interupts" :todo "INTR")
-                                                    (:name "In Progress" :todo "PROG")
-                                                    (:name "Next" :todo "NEXT")
-                                                    (:name "Overdue" :deadline past)
-                                                    (:name "Due Today" :deadline today)
-                                                    (:name "Scheduled Earlier" :scheduled past)
-                                                    (:name "Today"
-                                                           :time-grid t
-                                                           :date today
-                                                           :scheduled today
-                                                           :not
-                                                           )))))
-                                     (alltodo "" ((org-agenda-overriding-header "\nLater")
-                                                  (org-super-agenda-groups
-                                                   '((:discard (:habit t))
-                                                     (:name "In Progress"
-                                                            :todo "PROG")
-                                                     (:name "Next to do"
-                                                            :todo "NEXT")
-                                                     (:name "Interupts"
-                                                            :todo "INTR")
-                                                     (:name "Due Today"
-                                                            :deadline today)
-                                                     (:name "Due Soon"
-                                                            :deadline future)
-                                                     (:name "Overdue"
-                                                            :deadline past)
-                                                     (:name "Projects"
-                                                            :todo "PROJ")
-                                                     (:name "Future"
-                                                            :scheduled future)
-                                                     (:name "Work"
-                                                            :tag "@work"
-                                                            :order 97)
-                                                     (:name "Inbox"
-                                                            :tag ("inbox" "mobile"))
-
-                                                     (:name "Home" :tag "@home")
-                                                     (:name "Appointments"
-                                                            :tag "appointment")
-                                                     (:name "Grocery List"
-                                                            :tag "groceries")
-                                                     (:name "Emacs"
-                                                            :tag "emacs")
-                                                     (:name "Health"
-                                                            :tag "health")
-                                                     (:name "Errands"
-                                                            :tag "@errand")
-                                                     (:name "Computer"
-                                                            :category "computer")
-                                                     (:auto-category t :order 99))))))))
-
-  (setq me/org-agenda-custom-archive '("A" "Archive"
-                                       ((todo "DONE|CANCELLED|COMPLETE"))))
-
-  (setq me/org-agenda-custom-work '("w" "Work Agenda"
-                                    ((agenda "" ((org-agenda-span 'day)
-                                                 (org-super-agenda-groups
-                                                  '((:discard (:not (:tag "@work" :category "Work")))
-                                                    (:order-multi (2 (:name "Done Today"
-                                                                            :and (:regexp "State \"DONE\""
-                                                                                          :log t))
-                                                                     (:name "Clocked Today"
-                                                                            :log t)))
-                                                    (:order-multi (1 (:name "In Progress"
-                                                                            :todo "PROG")
-                                                                     (:name "Next"
-                                                                            :todo "NEXT")
-                                                                     (:name "Interupts"
-                                                                            :todo "INTR")
-                                                                     (:name "Overdue"
-                                                                            :deadline past)
-                                                                     (:name "Due Today"
-                                                                            :deadline today)
-                                                                     (:name "Scheduled Today"
-                                                                            :scheduled today)
-                                                                     (:name "Due Soon"
-                                                                            :deadline future)
-                                                                     (:name "Future"
-                                                                            :scheduled future)))))))
-                                     (alltodo "" ((org-agenda-overriding-header "\nBacklog")
-                                                  (org-super-agenda-groups
-                                                   '((:discard (:not (:tag "@work" :category "Work")))
-                                                     (:anything t))))))))
-
-  (add-to-list 'org-agenda-custom-commands me/org-agenda-custom-main)
-  (add-to-list 'org-agenda-custom-commands me/org-agenda-custom-work)
-  (add-to-list 'org-agenda-custom-commands me/org-agenda-custom-archive)
-
   (define-key org-super-agenda-header-map (kbd "z") nil)
   (define-key org-super-agenda-header-map (kbd "j") nil)
   (define-key org-super-agenda-header-map (kbd "k") nil)
-  (define-key org-super-agenda-header-map (kbd "g") nil))
+  (define-key org-super-agenda-header-map (kbd "g") nil)
 
-(use-package org-ql)
+  (setq org-super-agenda-groups '((:habit t :order 99)
+                                  (:name "In Progress"
+                                         :todo "PROG")
+                                  (:name "Next to do"
+                                         :todo "NEXT")
+                                  (:name "Interupts"
+                                         :todo "INTR")
+                                  (:name "Due Today"
+                                         :deadline today)
+                                  (:name "Due Soon"
+                                         :deadline future)
+                                  (:name "Overdue"
+                                         :deadline past)
+                                  (:name "Today"
+                                         :date today
+                                         :time-grid t
+                                         :scheduled today
+                                         :scheduled past)
+                                  (:name "Projects"
+                                         :todo "PROJ")
+                                  (:name "Future"
+                                         :scheduled future)
+                                  (:name "Work"
+                                         :tag "@work"
+                                         :order 97)
+                                  (:name "Inbox"
+                                         :tag ("inbox" "mobile"))
+
+                                  (:name "Home" :tag "@home")
+                                  (:name "Appointments"
+                                         :tag "appointment")
+                                  (:name "Grocery List"
+                                         :tag "groceries")
+                                  (:name "Emacs"
+                                         :tag "emacs")
+                                  (:name "Health"
+                                         :tag "health")
+                                  (:name "Errands"
+                                         :tag "@errand")
+                                  (:name "Computer"
+                                         :category "computer")
+                                  (:auto-category t :order 99)))
+
+  (setq org-agenda-custom-commands '(("a" "POG AGENDA"
+                                      ((agenda "" ((org-agenda-span 'day)
+                                                   (org-agenda-log-mode t)
+                                                   (org-super-agenda-groups
+                                                    '((:order-multi (97
+                                                                     (:name "Clocked Today" :log clock)
+                                                                     (:name "Done Today" :and (:log t))))
+                                                      (:name "Habits" :habit t :order 99)
+                                                      (:name "Work" :tag "@work" :order 98)
+                                                      (:name "Interupts" :todo "INTR")
+                                                      (:name "In Progress" :todo "PROG")
+                                                      (:name "Next" :todo "NEXT")
+                                                      (:name "Overdue" :deadline past)
+                                                      (:name "Due Today" :deadline today)
+                                                      (:name "Scheduled Earlier" :scheduled past)
+                                                      (:name "Today"
+                                                             :time-grid t
+                                                             :date today
+                                                             :scheduled today
+                                                             )))))
+                                       (alltodo "" ((org-agenda-overriding-header "\nLater")
+                                                    (org-super-agenda-groups
+                                                     '((:discard (:habit t))
+                                                       (:name "In Progress"
+                                                              :todo "PROG")
+                                                       (:name "Next to do"
+                                                              :todo "NEXT")
+                                                       (:name "Interupts"
+                                                              :todo "INTR")
+                                                       (:name "Due Today"
+                                                              :deadline today)
+                                                       (:name "Due Soon"
+                                                              :deadline future)
+                                                       (:name "Overdue"
+                                                              :deadline past)
+                                                       (:name "Projects"
+                                                              :todo "PROJ")
+                                                       (:name "Future"
+                                                              :scheduled future)
+                                                       (:name "Work"
+                                                              :tag "@work"
+                                                              :order 97)
+                                                       (:name "Inbox"
+                                                              :tag ("inbox" "mobile"))
+
+                                                       (:name "Home" :tag "@home")
+                                                       (:name "Appointments"
+                                                              :tag "appointment")
+                                                       (:name "Grocery List"
+                                                              :tag "groceries")
+                                                       (:name "Emacs"
+                                                              :tag "emacs")
+                                                       (:name "Health"
+                                                              :tag "health")
+                                                       (:name "Errands"
+                                                              :tag "@errand")
+                                                       (:name "Computer"
+                                                              :category "computer")
+                                                       (:auto-category t :order 99))))))))))
+
+(use-package org-ql
+  :config
+  (bind-key "C-c a a" 'org-agenda)
+  (bind-key "C-c a s" 'org-ql-search)
+  (bind-key "C-c a v" 'org-ql-view)
+  (bind-key "C-c a t" 'org-ql-view-sidebar)
+  (bind-key "C-c a S" 'org-ql-sparse-tree)
+  (bind-key "C-c a r" 'org-ql-view-recent-items)
+  (bind-key "C-c a f" 'org-ql-find)
+  (bind-key "C-c a p" 'org-ql-find-path)
+  (bind-key "C-c a h" 'org-ql-find-heading)
+
+  (setq org-ql-views nil)
+
+
+  (add-to-list 'org-ql-views '("Inbox" :buffers-files org-agenda-files :query
+                               (and
+                                (not
+                                 (done))
+                                (tags "inbox")
+                                (todo)
+                                )
+                               :sort
+                               (date priority)
+                               :super-groups org-super-agenda-groups :title "Inbox Items"))
+
+  (add-to-list 'org-ql-views '("Super View" :buffers-files org-agenda-files :query
+                               (and
+                                (not
+                                 (done))
+                                (and
+                                 (todo)))
+                               :sort
+                               (date priority)
+                               :super-groups org-super-agenda-groups :title "SUPER VIEW"))
+
+  (add-to-list 'org-ql-views '("NEXT tasks" :buffers-files org-agenda-files :query
+                               (todo "NEXT")
+                               :sort
+                               (date priority)
+                               :super-groups org-super-agenda-groups :title "Overview: NEXT tasks"))
+
+  (add-to-list 'org-ql-views '("Routines" :buffers-files org-agenda-files :query
+                               (and
+                                (not
+                                 (done))
+                                (and
+                                 (habit)
+                                 (scheduled :to today)
+                                 (or
+                                  (ts-active :to today))))
+                               :sort
+                               (todo priority date))))
+
+(use-package org-sidebar
+  :config
+  (bind-key "C-c a T" 'org-sidebar-tree-toggle))
 
 
 
