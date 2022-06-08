@@ -514,9 +514,7 @@ Start the Emacs server if it is not already running. Currently *disabled*
 ** Avy
 #+begin_src emacs-lisp
 
-  (defun me/avy-keybinds ()
-    (bind-key "C-:" 'avy-resume)
-    (bind-key "C-f" 'avy-goto-char-timer))
+  (defun me/avy-keybinds ())
 #+end_src
 ** Vertico
 #+begin_src emacs-lisp
@@ -609,6 +607,7 @@ Start the Emacs server if it is not already running. Currently *disabled*
      '("8" . meow-digit-argument)
      '("9" . meow-digit-argument)
      '("0" . meow-digit-argument)
+     '("b" . consult-buffer)
      '("/" . meow-keypad-describe-key)
      '("?" . meow-cheatsheet))
     (meow-normal-define-key
@@ -662,7 +661,7 @@ Start the Emacs server if it is not already running. Currently *disabled*
      '("s" . meow-kill)
      '("t" . meow-till)
      '("u" . meow-undo)
-     '("U" . meow-undo-in-selection)
+     '("U" . undo-tree-redo)
      '("v" . meow-visit)
      '("w" . meow-mark-word)
      '("W" . meow-mark-symbol)
@@ -672,7 +671,9 @@ Start the Emacs server if it is not already running. Currently *disabled*
      '("Y" . meow-sync-grab)
      '("z" . meow-pop-selection)
      '("'" . repeat)
-     '("<escape>" . ignore)))
+     '("<escape>" . ignore)
+     '("C-d" . me/scroll-half-page-down)
+     '("C-b" . me/scroll-half-page-up)))
 #+end_src
 * Package Configuration
 ** Path Configuration (Mac Only)
@@ -829,11 +830,40 @@ For using my favorite bind =jk= to easily exit insert mode
 #+end_src
 ** Meow
 #+begin_src emacs-lisp
-  (defun me/meow-init ())
+  (defun me/meow-init ()
+    (setq meow-mode-state-list '((authinfo-mode . normal)
+                                 (beancount-mode . normal)
+                                 (bibtex-mode . normal)
+                                 (cider-repl-mode . normal)
+                                 (cider-test-report-mode . normal)
+                                 (cider-browse-spec-view-mode . motion)
+                                 (cargo-process-mode . normal)
+                                 (conf-mode . normal)
+                                 (deadgrep-edit-mode . normal)
+                                 (deft-mode . normal)
+                                 (diff-mode . normal)
+                                 (ediff-mode . motion)
+                                 (gud-mode . normal)
+                                 (haskell-interactive-mode . normal)
+                                 (help-mode . normal)
+                                 (helpful-mode . normal)
+                                 (json-mode . normal)
+                                 (jupyter-repl-mode . normal)
+                                 (mix-mode . normal)
+                                 (occur-edit-mode . normal)
+                                 (pass-view-mode . normal)
+                                 (prog-mode . normal)
+                                 (py-shell-mode . normal)
+                                 (restclient-mode . normal)
+                                 (telega-chat-mode . normal)
+                                 (term-mode . normal)
+                                 (text-mode . normal)
+                                 (vterm-mode . normal)
+                                 (Custom-mode . normal))))
   (defun me/meow-config ()
-
     (me/meow-keybinds)
-    (meow-global-mode 1))
+    (meow-global-mode 1)
+    (global-set-key (kbd "C-h k") 'helpful-key))
 #+end_src
 * Install Packages
 ** exec-path-from-shell
@@ -874,6 +904,13 @@ For using my favorite bind =jk= to easily exit insert mode
   (use-package meow
     :init (me/meow-init)
     :config (me/meow-config))
+#+end_src
+** key-chord
+#+begin_src emacs-lisp
+  (use-package key-chord
+    :config
+    (key-chord-define meow-insert-state-keymap "jk" 'meow-insert-exit)
+    (key-chord-mode 1))
 #+end_src
 ** evil
 #+begin_src emacs-lisp :tangle no
@@ -1383,18 +1420,13 @@ For using my favorite bind =jk= to easily exit insert mode
 
 #+begin_src emacs-lisp
 
-    (use-package helpful
-      :commands (helpful-callable helpful-variable helpful-command helpful-key helpful-at-point)
-      ;;:custom
-      ;; (counsel-describe-function-function #'helpful-callable)
-      ;; (counsel-describe-variable-function #'helpful-variable)
-      :bind
-      ("H-d" . helpful-at-point)
-      ([remap describe-function] . helpful-function)
-      ([remap describe-command] . helpful-command)
-      ([remap describe-variable] . helpful-variable)
-      ([remap describe-key] . helpful-key))
-
+  (use-package helpful
+    :commands (helpful-callable helpful-variable helpful-command helpful-key helpful-at-point)
+    :bind
+    ("H-d" . helpful-at-point)
+    ([remap describe-function] . helpful-function)
+    ([remap describe-command] . helpful-command)
+    ([remap describe-variable] . helpful-variable))
 #+end_src
 
 ** Hydra
@@ -2729,11 +2761,7 @@ Dired is a built-in file manager for Emacs that does some pretty amazing things!
     (setq dired-open-extensions '(("png" . "feh")
                                   ("mkv" . "mpv"))))
 
-  (use-package dired-hide-dotfiles
-    ;;:hook (dired-mode . dired-hide-dotfiles-mode)
-    :config
-    (evil-collection-define-key 'normal 'dired-mode-map
-      "H" 'dired-hide-dotfiles-mode))
+  (use-package dired-hide-dotfiles)
 
 #+end_src
 *** Auto commit files

@@ -311,9 +311,7 @@ there's no active region."
   (evil-global-set-key 'motion "gb" 'consult-buffer)
   (define-key evil-normal-state-map (kbd "q") 'my-evil-record-macro))
 
-(defun me/avy-keybinds ()
-  (bind-key "C-:" 'avy-resume)
-  (bind-key "C-f" 'avy-goto-char-timer))
+(defun me/avy-keybinds ())
 
 (defun me/vertico-keybinds ()
   (bind-key "C-j" 'vertico-next 'vertico-map)
@@ -399,6 +397,7 @@ there's no active region."
    '("8" . meow-digit-argument)
    '("9" . meow-digit-argument)
    '("0" . meow-digit-argument)
+   '("b" . consult-buffer)
    '("/" . meow-keypad-describe-key)
    '("?" . meow-cheatsheet))
   (meow-normal-define-key
@@ -452,7 +451,7 @@ there's no active region."
    '("s" . meow-kill)
    '("t" . meow-till)
    '("u" . meow-undo)
-   '("U" . meow-undo-in-selection)
+   '("U" . undo-tree-redo)
    '("v" . meow-visit)
    '("w" . meow-mark-word)
    '("W" . meow-mark-symbol)
@@ -462,7 +461,9 @@ there's no active region."
    '("Y" . meow-sync-grab)
    '("z" . meow-pop-selection)
    '("'" . repeat)
-   '("<escape>" . ignore)))
+   '("<escape>" . ignore)
+   '("C-d" . me/scroll-half-page-down)
+   '("C-b" . me/scroll-half-page-up)))
 
 (defun me/exec-path-from-shell-config ()
   (when (memq window-system '(mac ns x))
@@ -579,11 +580,40 @@ there's no active region."
   (bind-key "C-c p f" 'consult-project-extra-find)
   (bind-key "C-c p o" 'consult-project-extra-find-other-window))
 
-(defun me/meow-init ())
+(defun me/meow-init ()
+  (setq meow-mode-state-list '((authinfo-mode . normal)
+                               (beancount-mode . normal)
+                               (bibtex-mode . normal)
+                               (cider-repl-mode . normal)
+                               (cider-test-report-mode . normal)
+                               (cider-browse-spec-view-mode . motion)
+                               (cargo-process-mode . normal)
+                               (conf-mode . normal)
+                               (deadgrep-edit-mode . normal)
+                               (deft-mode . normal)
+                               (diff-mode . normal)
+                               (ediff-mode . motion)
+                               (gud-mode . normal)
+                               (haskell-interactive-mode . normal)
+                               (help-mode . normal)
+                               (helpful-mode . normal)
+                               (json-mode . normal)
+                               (jupyter-repl-mode . normal)
+                               (mix-mode . normal)
+                               (occur-edit-mode . normal)
+                               (pass-view-mode . normal)
+                               (prog-mode . normal)
+                               (py-shell-mode . normal)
+                               (restclient-mode . normal)
+                               (telega-chat-mode . normal)
+                               (term-mode . normal)
+                               (text-mode . normal)
+                               (vterm-mode . normal)
+                               (Custom-mode . normal))))
 (defun me/meow-config ()
-
   (me/meow-keybinds)
-  (meow-global-mode 1))
+  (meow-global-mode 1)
+  (global-set-key (kbd "C-h k") 'helpful-key))
 
 (use-package exec-path-from-shell
   :config
@@ -605,6 +635,11 @@ there's no active region."
 (use-package meow
   :init (me/meow-init)
   :config (me/meow-config))
+
+(use-package key-chord
+  :config
+  (key-chord-define meow-insert-state-keymap "jk" 'meow-insert-exit)
+  (key-chord-mode 1))
 
 (use-package undo-tree
   :diminish undo-tree-mode
@@ -969,15 +1004,11 @@ there's no active region."
 
 (use-package helpful
   :commands (helpful-callable helpful-variable helpful-command helpful-key helpful-at-point)
-  ;;:custom
-  ;; (counsel-describe-function-function #'helpful-callable)
-  ;; (counsel-describe-variable-function #'helpful-variable)
   :bind
   ("H-d" . helpful-at-point)
   ([remap describe-function] . helpful-function)
   ([remap describe-command] . helpful-command)
-  ([remap describe-variable] . helpful-variable)
-  ([remap describe-key] . helpful-key))
+  ([remap describe-variable] . helpful-variable))
 
 (use-package hydra
   :defer t)
@@ -1851,11 +1882,7 @@ there's no active region."
   (setq dired-open-extensions '(("png" . "feh")
                                 ("mkv" . "mpv"))))
 
-(use-package dired-hide-dotfiles
-  ;;:hook (dired-mode . dired-hide-dotfiles-mode)
-  :config
-  (evil-collection-define-key 'normal 'dired-mode-map
-    "H" 'dired-hide-dotfiles-mode))
+(use-package dired-hide-dotfiles)
 
 (setq erc-server "irc.libera.chat"
       erc-nick "geoffery"
