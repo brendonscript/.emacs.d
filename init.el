@@ -312,8 +312,6 @@ there's no active region."
   (define-key evil-normal-state-map (kbd "q") 'my-evil-record-macro))
 
 (defun me/avy-keybinds ()
-  (evil-global-set-key 'motion (kbd "C-:") 'avy-resume)
-  (evil-global-set-key 'motion (kbd "C-f") 'avy-goto-char-timer)
   (bind-key "C-:" 'avy-resume)
   (bind-key "C-f" 'avy-goto-char-timer))
 
@@ -604,27 +602,9 @@ there's no active region."
   :config
   (add-hook 'after-init-hook 'persistent-scratch-setup-default))
 
-(use-package evil
-  :init (me/evil-init)
-  :config (me/evil-config))
-
-(use-package evil-collection
-  :after evil
-  :diminish evil-collection-unimpaired-mode
-  :config
-  (evil-collection-init))
-
-(use-package evil-escape
-  :after evil
-  :config (me/evil-escape-config))
-
-(use-package evil-org
-  :after org
-  :config (me/evil-org-config))
-
-(use-package god-mode
-  ;; :bind (("C-S-g" . god-mode))
-  :defer t)
+(use-package meow
+  :init (me/meow-init)
+  :config (me/meow-config))
 
 (use-package undo-tree
   :diminish undo-tree-mode
@@ -997,10 +977,7 @@ there's no active region."
   ([remap describe-function] . helpful-function)
   ([remap describe-command] . helpful-command)
   ([remap describe-variable] . helpful-variable)
-  ([remap describe-key] . helpful-key)
-  (:map evil-motion-state-map
-        ("K" . helpful-at-point))
-  )
+  ([remap describe-key] . helpful-key))
 
 (use-package hydra
   :defer t)
@@ -1303,13 +1280,6 @@ there's no active region."
 
 (defun me/org-agenda-keybinds ()
   (progn
-    (evil-define-key 'motion org-agenda-mode-map (kbd "sf") 'org-agenda-filter)
-    (evil-define-key 'motion org-agenda-mode-map (kbd "zc") 'evil-close-fold)
-    (evil-define-key 'motion org-agenda-mode-map (kbd "zo") 'evil-open-fold)
-    (evil-define-key 'motion org-agenda-mode-map (kbd "zr") 'evil-open-folds)
-    (evil-define-key 'motion org-agenda-mode-map (kbd "zm") 'evil-close-folds)
-    (evil-define-key 'motion org-agenda-mode-map (kbd "zO") 'evil-open-fold-rec)
-    (evil-define-key 'motion org-agenda-mode-map (kbd "za") 'evil-toggle-fold)
     ))
 
 (defun me/org-capture-setup ()
@@ -1499,7 +1469,7 @@ there's no active region."
   :hook (org-mode . me/org-mode-visual-fill))
 
 (use-package org-super-agenda
-  :after (evil evil-collection evil-org org)
+  :after (org)
   :init (me/org-agenda-keybinds)
   :config
   (org-super-agenda-mode)
@@ -1795,9 +1765,6 @@ there's no active region."
   :after magit
   :init (setq forge-add-default-bindings t))
 
-(use-package evil-nerd-commenter
-  :bind ("M-/" . evilnc-comment-or-uncomment-lines))
-
 (use-package rainbow-delimiters
   :hook (prog-mode . rainbow-delimiters-mode))
 
@@ -1837,11 +1804,6 @@ there's no active region."
   ;; Truncate buffer for performance
   (add-to-list 'eshell-output-filter-functions 'eshell-truncate-buffer)
 
-  ;; Bind some useful keys for evil-mode
-  (evil-define-key '(normal insert visual) eshell-mode-map (kbd "C-r") 'counsel-esh-history)
-  (evil-define-key '(normal insert visual) eshell-mode-map (kbd "<home>") 'eshell-bol)
-  (evil-normalize-keymaps)
-
   (setq eshell-history-size         10000
         eshell-buffer-maximum-lines 10000
         eshell-hist-ignoredups t
@@ -1873,11 +1835,7 @@ there's no active region."
   :bind (("C-x C-j" . dired-jump))
   :custom ((dired-listing-switches "-agho --group-directories-first"))
   :config
-  (setq dired-dwim-target t)
-  (evil-collection-define-key 'normal 'dired-mode-map
-      "h" 'dired-single-up-directory
-      "l" 'dired-single-buffer)
-  )
+  (setq dired-dwim-target t))
 
 (use-package dired-single
   :commands (dired dired-jump))
