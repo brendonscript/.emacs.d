@@ -479,7 +479,7 @@ there's no active region."
         evil-undo-system 'undo-tree))
 
 (defun me/evil-config ()
-  ;(evil-mode 1)
+  (evil-mode 1)
 
   ;; Initial states
   (evil-set-initial-state 'messages-buffer-mode 'normal)
@@ -603,10 +603,6 @@ there's no active region."
   :custom ((persistent-scratch-autosave-interval 180))
   :config
   (add-hook 'after-init-hook 'persistent-scratch-setup-default))
-
-(use-package meow
-  :init (me/meow-init)
-  :config (me/meow-config))
 
 (use-package evil
   :init (me/evil-init)

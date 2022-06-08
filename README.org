@@ -700,7 +700,7 @@ Start the Emacs server if it is not already running. Currently *disabled*
           evil-undo-system 'undo-tree))
 
   (defun me/evil-config ()
-    ;(evil-mode 1)
+    (evil-mode 1)
 
     ;; Initial states
     (evil-set-initial-state 'messages-buffer-mode 'normal)
@@ -871,7 +871,7 @@ For using my favorite bind =jk= to easily exit insert mode
     (add-hook 'after-init-hook 'persistent-scratch-setup-default))
 #+end_src
 ** meow
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 
   (use-package meow
     :init (me/meow-init)
