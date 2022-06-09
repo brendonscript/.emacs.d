@@ -44,8 +44,59 @@
 
 #+end_src
 
-* Use Package
+** Disable GUI Features
 
+#+begin_src emacs-lisp
+
+  (when (fboundp 'horizontal-scroll-bar-mode)
+    (horizontal-scroll-bar-mode -1))
+  (when (fboundp 'scroll-bar-mode)
+    (scroll-bar-mode -1))
+  (when (fboundp 'tool-bar-mode)
+    (tool-bar-mode -1))
+  (when (fboundp 'tooltip-mode)
+    (tooltip-mode -1))
+  (when (fboundp 'menu-bar-mode)
+    (menu-bar-mode -1))
+  (when (fboundp 'set-fringe-mode)
+    (set-fringe-mode 10))
+
+#+end_src
+
+** Custom.el
+#+begin_src emacs-lisp
+
+  (setq custom-file (concat user-emacs-directory "custom.el"))
+  (when (file-exists-p custom-file)
+    (load custom-file))
+
+#+end_src
+
+** Maximize On Launch
+#+begin_src emacs-lisp
+
+  (set-frame-parameter (selected-frame) 'fullscreen 'maximized)
+  (add-to-list 'default-frame-alist '(fullscreen . maximized))
+
+#+end_src
+
+** Platforms
+
+#+begin_src emacs-lisp
+
+  (defconst IS-MAC     (eq system-type 'darwin)
+    "If the host is running MacOS return true")
+  (defconst IS-LINUX   (eq system-type 'gnu/linux)
+    "If the host is running Linux return true")
+  (defconst IS-WINDOWS (memq system-type '(cygwin windows-nt ms-dos))
+    "If the host is running Windows return true")
+  (defconst IS-BSD     (or IS-MAC (eq system-type 'berkeley-unix))
+    "If the host is running BSD return true")
+
+#+end_src
+
+* Package Management
+** Use Package
 [[https://github.com/jwiegley/use-package][use-package]]
 
 #+begin_src emacs-lisp
@@ -54,8 +105,8 @@
   (require 'package)
 
   (setq package-archives '(("nongnu" . "https://elpa.nongnu.org/nongnu/")
-                          ("melpa" . "https://melpa.org/packages/")
-                          ("gnu" . "https://elpa.gnu.org/packages/")))
+                           ("melpa" . "https://melpa.org/packages/")
+                           ("gnu" . "https://elpa.gnu.org/packages/")))
 
   (package-initialize)
   (unless package-archive-contents
@@ -67,7 +118,6 @@
 
   (require 'use-package)
   (setq use-package-always-ensure t)
-
 #+end_src
 
 ** Automatic Package Updates
@@ -89,75 +139,6 @@ You can also use =M-x auto-package-update-now= to update right now!
 
 #+end_src
 
-* Platforms
-
-#+begin_src emacs-lisp
-
-  (defconst IS-MAC     (eq system-type 'darwin)
-    "If the host is running MacOS return true")
-  (defconst IS-LINUX   (eq system-type 'gnu/linux)
-    "If the host is running Linux return true")
-  (defconst IS-WINDOWS (memq system-type '(cygwin windows-nt ms-dos))
-    "If the host is running Windows return true")
-  (defconst IS-BSD     (or IS-MAC (eq system-type 'berkeley-unix))
-    "If the host is running BSD return true")
-
-#+end_src
-
-* Emacs Defaults
-** Custom.el
-#+begin_src emacs-lisp
-
-  (setq custom-file (concat user-emacs-directory "custom.el"))
-  (when (file-exists-p custom-file)
-    (load custom-file))
-
-#+end_src
-** Disable GUI Features
-
-#+begin_src emacs-lisp
-
-  (when (fboundp 'horizontal-scroll-bar-mode)
-    (horizontal-scroll-bar-mode -1))
-  (when (fboundp 'scroll-bar-mode)
-    (scroll-bar-mode -1))
-  (when (fboundp 'tool-bar-mode)
-    (tool-bar-mode -1))
-  (when (fboundp 'tooltip-mode)
-    (tooltip-mode -1))
-  (when (fboundp 'menu-bar-mode)
-    (menu-bar-mode -1))
-  (when (fboundp 'set-fringe-mode)
-    (set-fringe-mode 10))
-
-#+end_src
-
-** Maximize On Launch
-#+begin_src emacs-lisp
-
-  (set-frame-parameter (selected-frame) 'fullscreen 'maximized)
-  (add-to-list 'default-frame-alist '(fullscreen . maximized))
-
-#+end_src
-** Disable Error Bells
-
-#+begin_src emacs-lisp
-
-  (setq visible-bell nil)
-  (setq ring-bell-function #'ignore)
-
-#+end_src
-
-** Recentf Mode
-
-  #+begin_src emacs-lisp
-
-    (recentf-mode 1)
-    (setq recentf-max-menu-items 20)
-    (setq recentf-max-saved-items 50)
-
-  #+end_src
-
 ** No Littering
 
 #+begin_src emacs-lisp
@@ -167,9 +148,8 @@ You can also use =M-x auto-package-update-now= to update right now!
                                           ;(setq user-emacs-directory "~/.cache/emacs")
 
   (use-package no-littering
+    :demand t
     :config
-    (add-to-list 'recentf-exclude no-littering-var-directory)
-    (add-to-list 'recentf-exclude no-littering-etc-directory)
 
     ;; no-littering doesn't set this by default so we must place
     ;; auto save files in the same path as it uses for sessions
@@ -177,207 +157,200 @@ You can also use =M-x auto-package-update-now= to update right now!
           `((".*" ,(no-littering-expand-var-file-name "auto-save/") t))))
 
 #+end_src
-** Completion
 
+* Emacs Defaults
 #+begin_src emacs-lisp
+  (use-package emacs
+    :ensure nil
+    :preface
+    ;; Fonts and Text ;;
+    (defvar me/default-font-size 160)
+    (defvar me/default-variable-font-size 160)
+    (defun me/reset-text-size ()
+      (interactive)
+      (text-scale-set 0))
 
-  (setq read-file-name-completion-ignore-case t
-        read-buffer-completion-ignore-case t
-        completion-ignore-case t
-        completion-cycle-threshold 3
-        tab-always-indent 'complete)
+    ;; Transparency ;;
+    (defvar me/frame-transparency '(95 . 95))
 
-  ;; Use `consult-completion-in-region' if Vertico is enabled.
-  ;; Otherwise use the default `completion--in-region' function.
-  (setq completion-in-region-function
-        (lambda (&rest args)
-          (apply (if vertico-mode
-                     #'consult-completion-in-region
-                   #'completion--in-region)
-                 args)))
-#+end_src
+    ;; Buffers ;;
+    (defun me/alternate-buffer ()
+      "Go to previous buffer"
+      (interactive)
+      (switch-to-buffer (other-buffer)))
 
-** Minibuffer
+    (defun me/set-default-line-length-to (line-length)
+      "Set the default line length to LINE-LENGTH."
+      (setq-default fill-column line-length))
 
-#+begin_src emacs-lisp
+    ;; Saving ;;
+    (defun me/save-all-unsaved ()
+      "Save all unsaved files. no ask."
+      (interactive)
+      (save-some-buffers t))
 
-  ;; Do not allow the cursor in the minibuffer prompt
-  (setq minibuffer-prompt-properties
-        '(read-only t cursor-intangible t face minibuffer-prompt))
-  (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
+    ;; Utility ;;
+    (defun me/create-dir-if-not-exists ()
+      "Offer to create directory when it doesn't exist"
+      (when buffer-file-name
+        (let ((dir (file-name-directory buffer-file-name)))
+          (when (and (not (file-exists-p dir))
+                     (y-or-n-p (format "Directory %s does not exist. Create it?" dir)))
+            (make-directory dir t)))))
 
-  ;; Emacs 28: Hide commands in M-x which do not work in the current mode.
-  ;; Vertico commands are hidden in normal buffers.
-  (setq read-extended-command-predicate
-        #'command-completion-default-include-p)
+    (defun me/open-config ()
+      "Open configuration file"
+      (interactive)
+      (find-file (expand-file-name (concat user-emacs-directory "README.org"))))
 
-  ;; Enable recursive minibuffers
-  (setq enable-recursive-minibuffers t)
+    ;; Scrolling
+    (defun me/scroll-half-page (direction)
+      "Scrolls half page up if `direction' is non-nil, otherwise will scroll half page down."
+      (let ((opos (cdr (nth 6 (posn-at-point)))))
+        ;; opos = original position line relative to window
+        (move-to-window-line nil)  ;; Move cursor to middle line
+        (if direction
+            (recenter-top-bottom -1)  ;; Current line becomes last
+          (recenter-top-bottom 0))  ;; Current line becomes first
+        (move-to-window-line opos)))  ;; Restore cursor/point position
 
-#+end_src
+    (defun me/scroll-half-page-down ()
+      "Scrolls exactly half page down keeping cursor/point position."
+      (interactive)
+      (me/scroll-half-page nil))
 
-** Winner Mode
+    (defun me/scroll-half-page-up ()
+      "Scrolls exactly half page up keeping cursor/point position."
+      (interactive)
+      (me/scroll-half-page t))
 
-Make undoing window layout changes easy!
+    :bind (("<escape>" . keyboard-escape-quit)
+           ("C-c e e" . me/open-config)
+           ("C-c e q" . save-buffers-kill-emacs)
+           ("C-v" . me/scroll-half-page-down)
+           ("M-v" . me/scroll-half-page-up))
+    :config
+    (progn
+      ;; Startup ;;
+      (setq inhibit-startup-message t)
+      (setq initial-scratch-message nil)
 
-#+begin_src emacs-lisp
+      ;; Bells and Ringers ;;
+      (setq visible-bell nil)
+      (setq ring-bell-function #'ignore)
 
-  (winner-mode 1)
+      ;; History and persistence ;;
+      (setq recentf-max-menu-items 40)
+      (setq recentf-max-saved-items 250)
+      (setq save-interprogram-paste-before-kill t)
+      (customize-set-variable 'desktop-save 't)
+      (desktop-save-mode 1)
+      (recentf-mode 1)
+      (with-eval-after-load 'no-littering
+        (add-to-list 'recentf-exclude no-littering-etc-directory)
+        (add-to-list 'recentf-exclude no-littering-var-directory))
+      (save-place-mode 1)
+      (winner-mode 1)
+      (global-auto-revert-mode t)
 
-#+end_src
+      ;; Completion ;;
+      (setq read-file-name-completion-ignore-case t
+            read-buffer-completion-ignore-case t
+            completion-ignore-case t
+            completion-cycle-threshold 3
+            tab-always-indent 'complete)
 
-** UTF 8
+      ;; Use `consult-completion-in-region' if Vertico is enabled.
+      ;; Otherwise use the default `completion--in-region' function.
+      (setq completion-in-region-function
+            (lambda (&rest args)
+              (apply (if vertico-mode
+                         #'consult-completion-in-region
+                       #'completion--in-region)
+                     args)))
 
-UTF-8 ALL THE THINGS
+      ;; Emacs 28: Hide commands in M-x which do not work in the current mode.
+      ;; Vertico commands are hidden in normal buffers.
+      (setq read-extended-command-predicate
+            #'command-completion-default-include-p)
 
-#+begin_src emacs-lisp
+      ;; Minibuffer ;;
+      ;; Do not allow the cursor in the minibuffer prompt
+      (setq minibuffer-prompt-properties
+            '(read-only t cursor-intangible t face minibuffer-prompt))
+      (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
 
-  (prefer-coding-system 'utf-8)
-  (set-default-coding-systems 'utf-8)
-  (set-terminal-coding-system 'utf-8)
-  (set-keyboard-coding-system 'utf-8)
-  (set-selection-coding-system 'utf-8)
-  (set-file-name-coding-system 'utf-8)
-  (set-clipboard-coding-system 'utf-8)
-;  (set-w32-system-coding-system 'utf-8)
-  (set-buffer-file-coding-system 'utf-8)
+      ;; Enable recursive minibuffers
+      (setq enable-recursive-minibuffers t)
 
-#+end_src
+      ;; File Encoding ;;
+      (prefer-coding-system 'utf-8)
+      (set-default-coding-systems 'utf-8)
+      (set-terminal-coding-system 'utf-8)
+      (set-keyboard-coding-system 'utf-8)
+      (set-selection-coding-system 'utf-8)
+      (set-file-name-coding-system 'utf-8)
+      (set-clipboard-coding-system 'utf-8)
+      (set-buffer-file-coding-system 'utf-8)
 
-** Fonts
+      ;; Fonts ;;
+      (cond (IS-MAC (setq me/default-font-size 180) (setq me/default-variable-font-size 180))
+            (IS-WINDOWS (setq me/default-font-size 90) (setq me/default-variable-font-size 90)))
+      (set-face-attribute 'default nil :font "Fira Code Retina" :height me/default-font-size)
+      (set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height me/default-font-size)
+      (set-face-attribute 'variable-pitch nil :font "Cantarell" :height me/default-variable-font-size :weight 'regular)
+      (global-font-lock-mode t)
 
-#+begin_src emacs-lisp
+      ;; Transparency ;;
+      (set-frame-parameter (selected-frame) 'alpha me/frame-transparency)
+      (add-to-list 'default-frame-alist `(alpha . ,me/frame-transparency))
 
-  (defvar me/default-font-size 160)
-  (defvar me/default-variable-font-size 160)
+      ;; Loading ;;
+      (setq load-prefer-newer t)
 
-  (cond (IS-MAC (setq me/default-font-size 180) (setq me/default-variable-font-size 180))
-        (IS-WINDOWS (setq me/default-font-size 90) (setq me/default-variable-font-size 90)))
+      ;; Saving ;;
+      ;; Auto save
+      (setq after-focus-change-function 'me/save-all-unsaved)
+      (add-hook 'focus-out-hook 'me/save-all-unsaved)
 
-  (defun me/set-fonts ()
-    (set-face-attribute 'default nil :font "Fira Code Retina" :height me/default-font-size)
-    (set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height me/default-font-size)
-    ;; Set the variable pitch face
-    (set-face-attribute 'variable-pitch nil :font "Cantarell" :height me/default-variable-font-size :weight 'regular))
+      ;; Remove whitespace on save
+      (add-hook 'before-save-hook 'delete-trailing-whitespace)
 
-  (me/set-fonts)
+      ;; Make file executable if it's a script on save
+      (add-hook 'after-save-hook
+                'executable-make-buffer-file-executable-if-script-p)
 
-#+end_src
+      ;; Create directory if it doesn't exist
+      (add-hook 'before-save-hook 'me/create-dir-if-not-exists)
 
-** Transparency
+      ;; Version Control ;;
+      (setq vc-follow-symlinks t)
 
-#+begin_src emacs-lisp
+      ;; Directories ;;
+      (setq default-directory "~/")
 
-  (defvar me/frame-transparency '(95 . 95))
+      ;; Prog Mode ;;
+      (add-hook 'prog-mode-hook 'subword-mode)
 
-  (set-frame-parameter (selected-frame) 'alpha me/frame-transparency)
-  (add-to-list 'default-frame-alist `(alpha . ,me/frame-transparency))
+      ;; Formatting ;;
+      (setq sentence-end-double-space nil)
+      (me/set-default-line-length-to 80)
 
-#+end_src
+      ;; Behavior ;;
+      (setq require-final-newline t)
+      (setq show-paren-delay 0.0)
 
-** Auto Save Buffers
+      ;; Confirmations
+      (setq confirm-kill-emacs 'y-or-n-p)
+      (fset 'yes-or-no-p 'y-or-n-p)
 
-#+begin_src emacs-lisp
+      ;; Modes
+      (transient-mark-mode 1)
+      (delete-selection-mode 1)
+      (show-paren-mode 1)
+      (column-number-mode 0)
 
-  (defun me/alternate-buffer ()
-    (interactive)
-    (switch-to-buffer (other-buffer)))
-
-  (defun me/save-all-unsaved ()
-    "Save all unsaved files. no ask."
-    (interactive)
-    (save-some-buffers t))
-
-    (add-hook 'focus-out-hook 'me/save-all-unsaved)
-    (setq after-focus-change-function 'me/save-all-unsaved)
-
-#+end_src
-
-** Random Emacs Functions
-Need to organize
-#+begin_src emacs-lisp
-  (defun me/comment-or-uncomment-region-or-line ()
-    "Comments or uncomments the region or the current line if
-  there's no active region."
-    (interactive)
-    (let (beg end)
-      (if (region-active-p)
-          (setq beg (region-beginning) end (region-end))
-        (setq beg (line-beginning-position) end (line-end-position)))
-      (comment-or-uncomment-region beg end)))
-
-  (defun me/reset-text-size ()
-    (interactive)
-    (text-scale-set 0))
-
-  (setq default-directory "~/")
-  (add-hook 'before-save-hook 'delete-trailing-whitespace)
-  (add-hook 'prog-mode-hook 'subword-mode)
-  (setq vc-follow-symlinks t)
-  (add-hook 'after-save-hook
-            'executable-make-buffer-file-executable-if-script-p)
-
-  (setq sentence-end-double-space nil)
-
-  (add-hook 'before-save-hook
-            (lambda ()
-              (when buffer-file-name
-                (let ((dir (file-name-directory buffer-file-name)))
-                  (when (and (not (file-exists-p dir))
-                             (y-or-n-p (format "Directory %s does not exist. Create it?" dir)))
-                    (make-directory dir t))))))
-  (defun me/set-default-line-length-to (line-length)
-    "Set the default line length to LINE-LENGTH."
-    (setq-default fill-column line-length))
-
-  (me/set-default-line-length-to 80)
-
-
-  (transient-mark-mode t)
-  (delete-selection-mode t)
-  (setq require-final-newline t)
-  (setq confirm-kill-emacs 'y-or-n-p)
-  (setq inhibit-startup-message t)
-  (setq initial-scratch-message nil)
-  (setq-default dired-listing-switches "-alh")
-  (fset 'yes-or-no-p 'y-or-n-p)
-  (global-font-lock-mode t)
-  (global-auto-revert-mode t)
-  (show-paren-mode t)
-  (setq show-paren-delay 0.0)
-  (setq ns-pop-up-frames nil)
-  (setq mouse-yank-at-point t)
-  (global-set-key (kbd "M-;")
-                  'me/comment-or-uncomment-region-or-line)
-  (save-place-mode 1)
-  (show-paren-mode 1)
-  (setq save-interprogram-paste-before-kill t
-        apropos-do-all t
-        mouse-yank-at-point t
-        require-final-newline t
-        load-prefer-newer t)
-#+end_src
-
-** Buffer Creation Behavior
-
-Always try to reuse the same window for the new buffer and disable auto resizing
-
-#+begin_src emacs-lisp
-
-  (customize-set-variable 'display-buffer-base-action
-                          '((display-buffer-reuse-window display-buffer-same-window)
-                            (reusable-frames . t)))
-
-  (customize-set-variable 'even-window-sizes nil)     ; avoid resizing
-
-#+end_src
-** Line and Column Numbers
-
-#+begin_src emacs-lisp
-
-      ;; Line and column numbers
-      (column-number-mode)
-      (global-display-line-numbers-mode t)
+      ;; Line Numbers
 
       ;; Disable line numbers for some modes
       (dolist (mode '(org-mode-hook
@@ -388,40 +361,53 @@ Always try to reuse the same window for the new buffer and disable auto resizing
                       org-agenda-mode-hook
                       vterm-mode-hook))
         (add-hook mode (lambda () (display-line-numbers-mode 0))))
+      (global-display-line-numbers-mode 1)
 
+      ;; Frames
+      (setq ns-pop-up-frames nil)
+
+      ;; Windows
+      ;; Attempt to always use the same window size and stop resizing stuff weirdly
+      (customize-set-variable 'display-buffer-base-action
+                              '((display-buffer-reuse-window display-buffer-same-window)
+                                (reusable-frames . t)))
+      (customize-set-variable 'even-window-sizes nil)
+      (setq resize-mini-windows t)
+
+      ;; Mouse
+      (setq mouse-yank-at-point t)
+
+      ;; Apropos
+      (setq apropos-do-all t)
+
+      ;; Tab bar ;;
+      (tab-bar-mode t)
+      (customize-set-variable 'tab-bar-new-tab-choice '"*scratch*")
+      (customize-set-variable 'tab-bar-show 't)
+
+      ;; Mac OS ;;
+      (when IS-MAC
+        (setq mac-command-modifier 'control
+              mac-option-modifier 'meta
+              mac-control-modifier 'super
+              mac-right-command-modifier 'control
+              mac-right-option-modifier 'meta
+              ns-function-modifier 'hyper))
+
+      ))
 #+end_src
-
-** Tab Bar Mode
-
-#+begin_src emacs-lisp
-
-  (tab-bar-mode t)
-
-  (customize-set-variable 'tab-bar-new-tab-choice '"*scratch*")
-  (customize-set-variable 'tab-bar-show 't)
-#+end_src
-
-** Mini Windows
-#+begin_src emacs-lisp
-
-  (setq resize-mini-windows t)
-
-#+end_src
-
-** Desktop Mode
-
-  #+begin_src emacs-lisp
-
-    (customize-set-variable 'desktop-save 't)
-    (desktop-save-mode 1)
-
-  #+end_src
+* Builtins
 ** Ediff
 #+begin_src emacs-lisp
-  (setq ediff-diff-options "")
-  (setq ediff-custom-diff-options "-u")
-  (setq ediff-window-setup-function 'ediff-setup-windows-plain)
-  (setq ediff-split-window-function 'split-window-vertically)
+
+  (use-package ediff
+    :ensure nil
+    :config
+    (progn
+      (setq ediff-diff-options "")
+      (setq ediff-custom-diff-options "-u")
+      (setq ediff-window-setup-function 'ediff-setup-windows-plain)
+      (setq ediff-split-window-function 'split-window-vertically)))
 #+end_src
 ** Smerge
 #+begin_src emacs-lisp
@@ -429,9 +415,10 @@ Always try to reuse the same window for the new buffer and disable auto resizing
     :ensure nil
     :init (setq smerge-command-prefix "")
     :config
-    (defhydra hydra/smerge
-      (:color pink :hint nil :post (smerge-auto-leave))
-      "
+    (progn
+      (defhydra hydra/smerge
+        (:color pink :hint nil :post (smerge-auto-leave))
+        "
   ^Move^       ^Keep^               ^Diff^                 ^Other^
   ^^-----------^^-------------------^^---------------------^^-------
   _n_ext       _b_ase               _<_: upper/base        _C_ombine
@@ -440,135 +427,84 @@ Always try to reuse the same window for the new buffer and disable auto resizing
   ^^           _a_ll                _R_efine
   ^^           _RET_: current       _E_diff
   "
-      ("n" smerge-next)
-      ("p" smerge-prev)
-      ("b" smerge-keep-base)
-      ("u" smerge-keep-upper)
-      ("l" smerge-keep-lower)
-      ("a" smerge-keep-all)
-      ("RET" smerge-keep-current)
-      ("\C-m" smerge-keep-current)
-      ("<" smerge-diff-base-upper)
-      ("=" smerge-diff-upper-lower)
-      (">" smerge-diff-base-lower)
-      ("R" smerge-refine)
-      ("E" smerge-ediff)
-      ("C" smerge-combine-with-next)
-      ("r" smerge-resolve)
-      ("k" smerge-kill-current)
-      ("q" nil "cancel" :color blue))
+        ("n" smerge-next)
+        ("p" smerge-prev)
+        ("b" smerge-keep-base)
+        ("u" smerge-keep-upper)
+        ("l" smerge-keep-lower)
+        ("a" smerge-keep-all)
+        ("RET" smerge-keep-current)
+        ("\C-m" smerge-keep-current)
+        ("<" smerge-diff-base-upper)
+        ("=" smerge-diff-upper-lower)
+        (">" smerge-diff-base-lower)
+        ("R" smerge-refine)
+        ("E" smerge-ediff)
+        ("C" smerge-combine-with-next)
+        ("r" smerge-resolve)
+        ("k" smerge-kill-current)
+        ("q" nil "cancel" :color blue))
 
-    (bind-key "C-c g d" 'hydra/smerge/body))
+      (bind-key "C-c g d" 'hydra/smerge/body)))
 #+end_src
 
-* Custom Utility
-** Open Emacs Config
+** Dired
 #+begin_src emacs-lisp
+  (use-package dired
+    :ensure nil
+    :commands (dired dired-jump)
+    :bind (("C-x C-j" . dired-jump))
+    :custom ((dired-listing-switches "-agho --group-directories-first"))
+    :config
+    (setq dired-dwim-target t)
+    (with-eval-after-load 'evil-collection
+      (evil-collection-define-key 'normal 'dired-mode-map
+        "h" 'dired-single-up-directory
+        "l" 'dired-single-buffer))
+    ;; MacOS ;;
+    (when IS-MAC
+      (setq dired-use-ls-dired t
+            insert-directory-program "/opt/homebrew/bin/gls"
+            dired-listing-switches "-aBhl --group-directories-first")))
 
-  (defun me/open-config ()
-      (interactive)
-      (find-file (expand-file-name (concat user-emacs-directory "README.org"))))
+  (use-package dired-single
+    :commands (dired dired-jump))
 
+  (use-package all-the-icons-dired
+    :after all-the-icons
+    :hook (dired-mode . all-the-icons-dired-mode))
+
+  (use-package dired-open
+    :commands (dired dired-jump)
+    :config
+    (setq dired-open-extensions '(("png" . "feh")
+                                  ("mkv" . "mpv"))))
+
+  (use-package dired-hide-dotfiles
+    ;;:hook (dired-mode . dired-hide-dotfiles-mode)
+    :config
+    (with-eval-after-load 'evil-collection
+      (evil-collection-define-key 'normal 'dired-mode-map
+        "H" 'dired-hide-dotfiles-mode)))
 #+end_src
-** Half Page Scrolling
+** IRC
 #+begin_src emacs-lisp
-
-  (defun me/scroll-half-page (direction)
-    "Scrolls half page up if `direction' is non-nil, otherwise will scroll half page down."
-    (let ((opos (cdr (nth 6 (posn-at-point)))))
-      ;; opos = original position line relative to window
-      (move-to-window-line nil)  ;; Move cursor to middle line
-      (if direction
-          (recenter-top-bottom -1)  ;; Current line becomes last
-        (recenter-top-bottom 0))  ;; Current line becomes first
-      (move-to-window-line opos)))  ;; Restore cursor/point position
-
-  (defun me/scroll-half-page-down ()
-    "Scrolls exactly half page down keeping cursor/point position."
-    (interactive)
-    (me/scroll-half-page nil))
-
-  (defun me/scroll-half-page-up ()
-    "Scrolls exactly half page up keeping cursor/point position."
-    (interactive)
-    (me/scroll-half-page t))
+  (use-package erc
+    :ensure nil
+    :config
+    (setq erc-server "irc.libera.chat"
+          erc-nick "geoffery"
+          erc-user-full-name "Geoffery"
+          erc-autojoin-timing 'ident
+          erc-track-shorten-start 8
+          erc-autojoin-channels-alist '(("libera.chat" "#org-mode" "#evil-mode" "#emacs-beginners" "#emacs-til" "#emacs" "#linux" "#fedora" "#archlinux" "##rust" "##programming"))
+          erc-kill-buffer-on-part t
+          erc-auto-query 'bury
+          ;; Stop displaying channels in the mode line for no good reason.
+          erc-track-exclude-type '("JOIN" "KICK" "NICK" "PART" "QUIT" "MODE" "333" "353")
+          erc-hide-list '("JOIN" "PART" "QUIT" "KICK" "NICK" "MODE" "333" "353")))
 #+end_src
 * Keybindings
-** MacOS Modifiers
-#+begin_src emacs-lisp
-
-    (setq mac-command-modifier 'control
-          mac-option-modifier 'meta
-          mac-control-modifier 'super
-          mac-right-command-modifier 'control
-          mac-right-option-modifier 'meta
-          ns-function-modifier 'hyper)
-
-#+end_src
-** Emacs
-#+begin_src emacs-lisp
-  (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
-  (global-set-key (kbd "C-c e e") 'me/open-config)
-  (global-set-key (kbd "C-c e q") 'save-buffers-kill-emacs)
-  (global-set-key (kbd "C-v") 'me/scroll-half-page-down)
-  (global-set-key (kbd "M-v") 'me/scroll-half-page-up)
-#+end_src
-** Evil
-#+begin_src emacs-lisp
-  (defun me/evil-keybinds ()
-    ;; Exit insert with Emacs C-g bind
-    (define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state)
-
-    ;; Use visual line motions even outside of visual-line-mode buffers
-    (evil-global-set-key 'motion "j" 'evil-next-visual-line)
-    (evil-global-set-key 'motion "k" 'evil-previous-visual-line)
-
-    ;; L and H To end/beginning of line respectively
-    (evil-global-set-key 'motion "L" 'evil-end-of-line-or-visual-line)
-    (evil-global-set-key 'motion "H" 'evil-first-non-blank-of-visual-line)
-
-    (evil-global-set-key 'motion "gb" 'consult-buffer)
-
-    ;; Universal Argument since C-u is taken by jumping up in normal and visual
-    (evil-global-set-key 'motion "gu" 'universal-argument)
-    (evil-global-set-key 'normal "gu" 'universal-argument)
-    (evil-global-set-key 'visual "gu" 'universal-argument)
-    (define-key evil-insert-state-map (kbd "C-u") 'universal-argument)
-
-    ;; Macros
-    (define-key evil-normal-state-map (kbd "q") 'my-evil-record-macro)
-
-    ;; Unbinds
-    (define-key evil-normal-state-map (kbd "g ?") nil))
-#+end_src
-** Avy
-#+begin_src emacs-lisp
-  (defun me/avy-evil-keybinds ()
-    (evil-global-set-key 'motion (kbd "C-:") 'avy-resume)
-    (evil-global-set-key 'motion (kbd "C-S-f") 'avy-resume)
-    (evil-global-set-key 'motion (kbd "C-f") 'avy-goto-char-timer))
-
-  (defun me/avy-keybinds ()
-    (bind-key "C-:" 'avy-resume)
-    (bind-key "C-S-f" 'avy-resume)
-    (bind-key "C-f" 'avy-goto-char-timer)
-    (me/avy-evil-keybinds))
-#+end_src
-** Vertico
-#+begin_src emacs-lisp
-  (defun me/vertico-keybinds ()
-    (bind-key "C-j" 'vertico-next 'vertico-map)
-    (bind-key "C-J" 'vertico-next-group 'vertico-map)
-    (bind-key "C-k" 'vertico-previous 'vertico-map)
-    (bind-key "C-K" 'vertico-previous-group 'vertico-map)
-    (bind-key "M-RET" 'minibuffer-force-complete-and-exit 'vertico-map)
-    (bind-key "M-TAB" 'minibuffer-complete 'vertico-map))
-
-  (defun me/vertico-directory-keybinds ()
-    (bind-key "RET" 'vertico-directory-enter 'vertico-map)
-    (bind-key "DEL" 'vertico-directory-delete-char 'vertico-map)
-    (bind-key "M-DEL" 'vertico-directory-delete-word 'vertico-map))
-#+end_src
 ** Consult
 #+begin_src emacs-lisp
 
@@ -620,207 +556,7 @@ Always try to reuse the same window for the new buffer and disable auto resizing
     (bind-key "M-s" 'consult-history 'minibuffer-local-map)                 ;; orig. next-matching-history-element
     (bind-key "M-r" 'consult-history 'minibuffer-local-map))
 #+end_src
-** *DISABLED* Meow
-#+begin_src emacs-lisp :tangle no
-  (defun me/meow-keybinds ()
-    (setq meow-cheatsheet-layout meow-cheatsheet-layout-qwerty)
-
-    (meow-motion-overwrite-define-key
-     '("j" . meow-next)
-     '("k" . meow-prev)
-     '("<escape>" . ignore))
-
-    (meow-leader-define-key
-     ;; SPC j/k will run the original command in MOTION state.
-     '("j" . "H-j")
-     '("k" . "H-k")
-     ;; Use SPC (0-9) for digit arguments.
-     '("1" . meow-digit-argument)
-     '("2" . meow-digit-argument)
-     '("3" . meow-digit-argument)
-     '("4" . meow-digit-argument)
-     '("5" . meow-digit-argument)
-     '("6" . meow-digit-argument)
-     '("7" . meow-digit-argument)
-     '("8" . meow-digit-argument)
-     '("9" . meow-digit-argument)
-     '("0" . meow-digit-argument)
-     '("b" . consult-buffer)
-     '("/" . meow-keypad-describe-key)
-     '("?" . meow-cheatsheet))
-    (meow-normal-define-key
-     '("0" . meow-expand-0)
-     '("9" . meow-expand-9)
-     '("8" . meow-expand-8)
-     '("7" . meow-expand-7)
-     '("6" . meow-expand-6)
-     '("5" . meow-expand-5)
-     '("4" . meow-expand-4)
-     '("3" . meow-expand-3)
-     '("2" . meow-expand-2)
-     '("1" . meow-expand-1)
-     '("-" . negative-argument)
-     '(";" . meow-reverse)
-     '("," . meow-inner-of-thing)
-     '("." . meow-bounds-of-thing)
-     '("[" . meow-beginning-of-thing)
-     '("]" . meow-end-of-thing)
-     '("a" . meow-append)
-     '("A" . meow-open-below)
-     '("b" . meow-back-word)
-     '("B" . meow-back-symbol)
-     '("c" . meow-change)
-     '("d" . meow-delete)
-     '("D" . meow-backward-delete)
-     '("e" . meow-next-word)
-     '("E" . meow-next-symbol)
-     '("f" . meow-find)
-     '("g" . meow-cancel-selection)
-     '("G" . meow-grab)
-     '("h" . meow-left)
-     '("H" . meow-left-expand)
-     '("i" . meow-insert)
-     '("I" . meow-open-above)
-     '("j" . meow-next)
-     '("J" . meow-next-expand)
-     '("k" . meow-prev)
-     '("K" . meow-prev-expand)
-     '("l" . meow-right)
-     '("L" . meow-right-expand)
-     '("m" . meow-join)
-     '("n" . meow-search)
-     '("o" . meow-block)
-     '("O" . meow-to-block)
-     '("p" . meow-yank)
-     '("q" . meow-quit)
-     '("Q" . meow-goto-line)
-     '("r" . meow-replace)
-     '("R" . meow-swap-grab)
-     '("s" . meow-kill)
-     '("t" . meow-till)
-     '("u" . meow-undo)
-     '("U" . undo-tree-redo)
-     '("v" . meow-visit)
-     '("w" . meow-mark-word)
-     '("W" . meow-mark-symbol)
-     '("x" . meow-line)
-     '("X" . meow-goto-line)
-     '("y" . meow-save)
-     '("Y" . meow-sync-grab)
-     '("z" . meow-pop-selection)
-     '("'" . repeat)
-     '("<escape>" . ignore)
-     '("C-d" . me/scroll-half-page-down)
-     '("C-b" . me/scroll-half-page-up)))
-#+end_src
 * Package Configuration
-** Path Configuration (Mac Only)
-
-#+begin_src emacs-lisp
-
-  (defun me/exec-path-from-shell-config ()
-    (when (memq window-system '(mac ns x))
-      (exec-path-from-shell-initialize)))
-
-#+end_src
-
-** Evil
-*** Evil Mode
-#+begin_src emacs-lisp
-
-  (defun me/evil-init ()
-    (setq evil-want-integration t
-          evil-want-keybinding nil
-          evil-want-C-u-scroll t
-          evil-want-C-i-jump t
-          evil-respect-visual-line-mode t
-          evil-undo-system 'undo-tree))
-
-  (defun me/evil-config ()
-    (evil-mode 1)
-
-    ;; Initial states
-    (evil-set-initial-state 'messages-buffer-mode 'normal)
-    (evil-set-initial-state 'dashboard-mode 'normal)
-
-    (defun my-evil-record-macro ()
-      (interactive)
-      (if buffer-read-only
-          (quit-window)
-        (call-interactively 'evil-record-macro)))
-    (me/evil-keybinds))
-#+end_src
-
-*** Evil Escape
-
-For using my favorite bind =jk= to easily exit insert mode
-
-#+begin_src emacs-lisp
-  (defun me/evil-escape-config ()
-    (evil-escape-mode)
-    (setq-default evil-escape-key-sequence "jk")
-    (setq evil-escape-delay 0.15)
-
-    (add-hook 'evil-escape-inhibit-functions
-              (defun +evil-inhibit-escape-in-minibuffer-fn ()
-                (and (minibufferp)
-                     (or (not (bound-and-true-p evil-collection-setup-minibuffer))
-                         (evil-normal-state-p))))))
-#+end_src
-
-*** Evil Org Mode
-
-#+begin_src emacs-lisp
-  (defun me/evil-org-config ()
-    (add-hook 'org-mode-hook 'evil-org-mode)
-    (add-hook 'evil-org-mode-hook
-              (lambda () (evil-org-set-key-theme)))
-    (require 'evil-org-agenda)
-    (evil-org-agenda-set-keys))
-#+end_src
-
-** Avy
-#+begin_src emacs-lisp
-
-  (defun me/avy-config ()
-    (setq avy-timeout-seconds 0.5)
-    (me/avy-keybinds))
-#+end_src
-** Themes
-
-[[https://github.com/hlissner/emacs-doom-themes][doom-themes]] is a great set of themes with a lot of variety and support for many different Emacs modes.  Taking a look at the [[https://github.com/hlissner/emacs-doom-themes/tree/screenshots][screenshots]] might help you decide which one you like best.  You can also run =M-x counsel-load-theme= to choose between them easily.
-
-#+begin_src emacs-lisp
-  (defun me/doom-themes-init ()
-    (load-theme 'doom-vibrant t))
-
-  (defun me/doom-themes-config ()
-    (setq doom-themes-enable-bold t
-          doom-themes-enable-italic t)
-    (setq doom-themes-treemacs-theme "doom-atom")
-    (doom-themes-treemacs-config)
-    (doom-themes-org-config))
-#+end_src
-
-** Vertico
-
-#+begin_src emacs-lisp
-
-  (defun me/vertico-config ()
-    (advice-add #'vertico--format-candidate :around
-                (lambda (orig cand prefix suffix index _start)
-                  (setq cand (funcall orig cand prefix suffix index _start))
-                  (concat
-                   (if (= vertico--index index)
-                       (propertize "» " 'face 'vertico-current)
-                     "  ")
-                   cand)))
-    (me/vertico-keybinds))
-
-  (defun me/vertico-directory-config ()
-    (me/vertico-directory-keybinds))
-#+end_src
-
 ** Consult
 #+begin_src emacs-lisp
   (defun me/consult-init ()
@@ -868,50 +604,16 @@ For using my favorite bind =jk= to easily exit insert mode
 #+end_src
 ** *DISABLED* Meow
 #+begin_src emacs-lisp :tangle no
-  (defun me/meow-init ()
-    (setq meow-mode-state-list '((authinfo-mode . normal)
-                                 (beancount-mode . normal)
-                                 (bibtex-mode . normal)
-                                 (cider-repl-mode . normal)
-                                 (cider-test-report-mode . normal)
-                                 (cider-browse-spec-view-mode . motion)
-                                 (cargo-process-mode . normal)
-                                 (conf-mode . normal)
-                                 (deadgrep-edit-mode . normal)
-                                 (deft-mode . normal)
-                                 (diff-mode . normal)
-                                 (ediff-mode . motion)
-                                 (gud-mode . normal)
-                                 (haskell-interactive-mode . normal)
-                                 (help-mode . normal)
-                                 (helpful-mode . normal)
-                                 (json-mode . normal)
-                                 (jupyter-repl-mode . normal)
-                                 (mix-mode . normal)
-                                 (occur-edit-mode . normal)
-                                 (pass-view-mode . normal)
-                                 (prog-mode . normal)
-                                 (py-shell-mode . normal)
-                                 (restclient-mode . normal)
-                                 (telega-chat-mode . normal)
-                                 (term-mode . normal)
-                                 (text-mode . normal)
-                                 (vterm-mode . normal)
-                                 (Custom-mode . normal))))
-  (defun me/meow-config ()
-    (me/meow-keybinds)
-    (meow-global-mode 1)
-    (global-set-key (kbd "C-h k") 'helpful-key))
 #+end_src
-* Install Packages
+* Packages
 ** exec-path-from-shell
 
 #+begin_src emacs-lisp
 
   (use-package exec-path-from-shell
+    :if IS-MAC
     :config
-    (me/exec-path-from-shell-config))
-
+    (exec-path-from-shell-initialize))
 #+end_src
 ** dash
 [[https://github.com/magnars/dash.el][Modern Elisp List API]]
@@ -940,8 +642,131 @@ For using my favorite bind =jk= to easily exit insert mode
 #+begin_src emacs-lisp :tangle no
 
   (use-package meow
-    :init (me/meow-init)
-    :config (me/meow-config))
+    :after helpful
+    :init (progn
+            (setq meow-cheatsheet-layout meow-cheatsheet-layout-qwerty)
+            (meow-motion-overwrite-define-key
+             '("j" . meow-next)
+             '("k" . meow-prev)
+             '("<escape>" . ignore))
+
+            (meow-leader-define-key
+             ;; SPC j/k will run the original command in MOTION state.
+             '("j" . "H-j")
+             '("k" . "H-k")
+             ;; Use SPC (0-9) for digit arguments.
+             '("1" . meow-digit-argument)
+             '("2" . meow-digit-argument)
+             '("3" . meow-digit-argument)
+             '("4" . meow-digit-argument)
+             '("5" . meow-digit-argument)
+             '("6" . meow-digit-argument)
+             '("7" . meow-digit-argument)
+             '("8" . meow-digit-argument)
+             '("9" . meow-digit-argument)
+             '("0" . meow-digit-argument)
+             '("b" . consult-buffer)
+             '("/" . meow-keypad-describe-key)
+             '("?" . meow-cheatsheet))
+            (meow-normal-define-key
+             '("0" . meow-expand-0)
+             '("9" . meow-expand-9)
+             '("8" . meow-expand-8)
+             '("7" . meow-expand-7)
+             '("6" . meow-expand-6)
+             '("5" . meow-expand-5)
+             '("4" . meow-expand-4)
+             '("3" . meow-expand-3)
+             '("2" . meow-expand-2)
+             '("1" . meow-expand-1)
+             '("-" . negative-argument)
+             '(";" . meow-reverse)
+             '("," . meow-inner-of-thing)
+             '("." . meow-bounds-of-thing)
+             '("[" . meow-beginning-of-thing)
+             '("]" . meow-end-of-thing)
+             '("a" . meow-append)
+             '("A" . meow-open-below)
+             '("b" . meow-back-word)
+             '("B" . meow-back-symbol)
+             '("c" . meow-change)
+             '("d" . meow-delete)
+             '("D" . meow-backward-delete)
+             '("e" . meow-next-word)
+             '("E" . meow-next-symbol)
+             '("f" . meow-find)
+             '("g" . meow-cancel-selection)
+             '("G" . meow-grab)
+             '("h" . meow-left)
+             '("H" . meow-left-expand)
+             '("i" . meow-insert)
+             '("I" . meow-open-above)
+             '("j" . meow-next)
+             '("J" . meow-next-expand)
+             '("k" . meow-prev)
+             '("K" . meow-prev-expand)
+             '("l" . meow-right)
+             '("L" . meow-right-expand)
+             '("m" . meow-join)
+             '("n" . meow-search)
+             '("o" . meow-block)
+             '("O" . meow-to-block)
+             '("p" . meow-yank)
+             '("q" . meow-quit)
+             '("Q" . meow-goto-line)
+             '("r" . meow-replace)
+             '("R" . meow-swap-grab)
+             '("s" . meow-kill)
+             '("t" . meow-till)
+             '("u" . meow-undo)
+             '("U" . undo-tree-redo)
+             '("v" . meow-visit)
+             '("w" . meow-mark-word)
+             '("W" . meow-mark-symbol)
+             '("x" . meow-line)
+             '("X" . meow-goto-line)
+             '("y" . meow-save)
+             '("Y" . meow-sync-grab)
+             '("z" . meow-pop-selection)
+             '("'" . repeat)
+             '("<escape>" . ignore)
+             '("C-d" . me/scroll-half-page-down)
+             '("C-b" . me/scroll-half-page-up))
+
+            (setq meow-mode-state-list '((authinfo-mode . normal)
+                                         (beancount-mode . normal)
+                                         (bibtex-mode . normal)
+                                         (cider-repl-mode . normal)
+                                         (cider-test-report-mode . normal)
+                                         (cider-browse-spec-view-mode . motion)
+                                         (cargo-process-mode . normal)
+                                         (conf-mode . normal)
+                                         (deadgrep-edit-mode . normal)
+                                         (deft-mode . normal)
+                                         (diff-mode . normal)
+                                         (ediff-mode . motion)
+                                         (gud-mode . normal)
+                                         (haskell-interactive-mode . normal)
+                                         (help-mode . normal)
+                                         (helpful-mode . normal)
+                                         (json-mode . normal)
+                                         (jupyter-repl-mode . normal)
+                                         (mix-mode . normal)
+                                         (occur-edit-mode . normal)
+                                         (pass-view-mode . normal)
+                                         (prog-mode . normal)
+                                         (py-shell-mode . normal)
+                                         (restclient-mode . normal)
+                                         (telega-chat-mode . normal)
+                                         (term-mode . normal)
+                                         (text-mode . normal)
+                                         (vterm-mode . normal)
+                                         (Custom-mode . normal))))
+
+    :config (progn
+              (me/meow-keybinds)
+              (meow-global-mode 1)
+              (global-set-key (kbd "C-h k") 'helpful-key)))
 #+end_src
 ** *DISABLED* key-chord
 #+begin_src emacs-lisp :tangle no
@@ -953,8 +778,45 @@ For using my favorite bind =jk= to easily exit insert mode
 ** evil
 #+begin_src emacs-lisp
   (use-package evil
-    :init (me/evil-init)
-    :config (me/evil-config))
+    :preface
+    (defun my/evil-record-macro ()
+      (interactive)
+      (if buffer-read-only
+          (quit-window)
+        (call-interactively 'evil-record-macro)))
+
+    :init
+    (progn
+      (setq evil-want-integration t
+            evil-want-keybinding nil
+            evil-want-C-u-scroll t
+            evil-want-C-i-jump t
+            evil-respect-visual-line-mode t
+            evil-undo-system 'undo-tree))
+
+    :bind
+    (:map evil-insert-state-map
+          ("C-g" . evil-normal-state)
+          ("C-u" . universal-argument)
+          :map evil-normal-state-map
+          ("q" . my/evil-record-macro)
+          ("g ?" . nil)
+          ("gu" . universal-argument)
+          :map evil-visual-state-map
+          ("gu" . universal-argument)
+          :map evil-motion-state-map
+          ("j" . evil-next-visual-line)
+          ("k" . evil-previous-visual-line)
+          ("L" . evil-end-of-line-or-visual-line)
+          ("H" . evil-first-non-blank-of-visual-line)
+          ("gu" . universal-argument)
+          ("gb" . consult-buffer))
+
+    :config
+    (progn
+      (evil-mode 1)
+      (evil-set-initial-state 'messages-buffer-mode 'normal)
+      (evil-set-initial-state 'dashboard-mode 'normal)))
 #+end_src
 ** evil-collection
 #+begin_src emacs-lisp
@@ -970,16 +832,32 @@ For using my favorite bind =jk= to easily exit insert mode
 #+begin_src emacs-lisp
   (use-package evil-escape
     :after evil
-    :config (me/evil-escape-config))
+    :config
+    (progn
+      (evil-escape-mode)
+      (setq-default evil-escape-key-sequence "jk")
+      (setq evil-escape-delay 0.15)
+
+      (add-hook 'evil-escape-inhibit-functions
+                (defun +evil-inhibit-escape-in-minibuffer-fn ()
+                  (and (minibufferp)
+                       (or (not (bound-and-true-p evil-collection-setup-minibuffer))
+                           (evil-normal-state-p)))))))
 #+end_src
 ** evil-org
 #+begin_src emacs-lisp
 
   (use-package evil-org
     :after org
-    :config (me/evil-org-config))
+    :config
+    (progn
+      (add-hook 'org-mode-hook 'evil-org-mode)
+      (add-hook 'evil-org-mode-hook
+                (lambda () (evil-org-set-key-theme)))
+      (require 'evil-org-agenda)
+      (evil-org-agenda-set-keys)))
 #+end_src
-** god-mode
+** *DISABLED* god-mode
 #+begin_src emacs-lisp :tangle no
   (use-package god-mode
     ;; :bind (("C-S-g" . god-mode))
@@ -994,14 +872,28 @@ For using my favorite bind =jk= to easily exit insert mode
 #+end_src
 ** avy
 #+begin_src emacs-lisp
-(use-package avy
-  :config (me/avy-config))
+  (use-package avy
+    :bind (("C-S-f" . avy-resume)
+           ("C-f" . avy-goto-char-timer)
+           :map evil-motion-state-map
+           ("C-S-f" . avy-resume)
+           ("C-f" . avy-goto-char-timer))
+    :config
+    (progn
+      (setq avy-timeout-seconds 0.5)))
 #+end_src
 ** doom-themes
 #+begin_src emacs-lisp
   (use-package doom-themes
-    :init (me/doom-themes-init)
-    :config (me/doom-themes-config))
+    :init
+    (load-theme 'doom-vibrant t)
+    :config
+    (progn
+      (setq doom-themes-enable-bold t
+            doom-themes-enable-italic t)
+      (setq doom-themes-treemacs-theme "doom-atom")
+      (doom-themes-treemacs-config)
+      (doom-themes-org-config)))
 #+end_src
 ** doom-modeline
 #+begin_src emacs-lisp
@@ -1044,16 +936,34 @@ For using my favorite bind =jk= to easily exit insert mode
     :init (which-key-mode)
     :diminish which-key-mode
     :config
-    (setq which-key-allow-evil-operators t)
-    (setq which-key-sort-order 'which-key-key-order-alpha)
-    (setq which-key-use-C-h-commands nil)
-    (setq which-key-idle-delay 0.5))
+    (progn
+      (setq which-key-allow-evil-operators t)
+      (setq which-key-sort-order 'which-key-key-order-alpha)
+      (setq which-key-use-C-h-commands nil)
+      (setq which-key-idle-delay 0.5)))
 #+end_src
 ** vertico
 #+begin_src emacs-lisp
   (use-package vertico
     :init (vertico-mode)
-    :config (me/vertico-config))
+    :bind
+    (:map vertico-map
+          ("C-j" . vertico-next)
+          ("C-J" . vertico-next-group)
+          ("C-k" . vertico-previous)
+          ("C-K" . vertico-previous-group)
+          ("M-RET" . minibuffer-force-complete-and-exit)
+          ("M-TAB" . minibuffer-complete))
+    :config
+    (progn
+      (advice-add #'vertico--format-candidate :around
+                  (lambda (orig cand prefix suffix index _start)
+                    (setq cand (funcall orig cand prefix suffix index _start))
+                    (concat
+                     (if (= vertico--index index)
+                         (propertize "» " 'face 'vertico-current)
+                       "  ")
+                     cand)))))
 #+end_src
 ** vertico-directory
 #+begin_src emacs-lisp
@@ -1061,7 +971,11 @@ For using my favorite bind =jk= to easily exit insert mode
   (use-package vertico-directory
     :after vertico
     :ensure nil
-    :config (me/vertico-directory-config)
+    :bind
+    (:map vertico-map
+          ("RET" . vertico-directory-enter)
+          ("DEL" . vertico-directory-delete-char)
+          ("M-DEL" . vertico-directory-delete-word))
     :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
 #+end_src
 ** savehist
@@ -2440,47 +2354,6 @@ This snippet adds a hook to =org-mode= buffers so that =me/org-babel-tangle-conf
 #+end_src
 ** Terminals
 
-*** term-mode
-
-=term-mode= is a built-in terminal emulator in Emacs.  Because it is written in Emacs Lisp, you can start using it immediately with very little configuration.  If you are on Linux or macOS, =term-mode= is a great choice to get started because it supports fairly complex terminal applications (=htop=, =vim=, etc) and works pretty reliably.  However, because it is written in Emacs Lisp, it can be slower than other options like =vterm=.  The speed will only be an issue if you regularly run console apps with a lot of output.
-
-One important thing to understand is =line-mode= versus =char-mode=.  =line-mode= enables you to use normal Emacs keybindings while moving around in the terminal buffer while =char-mode= sends most of your keypresses to the underlying terminal.  While using =term-mode=, you will want to be in =char-mode= for any terminal applications that have their own keybindings.  If you're just in your usual shell, =line-mode= is sufficient and feels more integrated with Emacs.
-
-With =evil-collection= installed, you will automatically switch to =char-mode= when you enter Evil's insert mode (press =i=).  You will automatically be switched back to =line-mode= when you enter Evil's normal mode (press =ESC=).
-
-Run a terminal with =M-x term!=
-
-*Useful key bindings:*
-
-- =C-c C-p= / =C-c C-n= - go back and forward in the buffer's prompts (also =[[= and =]]= with evil-mode)
-- =C-c C-k= - Enter char-mode
-- =C-c C-j= - Return to line-mode
-- If you have =evil-collection= installed, =term-mode= will enter char mode when you use Evil's Insert mode
-
-#+begin_src emacs-lisp
-
-  (use-package term
-    :commands term
-    :config
-    (setq explicit-shell-file-name "bash") ;; Change this to zsh, etc
-    ;;(setq explicit-zsh-args '())         ;; Use 'explicit-<shell>-args for shell-specific args
-
-    ;; Match the default Bash shell prompt.  Update this if you have a custom prompt
-    (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *"))
-
-#+end_src
-
-**** Better term-mode colors
-
-The =eterm-256color= package enhances the output of =term-mode= to enable handling of a wider range of color codes so that many popular terminal applications look as you would expect them to.  Keep in mind that this package requires =ncurses= to be installed on your machine so that it has access to the =tic= program.  Most Linux distributions come with this program installed already so you may not have to do anything extra to use it.
-
-#+begin_src emacs-lisp
-
-  (use-package eterm-256color
-    :hook (term-mode . eterm-256color-mode))
-
-#+end_src
-
 *** vterm
 
 [[https://github.com/akermu/emacs-libvterm/][vterm]] is an improved terminal emulator package which uses a compiled native module to interact with the underlying terminal applications.  This enables it to be much faster than =term-mode= and to also provide a more complete terminal emulation experience.
@@ -2499,81 +2372,6 @@ Make sure that you have the [[https://github.com/akermu/emacs-libvterm/#requirem
 
 #+end_src
 
-*** shell-mode
-
-[[https://www.gnu.org/software/emacs/manual/html_node/emacs/Interactive-Shell.html#Interactive-Shell][shell-mode]] is a middle ground between =term-mode= and Eshell.  It is *not* a terminal emulator so more complex terminal programs will not run inside of it.  It does have much better integration with Emacs because all command input in this mode is handled by Emacs and then sent to the underlying shell once you press Enter.  This means that you can use =evil-mode='s editing motions on the command line, unlike in the terminal emulator modes above.
-
-*Useful key bindings:*
-
-- =C-c C-p= / =C-c C-n= - go back and forward in the buffer's prompts (also =[[= and =]]= with evil-mode)
-- =M-p= / =M-n= - go back and forward in the input history
-- =C-c C-u= - delete the current input string backwards up to the cursor
-- =counsel-shell-history= - A searchable history of commands typed into the shell
-
-One advantage of =shell-mode= on Windows is that it's the only way to run =cmd.exe=, PowerShell, Git Bash, etc from within Emacs.  Here's an example of how you would set up =shell-mode= to run PowerShell on Windows:
-
-#+begin_src emacs-lisp
-
-  (when (eq system-type 'windows-nt)
-    (setq explicit-shell-file-name "powershell.exe")
-    (setq explicit-powershell.exe-args '()))
-
-#+end_src
-
-*** Eshell
-
-[[https://www.gnu.org/software/emacs/manual/html_mono/eshell.html#Contributors-to-Eshell][Eshell]] is Emacs' own shell implementation written in Emacs Lisp.  It provides you with a cross-platform implementation (even on Windows!) of the common GNU utilities you would find on Linux and macOS (=ls=, =rm=, =mv=, =grep=, etc).  It also allows you to call Emacs Lisp functions directly from the shell and you can even set up aliases (like aliasing =vim= to =find-file=).  Eshell is also an Emacs Lisp REPL which allows you to evaluate full expressions at the shell.
-
-The downsides to Eshell are that it can be harder to configure than other packages due to the particularity of where you need to set some options for them to go into effect, the lack of shell completions (by default) for some useful things like Git commands, and that REPL programs sometimes don't work as well.  However, many of these limitations can be dealt with by good configuration and installing external packages, so don't let that discourage you from trying it!
-
-*Useful key bindings:*
-
-- =C-c C-p= / =C-c C-n= - go back and forward in the buffer's prompts (also =[[= and =]]= with evil-mode)
-- =M-p= / =M-n= - go back and forward in the input history
-- =C-c C-u= - delete the current input string backwards up to the cursor
-- =counsel-esh-history= - A searchable history of commands typed into Eshell
-
-We will be covering Eshell more in future videos highlighting other things you can do with it.
-
-For more thoughts on Eshell, check out these articles by Pierre Neidhardt:
-- https://ambrevar.xyz/emacs-eshell/index.html
-- https://ambrevar.xyz/emacs-eshell-versus-shell/index.html
-
-#+begin_src emacs-lisp
-
-  (defun me/configure-eshell ()
-    ;; Save command history when commands are entered
-    (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
-
-    ;; Truncate buffer for performance
-    (add-to-list 'eshell-output-filter-functions 'eshell-truncate-buffer)
-
-    ;; Bind some useful keys for evil-mode
-    (evil-define-key '(normal insert visual) eshell-mode-map (kbd "C-r") 'counsel-esh-history)
-    (evil-define-key '(normal insert visual) eshell-mode-map (kbd "<home>") 'eshell-bol)
-    (evil-normalize-keymaps)
-
-    (setq eshell-history-size         10000
-          eshell-buffer-maximum-lines 10000
-          eshell-hist-ignoredups t
-          eshell-scroll-to-bottom-on-input t))
-
-  (use-package eshell-git-prompt
-    :after eshell)
-
-  (use-package eshell
-    :hook (eshell-first-time-mode . me/configure-eshell)
-    :config
-
-    (with-eval-after-load 'esh-opt
-      (setq eshell-destroy-buffer-when-process-dies t)
-      (setq eshell-visual-commands '("htop" "zsh" "vim")))
-
-    (eshell-git-prompt-use-theme 'powerline))
-
-
-#+end_src
-
 *** Fish Mode
 
 #+begin_src emacs-lisp
@@ -2582,82 +2380,10 @@ For more thoughts on Eshell, check out these articles by Pierre Neidhardt:
 
 #+end_src
 
-** File Management
-*** Dired
-
-Dired is a built-in file manager for Emacs that does some pretty amazing things!  Here are some key bindings you should try out:
-
-**** MacOS Specific Settings
-
-#+begin_src emacs-lisp
-
-  (when (string= system-type "darwin")
-    (setq dired-use-ls-dired t
-          insert-directory-program "/opt/homebrew/bin/gls"
-          dired-listing-switches "-aBhl --group-directories-first"))
-
-#+end_src
-
-**** Configuration
-
-#+begin_src emacs-lisp
-
-  (use-package dired
-    :ensure nil
-    :commands (dired dired-jump)
-    :bind (("C-x C-j" . dired-jump))
-    :custom ((dired-listing-switches "-agho --group-directories-first"))
-    :config
-    (setq dired-dwim-target t)
-    (evil-collection-define-key 'normal 'dired-mode-map
-        "h" 'dired-single-up-directory
-        "l" 'dired-single-buffer)
-    )
-
-  (use-package dired-single
-    :commands (dired dired-jump))
-
-  (use-package all-the-icons-dired
-    :hook (dired-mode . all-the-icons-dired-mode))
-
-  (use-package dired-open
-    :commands (dired dired-jump)
-    :config
-    ;; Doesn't work as expected!
-    ;;(add-to-list 'dired-open-functions #'dired-open-xdg t)
-    (setq dired-open-extensions '(("png" . "feh")
-                                  ("mkv" . "mpv"))))
-
-  (use-package dired-hide-dotfiles
-    ;;:hook (dired-mode . dired-hide-dotfiles-mode)
-    :config
-    (evil-collection-define-key 'normal 'dired-mode-map
-      "H" 'dired-hide-dotfiles-mode))
-
-#+end_src
-*** Auto commit files
-**** Template
+* Templates
 
 #+begin_src emacs-lisp :noweb-ref auto-commit :tangle no
 
   ((nil . ((eval git-auto-commit-mode 1))))
-
-#+end_src
-** Applications
-*** IRC
-
-#+begin_src emacs-lisp
-
-  (setq erc-server "irc.libera.chat"
-        erc-nick "geoffery"
-        erc-user-full-name "Geoffery"
-        erc-autojoin-timing 'ident
-        erc-track-shorten-start 8
-        erc-autojoin-channels-alist '(("libera.chat" "#org-mode" "#evil-mode" "#emacs-beginners" "#emacs-til" "#emacs" "#linux" "#fedora" "#archlinux" "##rust" "##programming"))
-        erc-kill-buffer-on-part t
-        erc-auto-query 'bury
-        ;; Stop displaying channels in the mode line for no good reason.
-        erc-track-exclude-type '("JOIN" "KICK" "NICK" "PART" "QUIT" "MODE" "333" "353")
-        erc-hide-list '("JOIN" "PART" "QUIT" "KICK" "NICK" "MODE" "333" "353"))
 
 #+end_src

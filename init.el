@@ -16,12 +16,41 @@
 
 (add-hook 'emacs-startup-hook #'me/display-startup-time)
 
+(when (fboundp 'horizontal-scroll-bar-mode)
+  (horizontal-scroll-bar-mode -1))
+(when (fboundp 'scroll-bar-mode)
+  (scroll-bar-mode -1))
+(when (fboundp 'tool-bar-mode)
+  (tool-bar-mode -1))
+(when (fboundp 'tooltip-mode)
+  (tooltip-mode -1))
+(when (fboundp 'menu-bar-mode)
+  (menu-bar-mode -1))
+(when (fboundp 'set-fringe-mode)
+  (set-fringe-mode 10))
+
+(setq custom-file (concat user-emacs-directory "custom.el"))
+(when (file-exists-p custom-file)
+  (load custom-file))
+
+(set-frame-parameter (selected-frame) 'fullscreen 'maximized)
+(add-to-list 'default-frame-alist '(fullscreen . maximized))
+
+(defconst IS-MAC     (eq system-type 'darwin)
+  "If the host is running MacOS return true")
+(defconst IS-LINUX   (eq system-type 'gnu/linux)
+  "If the host is running Linux return true")
+(defconst IS-WINDOWS (memq system-type '(cygwin windows-nt ms-dos))
+  "If the host is running Windows return true")
+(defconst IS-BSD     (or IS-MAC (eq system-type 'berkeley-unix))
+  "If the host is running BSD return true")
+
 ;; Initialize package sources
 (require 'package)
 
 (setq package-archives '(("nongnu" . "https://elpa.nongnu.org/nongnu/")
-                        ("melpa" . "https://melpa.org/packages/")
-                        ("gnu" . "https://elpa.gnu.org/packages/")))
+                         ("melpa" . "https://melpa.org/packages/")
+                         ("gnu" . "https://elpa.gnu.org/packages/")))
 
 (package-initialize)
 (unless package-archive-contents
@@ -43,230 +72,272 @@
   (auto-package-update-maybe)
   (auto-package-update-at-time "09:00"))
 
-(defconst IS-MAC     (eq system-type 'darwin)
-  "If the host is running MacOS return true")
-(defconst IS-LINUX   (eq system-type 'gnu/linux)
-  "If the host is running Linux return true")
-(defconst IS-WINDOWS (memq system-type '(cygwin windows-nt ms-dos))
-  "If the host is running Windows return true")
-(defconst IS-BSD     (or IS-MAC (eq system-type 'berkeley-unix))
-  "If the host is running BSD return true")
-
-(setq custom-file (concat user-emacs-directory "custom.el"))
-(when (file-exists-p custom-file)
-  (load custom-file))
-
-(when (fboundp 'horizontal-scroll-bar-mode)
-  (horizontal-scroll-bar-mode -1))
-(when (fboundp 'scroll-bar-mode)
-  (scroll-bar-mode -1))
-(when (fboundp 'tool-bar-mode)
-  (tool-bar-mode -1))
-(when (fboundp 'tooltip-mode)
-  (tooltip-mode -1))
-(when (fboundp 'menu-bar-mode)
-  (menu-bar-mode -1))
-(when (fboundp 'set-fringe-mode)
-  (set-fringe-mode 10))
-
-(set-frame-parameter (selected-frame) 'fullscreen 'maximized)
-(add-to-list 'default-frame-alist '(fullscreen . maximized))
-
-(setq visible-bell nil)
-(setq ring-bell-function #'ignore)
-
-(recentf-mode 1)
-(setq recentf-max-menu-items 20)
-(setq recentf-max-saved-items 50)
-
 ;; NOTE: If you want to move everything out of the ~/.emacs.d folder
 ;; reliably, set `user-emacs-directory` before loading no-littering!
                                         ;(setq user-emacs-directory "~/.cache/emacs")
 
 (use-package no-littering
+  :demand t
   :config
-  (add-to-list 'recentf-exclude no-littering-var-directory)
-  (add-to-list 'recentf-exclude no-littering-etc-directory)
 
   ;; no-littering doesn't set this by default so we must place
   ;; auto save files in the same path as it uses for sessions
   (setq auto-save-file-name-transforms
         `((".*" ,(no-littering-expand-var-file-name "auto-save/") t))))
 
-(setq read-file-name-completion-ignore-case t
-      read-buffer-completion-ignore-case t
-      completion-ignore-case t
-      completion-cycle-threshold 3
-      tab-always-indent 'complete)
+(use-package emacs
+  :ensure nil
+  :preface
+  ;; Fonts and Text ;;
+  (defvar me/default-font-size 160)
+  (defvar me/default-variable-font-size 160)
+  (defun me/reset-text-size ()
+    (interactive)
+    (text-scale-set 0))
 
-;; Use `consult-completion-in-region' if Vertico is enabled.
-;; Otherwise use the default `completion--in-region' function.
-(setq completion-in-region-function
-      (lambda (&rest args)
-        (apply (if vertico-mode
-                   #'consult-completion-in-region
-                 #'completion--in-region)
-               args)))
+  ;; Transparency ;;
+  (defvar me/frame-transparency '(95 . 95))
 
-;; Do not allow the cursor in the minibuffer prompt
-(setq minibuffer-prompt-properties
-      '(read-only t cursor-intangible t face minibuffer-prompt))
-(add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
+  ;; Buffers ;;
+  (defun me/alternate-buffer ()
+    "Go to previous buffer"
+    (interactive)
+    (switch-to-buffer (other-buffer)))
 
-;; Emacs 28: Hide commands in M-x which do not work in the current mode.
-;; Vertico commands are hidden in normal buffers.
-(setq read-extended-command-predicate
-      #'command-completion-default-include-p)
+  (defun me/set-default-line-length-to (line-length)
+    "Set the default line length to LINE-LENGTH."
+    (setq-default fill-column line-length))
 
-;; Enable recursive minibuffers
-(setq enable-recursive-minibuffers t)
+  ;; Saving ;;
+  (defun me/save-all-unsaved ()
+    "Save all unsaved files. no ask."
+    (interactive)
+    (save-some-buffers t))
 
-(winner-mode 1)
+  ;; Utility ;;
+  (defun me/create-dir-if-not-exists ()
+    "Offer to create directory when it doesn't exist"
+    (when buffer-file-name
+      (let ((dir (file-name-directory buffer-file-name)))
+        (when (and (not (file-exists-p dir))
+                   (y-or-n-p (format "Directory %s does not exist. Create it?" dir)))
+          (make-directory dir t)))))
 
-(prefer-coding-system 'utf-8)
-  (set-default-coding-systems 'utf-8)
-  (set-terminal-coding-system 'utf-8)
-  (set-keyboard-coding-system 'utf-8)
-  (set-selection-coding-system 'utf-8)
-  (set-file-name-coding-system 'utf-8)
-  (set-clipboard-coding-system 'utf-8)
-;  (set-w32-system-coding-system 'utf-8)
-  (set-buffer-file-coding-system 'utf-8)
+  (defun me/open-config ()
+    "Open configuration file"
+    (interactive)
+    (find-file (expand-file-name (concat user-emacs-directory "README.org"))))
 
-(defvar me/default-font-size 160)
-(defvar me/default-variable-font-size 160)
+  ;; Scrolling
+  (defun me/scroll-half-page (direction)
+    "Scrolls half page up if `direction' is non-nil, otherwise will scroll half page down."
+    (let ((opos (cdr (nth 6 (posn-at-point)))))
+      ;; opos = original position line relative to window
+      (move-to-window-line nil)  ;; Move cursor to middle line
+      (if direction
+          (recenter-top-bottom -1)  ;; Current line becomes last
+        (recenter-top-bottom 0))  ;; Current line becomes first
+      (move-to-window-line opos)))  ;; Restore cursor/point position
 
-(cond (IS-MAC (setq me/default-font-size 180) (setq me/default-variable-font-size 180))
-      (IS-WINDOWS (setq me/default-font-size 90) (setq me/default-variable-font-size 90)))
+  (defun me/scroll-half-page-down ()
+    "Scrolls exactly half page down keeping cursor/point position."
+    (interactive)
+    (me/scroll-half-page nil))
 
-(defun me/set-fonts ()
-  (set-face-attribute 'default nil :font "Fira Code Retina" :height me/default-font-size)
-  (set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height me/default-font-size)
-  ;; Set the variable pitch face
-  (set-face-attribute 'variable-pitch nil :font "Cantarell" :height me/default-variable-font-size :weight 'regular))
+  (defun me/scroll-half-page-up ()
+    "Scrolls exactly half page up keeping cursor/point position."
+    (interactive)
+    (me/scroll-half-page t))
 
-(me/set-fonts)
+  :bind (("<escape>" . keyboard-escape-quit)
+         ("C-c e e" . me/open-config)
+         ("C-c e q" . save-buffers-kill-emacs)
+         ("C-v" . me/scroll-half-page-down)
+         ("M-v" . me/scroll-half-page-up))
+  :config
+  (progn
+    ;; Startup ;;
+    (setq inhibit-startup-message t)
+    (setq initial-scratch-message nil)
 
-(defvar me/frame-transparency '(95 . 95))
+    ;; Bells and Ringers ;;
+    (setq visible-bell nil)
+    (setq ring-bell-function #'ignore)
 
-(set-frame-parameter (selected-frame) 'alpha me/frame-transparency)
-(add-to-list 'default-frame-alist `(alpha . ,me/frame-transparency))
+    ;; History and persistence ;;
+    (setq recentf-max-menu-items 40)
+    (setq recentf-max-saved-items 250)
+    (setq save-interprogram-paste-before-kill t)
+    (customize-set-variable 'desktop-save 't)
+    (desktop-save-mode 1)
+    (recentf-mode 1)
+    (with-eval-after-load 'no-littering
+      (add-to-list 'recentf-exclude no-littering-etc-directory)
+      (add-to-list 'recentf-exclude no-littering-var-directory))
+    (save-place-mode 1)
+    (winner-mode 1)
+    (global-auto-revert-mode t)
 
-(defun me/alternate-buffer ()
-  (interactive)
-  (switch-to-buffer (other-buffer)))
+    ;; Completion ;;
+    (setq read-file-name-completion-ignore-case t
+          read-buffer-completion-ignore-case t
+          completion-ignore-case t
+          completion-cycle-threshold 3
+          tab-always-indent 'complete)
 
-(defun me/save-all-unsaved ()
-  "Save all unsaved files. no ask."
-  (interactive)
-  (save-some-buffers t))
+    ;; Use `consult-completion-in-region' if Vertico is enabled.
+    ;; Otherwise use the default `completion--in-region' function.
+    (setq completion-in-region-function
+          (lambda (&rest args)
+            (apply (if vertico-mode
+                       #'consult-completion-in-region
+                     #'completion--in-region)
+                   args)))
 
-  (add-hook 'focus-out-hook 'me/save-all-unsaved)
-  (setq after-focus-change-function 'me/save-all-unsaved)
+    ;; Emacs 28: Hide commands in M-x which do not work in the current mode.
+    ;; Vertico commands are hidden in normal buffers.
+    (setq read-extended-command-predicate
+          #'command-completion-default-include-p)
 
-(defun me/comment-or-uncomment-region-or-line ()
-  "Comments or uncomments the region or the current line if
-there's no active region."
-  (interactive)
-  (let (beg end)
-    (if (region-active-p)
-        (setq beg (region-beginning) end (region-end))
-      (setq beg (line-beginning-position) end (line-end-position)))
-    (comment-or-uncomment-region beg end)))
+    ;; Minibuffer ;;
+    ;; Do not allow the cursor in the minibuffer prompt
+    (setq minibuffer-prompt-properties
+          '(read-only t cursor-intangible t face minibuffer-prompt))
+    (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
 
-(defun me/reset-text-size ()
-  (interactive)
-  (text-scale-set 0))
+    ;; Enable recursive minibuffers
+    (setq enable-recursive-minibuffers t)
 
-(setq default-directory "~/")
-(add-hook 'before-save-hook 'delete-trailing-whitespace)
-(add-hook 'prog-mode-hook 'subword-mode)
-(setq vc-follow-symlinks t)
-(add-hook 'after-save-hook
-          'executable-make-buffer-file-executable-if-script-p)
+    ;; File Encoding ;;
+    (prefer-coding-system 'utf-8)
+    (set-default-coding-systems 'utf-8)
+    (set-terminal-coding-system 'utf-8)
+    (set-keyboard-coding-system 'utf-8)
+    (set-selection-coding-system 'utf-8)
+    (set-file-name-coding-system 'utf-8)
+    (set-clipboard-coding-system 'utf-8)
+    (set-buffer-file-coding-system 'utf-8)
 
-(setq sentence-end-double-space nil)
+    ;; Fonts ;;
+    (cond (IS-MAC (setq me/default-font-size 180) (setq me/default-variable-font-size 180))
+          (IS-WINDOWS (setq me/default-font-size 90) (setq me/default-variable-font-size 90)))
+    (set-face-attribute 'default nil :font "Fira Code Retina" :height me/default-font-size)
+    (set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height me/default-font-size)
+    (set-face-attribute 'variable-pitch nil :font "Cantarell" :height me/default-variable-font-size :weight 'regular)
+    (global-font-lock-mode t)
 
-(add-hook 'before-save-hook
-          (lambda ()
-            (when buffer-file-name
-              (let ((dir (file-name-directory buffer-file-name)))
-                (when (and (not (file-exists-p dir))
-                           (y-or-n-p (format "Directory %s does not exist. Create it?" dir)))
-                  (make-directory dir t))))))
-(defun me/set-default-line-length-to (line-length)
-  "Set the default line length to LINE-LENGTH."
-  (setq-default fill-column line-length))
+    ;; Transparency ;;
+    (set-frame-parameter (selected-frame) 'alpha me/frame-transparency)
+    (add-to-list 'default-frame-alist `(alpha . ,me/frame-transparency))
 
-(me/set-default-line-length-to 80)
+    ;; Loading ;;
+    (setq load-prefer-newer t)
 
+    ;; Saving ;;
+    ;; Auto save
+    (setq after-focus-change-function 'me/save-all-unsaved)
+    (add-hook 'focus-out-hook 'me/save-all-unsaved)
 
-(transient-mark-mode t)
-(delete-selection-mode t)
-(setq require-final-newline t)
-(setq confirm-kill-emacs 'y-or-n-p)
-(setq inhibit-startup-message t)
-(setq initial-scratch-message nil)
-(setq-default dired-listing-switches "-alh")
-(fset 'yes-or-no-p 'y-or-n-p)
-(global-font-lock-mode t)
-(global-auto-revert-mode t)
-(show-paren-mode t)
-(setq show-paren-delay 0.0)
-(setq ns-pop-up-frames nil)
-(setq mouse-yank-at-point t)
-(global-set-key (kbd "M-;")
-                'me/comment-or-uncomment-region-or-line)
-(save-place-mode 1)
-(show-paren-mode 1)
-(setq save-interprogram-paste-before-kill t
-      apropos-do-all t
-      mouse-yank-at-point t
-      require-final-newline t
-      load-prefer-newer t)
+    ;; Remove whitespace on save
+    (add-hook 'before-save-hook 'delete-trailing-whitespace)
 
-(customize-set-variable 'display-buffer-base-action
-                        '((display-buffer-reuse-window display-buffer-same-window)
-                          (reusable-frames . t)))
+    ;; Make file executable if it's a script on save
+    (add-hook 'after-save-hook
+              'executable-make-buffer-file-executable-if-script-p)
 
-(customize-set-variable 'even-window-sizes nil)     ; avoid resizing
+    ;; Create directory if it doesn't exist
+    (add-hook 'before-save-hook 'me/create-dir-if-not-exists)
 
-;; Line and column numbers
-(column-number-mode)
-(global-display-line-numbers-mode t)
+    ;; Version Control ;;
+    (setq vc-follow-symlinks t)
 
-;; Disable line numbers for some modes
-(dolist (mode '(org-mode-hook
-                term-mode-hook
-                shell-mode-hook
-                treemacs-mode-hook
-                eshell-mode-hook
-                org-agenda-mode-hook
-                vterm-mode-hook))
-  (add-hook mode (lambda () (display-line-numbers-mode 0))))
+    ;; Directories ;;
+    (setq default-directory "~/")
 
-(tab-bar-mode t)
+    ;; Prog Mode ;;
+    (add-hook 'prog-mode-hook 'subword-mode)
 
-(customize-set-variable 'tab-bar-new-tab-choice '"*scratch*")
-(customize-set-variable 'tab-bar-show 't)
+    ;; Formatting ;;
+    (setq sentence-end-double-space nil)
+    (me/set-default-line-length-to 80)
 
-(setq resize-mini-windows t)
+    ;; Behavior ;;
+    (setq require-final-newline t)
+    (setq show-paren-delay 0.0)
 
-(customize-set-variable 'desktop-save 't)
-(desktop-save-mode 1)
+    ;; Confirmations
+    (setq confirm-kill-emacs 'y-or-n-p)
+    (fset 'yes-or-no-p 'y-or-n-p)
 
-(setq ediff-diff-options "")
-(setq ediff-custom-diff-options "-u")
-(setq ediff-window-setup-function 'ediff-setup-windows-plain)
-(setq ediff-split-window-function 'split-window-vertically)
+    ;; Modes
+    (transient-mark-mode 1)
+    (delete-selection-mode 1)
+    (show-paren-mode 1)
+    (column-number-mode 0)
+
+    ;; Line Numbers
+
+    ;; Disable line numbers for some modes
+    (dolist (mode '(org-mode-hook
+                    term-mode-hook
+                    shell-mode-hook
+                    treemacs-mode-hook
+                    eshell-mode-hook
+                    org-agenda-mode-hook
+                    vterm-mode-hook))
+      (add-hook mode (lambda () (display-line-numbers-mode 0))))
+    (global-display-line-numbers-mode 1)
+
+    ;; Frames
+    (setq ns-pop-up-frames nil)
+
+    ;; Windows
+    ;; Attempt to always use the same window size and stop resizing stuff weirdly
+    (customize-set-variable 'display-buffer-base-action
+                            '((display-buffer-reuse-window display-buffer-same-window)
+                              (reusable-frames . t)))
+    (customize-set-variable 'even-window-sizes nil)
+    (setq resize-mini-windows t)
+
+    ;; Mouse
+    (setq mouse-yank-at-point t)
+
+    ;; Apropos
+    (setq apropos-do-all t)
+
+    ;; Tab bar ;;
+    (tab-bar-mode t)
+    (customize-set-variable 'tab-bar-new-tab-choice '"*scratch*")
+    (customize-set-variable 'tab-bar-show 't)
+
+    ;; Mac OS ;;
+    (when IS-MAC
+      (setq mac-command-modifier 'control
+            mac-option-modifier 'meta
+            mac-control-modifier 'super
+            mac-right-command-modifier 'control
+            mac-right-option-modifier 'meta
+            ns-function-modifier 'hyper))
+
+    ))
+
+(use-package ediff
+  :ensure nil
+  :config
+  (progn
+    (setq ediff-diff-options "")
+    (setq ediff-custom-diff-options "-u")
+    (setq ediff-window-setup-function 'ediff-setup-windows-plain)
+    (setq ediff-split-window-function 'split-window-vertically)))
 
 (use-package smerge-mode
   :ensure nil
   :init (setq smerge-command-prefix "")
   :config
-  (defhydra hydra/smerge
-    (:color pink :hint nil :post (smerge-auto-leave))
-    "
+  (progn
+    (defhydra hydra/smerge
+      (:color pink :hint nil :post (smerge-auto-leave))
+      "
 ^Move^       ^Keep^               ^Diff^                 ^Other^
 ^^-----------^^-------------------^^---------------------^^-------
 _n_ext       _b_ase               _<_: upper/base        _C_ombine
@@ -275,112 +346,77 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 ^^           _a_ll                _R_efine
 ^^           _RET_: current       _E_diff
 "
-    ("n" smerge-next)
-    ("p" smerge-prev)
-    ("b" smerge-keep-base)
-    ("u" smerge-keep-upper)
-    ("l" smerge-keep-lower)
-    ("a" smerge-keep-all)
-    ("RET" smerge-keep-current)
-    ("\C-m" smerge-keep-current)
-    ("<" smerge-diff-base-upper)
-    ("=" smerge-diff-upper-lower)
-    (">" smerge-diff-base-lower)
-    ("R" smerge-refine)
-    ("E" smerge-ediff)
-    ("C" smerge-combine-with-next)
-    ("r" smerge-resolve)
-    ("k" smerge-kill-current)
-    ("q" nil "cancel" :color blue))
+      ("n" smerge-next)
+      ("p" smerge-prev)
+      ("b" smerge-keep-base)
+      ("u" smerge-keep-upper)
+      ("l" smerge-keep-lower)
+      ("a" smerge-keep-all)
+      ("RET" smerge-keep-current)
+      ("\C-m" smerge-keep-current)
+      ("<" smerge-diff-base-upper)
+      ("=" smerge-diff-upper-lower)
+      (">" smerge-diff-base-lower)
+      ("R" smerge-refine)
+      ("E" smerge-ediff)
+      ("C" smerge-combine-with-next)
+      ("r" smerge-resolve)
+      ("k" smerge-kill-current)
+      ("q" nil "cancel" :color blue))
 
-  (bind-key "C-c g d" 'hydra/smerge/body))
+    (bind-key "C-c g d" 'hydra/smerge/body)))
 
-(defun me/open-config ()
-    (interactive)
-    (find-file (expand-file-name (concat user-emacs-directory "README.org"))))
+(use-package dired
+  :ensure nil
+  :commands (dired dired-jump)
+  :bind (("C-x C-j" . dired-jump))
+  :custom ((dired-listing-switches "-agho --group-directories-first"))
+  :config
+  (setq dired-dwim-target t)
+  (with-eval-after-load 'evil-collection
+    (evil-collection-define-key 'normal 'dired-mode-map
+      "h" 'dired-single-up-directory
+      "l" 'dired-single-buffer))
+  ;; MacOS ;;
+  (when IS-MAC
+    (setq dired-use-ls-dired t
+          insert-directory-program "/opt/homebrew/bin/gls"
+          dired-listing-switches "-aBhl --group-directories-first")))
 
-(defun me/scroll-half-page (direction)
-  "Scrolls half page up if `direction' is non-nil, otherwise will scroll half page down."
-  (let ((opos (cdr (nth 6 (posn-at-point)))))
-    ;; opos = original position line relative to window
-    (move-to-window-line nil)  ;; Move cursor to middle line
-    (if direction
-        (recenter-top-bottom -1)  ;; Current line becomes last
-      (recenter-top-bottom 0))  ;; Current line becomes first
-    (move-to-window-line opos)))  ;; Restore cursor/point position
+(use-package dired-single
+  :commands (dired dired-jump))
 
-(defun me/scroll-half-page-down ()
-  "Scrolls exactly half page down keeping cursor/point position."
-  (interactive)
-  (me/scroll-half-page nil))
+(use-package all-the-icons-dired
+  :after all-the-icons
+  :hook (dired-mode . all-the-icons-dired-mode))
 
-(defun me/scroll-half-page-up ()
-  "Scrolls exactly half page up keeping cursor/point position."
-  (interactive)
-  (me/scroll-half-page t))
+(use-package dired-open
+  :commands (dired dired-jump)
+  :config
+  (setq dired-open-extensions '(("png" . "feh")
+                                ("mkv" . "mpv"))))
 
-(setq mac-command-modifier 'control
-      mac-option-modifier 'meta
-      mac-control-modifier 'super
-      mac-right-command-modifier 'control
-      mac-right-option-modifier 'meta
-      ns-function-modifier 'hyper)
+(use-package dired-hide-dotfiles
+  ;;:hook (dired-mode . dired-hide-dotfiles-mode)
+  :config
+  (with-eval-after-load 'evil-collection
+    (evil-collection-define-key 'normal 'dired-mode-map
+      "H" 'dired-hide-dotfiles-mode)))
 
-(global-set-key (kbd "<escape>") 'keyboard-escape-quit)
-(global-set-key (kbd "C-c e e") 'me/open-config)
-(global-set-key (kbd "C-c e q") 'save-buffers-kill-emacs)
-(global-set-key (kbd "C-v") 'me/scroll-half-page-down)
-(global-set-key (kbd "M-v") 'me/scroll-half-page-up)
-
-(defun me/evil-keybinds ()
-  ;; Exit insert with Emacs C-g bind
-  (define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state)
-
-  ;; Use visual line motions even outside of visual-line-mode buffers
-  (evil-global-set-key 'motion "j" 'evil-next-visual-line)
-  (evil-global-set-key 'motion "k" 'evil-previous-visual-line)
-
-  ;; L and H To end/beginning of line respectively
-  (evil-global-set-key 'motion "L" 'evil-end-of-line-or-visual-line)
-  (evil-global-set-key 'motion "H" 'evil-first-non-blank-of-visual-line)
-
-  (evil-global-set-key 'motion "gb" 'consult-buffer)
-
-  ;; Universal Argument since C-u is taken by jumping up in normal and visual
-  (evil-global-set-key 'motion "gu" 'universal-argument)
-  (evil-global-set-key 'normal "gu" 'universal-argument)
-  (evil-global-set-key 'visual "gu" 'universal-argument)
-  (define-key evil-insert-state-map (kbd "C-u") 'universal-argument)
-
-  ;; Macros
-  (define-key evil-normal-state-map (kbd "q") 'my-evil-record-macro)
-
-  ;; Unbinds
-  (define-key evil-normal-state-map (kbd "g ?") nil))
-
-(defun me/avy-evil-keybinds ()
-  (evil-global-set-key 'motion (kbd "C-:") 'avy-resume)
-  (evil-global-set-key 'motion (kbd "C-S-f") 'avy-resume)
-  (evil-global-set-key 'motion (kbd "C-f") 'avy-goto-char-timer))
-
-(defun me/avy-keybinds ()
-  (bind-key "C-:" 'avy-resume)
-  (bind-key "C-S-f" 'avy-resume)
-  (bind-key "C-f" 'avy-goto-char-timer)
-  (me/avy-evil-keybinds))
-
-(defun me/vertico-keybinds ()
-  (bind-key "C-j" 'vertico-next 'vertico-map)
-  (bind-key "C-J" 'vertico-next-group 'vertico-map)
-  (bind-key "C-k" 'vertico-previous 'vertico-map)
-  (bind-key "C-K" 'vertico-previous-group 'vertico-map)
-  (bind-key "M-RET" 'minibuffer-force-complete-and-exit 'vertico-map)
-  (bind-key "M-TAB" 'minibuffer-complete 'vertico-map))
-
-(defun me/vertico-directory-keybinds ()
-  (bind-key "RET" 'vertico-directory-enter 'vertico-map)
-  (bind-key "DEL" 'vertico-directory-delete-char 'vertico-map)
-  (bind-key "M-DEL" 'vertico-directory-delete-word 'vertico-map))
+(use-package erc
+  :ensure nil
+  :config
+  (setq erc-server "irc.libera.chat"
+        erc-nick "geoffery"
+        erc-user-full-name "Geoffery"
+        erc-autojoin-timing 'ident
+        erc-track-shorten-start 8
+        erc-autojoin-channels-alist '(("libera.chat" "#org-mode" "#evil-mode" "#emacs-beginners" "#emacs-til" "#emacs" "#linux" "#fedora" "#archlinux" "##rust" "##programming"))
+        erc-kill-buffer-on-part t
+        erc-auto-query 'bury
+        ;; Stop displaying channels in the mode line for no good reason.
+        erc-track-exclude-type '("JOIN" "KICK" "NICK" "PART" "QUIT" "MODE" "333" "353")
+        erc-hide-list '("JOIN" "PART" "QUIT" "KICK" "NICK" "MODE" "333" "353")))
 
 (defun me/consult-keybinds ()
   (bind-key "C-c s a" 'consult-org-agenda)
@@ -430,78 +466,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (bind-key "M-s" 'consult-history 'minibuffer-local-map)                 ;; orig. next-matching-history-element
   (bind-key "M-r" 'consult-history 'minibuffer-local-map))
 
-(defun me/exec-path-from-shell-config ()
-  (when (memq window-system '(mac ns x))
-    (exec-path-from-shell-initialize)))
-
-(defun me/evil-init ()
-  (setq evil-want-integration t
-        evil-want-keybinding nil
-        evil-want-C-u-scroll t
-        evil-want-C-i-jump t
-        evil-respect-visual-line-mode t
-        evil-undo-system 'undo-tree))
-
-(defun me/evil-config ()
-  (evil-mode 1)
-
-  ;; Initial states
-  (evil-set-initial-state 'messages-buffer-mode 'normal)
-  (evil-set-initial-state 'dashboard-mode 'normal)
-
-  (defun my-evil-record-macro ()
-    (interactive)
-    (if buffer-read-only
-        (quit-window)
-      (call-interactively 'evil-record-macro)))
-  (me/evil-keybinds))
-
-(defun me/evil-escape-config ()
-  (evil-escape-mode)
-  (setq-default evil-escape-key-sequence "jk")
-  (setq evil-escape-delay 0.15)
-
-  (add-hook 'evil-escape-inhibit-functions
-            (defun +evil-inhibit-escape-in-minibuffer-fn ()
-              (and (minibufferp)
-                   (or (not (bound-and-true-p evil-collection-setup-minibuffer))
-                       (evil-normal-state-p))))))
-
-(defun me/evil-org-config ()
-  (add-hook 'org-mode-hook 'evil-org-mode)
-  (add-hook 'evil-org-mode-hook
-            (lambda () (evil-org-set-key-theme)))
-  (require 'evil-org-agenda)
-  (evil-org-agenda-set-keys))
-
-(defun me/avy-config ()
-  (setq avy-timeout-seconds 0.5)
-  (me/avy-keybinds))
-
-(defun me/doom-themes-init ()
-  (load-theme 'doom-vibrant t))
-
-(defun me/doom-themes-config ()
-  (setq doom-themes-enable-bold t
-        doom-themes-enable-italic t)
-  (setq doom-themes-treemacs-theme "doom-atom")
-  (doom-themes-treemacs-config)
-  (doom-themes-org-config))
-
-(defun me/vertico-config ()
-  (advice-add #'vertico--format-candidate :around
-              (lambda (orig cand prefix suffix index _start)
-                (setq cand (funcall orig cand prefix suffix index _start))
-                (concat
-                 (if (= vertico--index index)
-                     (propertize "» " 'face 'vertico-current)
-                   "  ")
-                 cand)))
-  (me/vertico-keybinds))
-
-(defun me/vertico-directory-config ()
-  (me/vertico-directory-keybinds))
-
 (defun me/consult-init ()
   ;; Optionally configure the register formatting. This improves the register
   ;; preview for `consult-register', `consult-register-load',
@@ -546,8 +510,9 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (bind-key "C-c p o" 'consult-project-extra-find-other-window))
 
 (use-package exec-path-from-shell
+  :if IS-MAC
   :config
-  (me/exec-path-from-shell-config))
+  (exec-path-from-shell-initialize))
 
 (use-package dash
   :commands (global-dash-fontify-mode)
@@ -557,8 +522,45 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (use-package s)
 
 (use-package evil
-  :init (me/evil-init)
-  :config (me/evil-config))
+  :preface
+  (defun my/evil-record-macro ()
+    (interactive)
+    (if buffer-read-only
+        (quit-window)
+      (call-interactively 'evil-record-macro)))
+
+  :init
+  (progn
+    (setq evil-want-integration t
+          evil-want-keybinding nil
+          evil-want-C-u-scroll t
+          evil-want-C-i-jump t
+          evil-respect-visual-line-mode t
+          evil-undo-system 'undo-tree))
+
+  :bind
+  (:map evil-insert-state-map
+        ("C-g" . evil-normal-state)
+        ("C-u" . universal-argument)
+        :map evil-normal-state-map
+        ("q" . my/evil-record-macro)
+        ("g ?" . nil)
+        ("gu" . universal-argument)
+        :map evil-visual-state-map
+        ("gu" . universal-argument)
+        :map evil-motion-state-map
+        ("j" . evil-next-visual-line)
+        ("k" . evil-previous-visual-line)
+        ("L" . evil-end-of-line-or-visual-line)
+        ("H" . evil-first-non-blank-of-visual-line)
+        ("gu" . universal-argument)
+        ("gb" . consult-buffer))
+
+  :config
+  (progn
+    (evil-mode 1)
+    (evil-set-initial-state 'messages-buffer-mode 'normal)
+    (evil-set-initial-state 'dashboard-mode 'normal)))
 
 (use-package evil-collection
   :after evil
@@ -568,11 +570,27 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 (use-package evil-escape
   :after evil
-  :config (me/evil-escape-config))
+  :config
+  (progn
+    (evil-escape-mode)
+    (setq-default evil-escape-key-sequence "jk")
+    (setq evil-escape-delay 0.15)
+
+    (add-hook 'evil-escape-inhibit-functions
+              (defun +evil-inhibit-escape-in-minibuffer-fn ()
+                (and (minibufferp)
+                     (or (not (bound-and-true-p evil-collection-setup-minibuffer))
+                         (evil-normal-state-p)))))))
 
 (use-package evil-org
   :after org
-  :config (me/evil-org-config))
+  :config
+  (progn
+    (add-hook 'org-mode-hook 'evil-org-mode)
+    (add-hook 'evil-org-mode-hook
+              (lambda () (evil-org-set-key-theme)))
+    (require 'evil-org-agenda)
+    (evil-org-agenda-set-keys)))
 
 (use-package undo-tree
   :diminish undo-tree-mode
@@ -580,11 +598,25 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (global-undo-tree-mode))
 
 (use-package avy
-  :config (me/avy-config))
+  :bind (("C-S-f" . avy-resume)
+         ("C-f" . avy-goto-char-timer)
+         :map evil-motion-state-map
+         ("C-S-f" . avy-resume)
+         ("C-f" . avy-goto-char-timer))
+  :config
+  (progn
+    (setq avy-timeout-seconds 0.5)))
 
 (use-package doom-themes
-  :init (me/doom-themes-init)
-  :config (me/doom-themes-config))
+  :init
+  (load-theme 'doom-vibrant t)
+  :config
+  (progn
+    (setq doom-themes-enable-bold t
+          doom-themes-enable-italic t)
+    (setq doom-themes-treemacs-theme "doom-atom")
+    (doom-themes-treemacs-config)
+    (doom-themes-org-config)))
 
 (use-package doom-modeline
   :init (doom-modeline-mode 1)
@@ -614,19 +646,41 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   :init (which-key-mode)
   :diminish which-key-mode
   :config
-  (setq which-key-allow-evil-operators t)
-  (setq which-key-sort-order 'which-key-key-order-alpha)
-  (setq which-key-use-C-h-commands nil)
-  (setq which-key-idle-delay 0.5))
+  (progn
+    (setq which-key-allow-evil-operators t)
+    (setq which-key-sort-order 'which-key-key-order-alpha)
+    (setq which-key-use-C-h-commands nil)
+    (setq which-key-idle-delay 0.5)))
 
 (use-package vertico
   :init (vertico-mode)
-  :config (me/vertico-config))
+  :bind
+  (:map vertico-map
+        ("C-j" . vertico-next)
+        ("C-J" . vertico-next-group)
+        ("C-k" . vertico-previous)
+        ("C-K" . vertico-previous-group)
+        ("M-RET" . minibuffer-force-complete-and-exit)
+        ("M-TAB" . minibuffer-complete))
+  :config
+  (progn
+    (advice-add #'vertico--format-candidate :around
+                (lambda (orig cand prefix suffix index _start)
+                  (setq cand (funcall orig cand prefix suffix index _start))
+                  (concat
+                   (if (= vertico--index index)
+                       (propertize "» " 'face 'vertico-current)
+                     "  ")
+                   cand)))))
 
 (use-package vertico-directory
   :after vertico
   :ensure nil
-  :config (me/vertico-directory-config)
+  :bind
+  (:map vertico-map
+        ("RET" . vertico-directory-enter)
+        ("DEL" . vertico-directory-delete-char)
+        ("M-DEL" . vertico-directory-delete-word))
   :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
 
 (use-package savehist
@@ -1719,18 +1773,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   :hook (prog-mode . format-all-mode)
   :bind(("C-c F" . format-all-buffer)))
 
-(use-package term
-  :commands term
-  :config
-  (setq explicit-shell-file-name "bash") ;; Change this to zsh, etc
-  ;;(setq explicit-zsh-args '())         ;; Use 'explicit-<shell>-args for shell-specific args
-
-  ;; Match the default Bash shell prompt.  Update this if you have a custom prompt
-  (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *"))
-
-(use-package eterm-256color
-  :hook (term-mode . eterm-256color-mode))
-
 (use-package vterm
   :commands vterm
   :bind (("C-c t" . vterm))
@@ -1739,87 +1781,4 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (setq vterm-shell "fish")                       ;; Set this to customize the shell to launch
   (setq vterm-max-scrollback 10000))
 
-(when (eq system-type 'windows-nt)
-  (setq explicit-shell-file-name "powershell.exe")
-  (setq explicit-powershell.exe-args '()))
-
-(defun me/configure-eshell ()
-  ;; Save command history when commands are entered
-  (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
-
-  ;; Truncate buffer for performance
-  (add-to-list 'eshell-output-filter-functions 'eshell-truncate-buffer)
-
-  ;; Bind some useful keys for evil-mode
-  (evil-define-key '(normal insert visual) eshell-mode-map (kbd "C-r") 'counsel-esh-history)
-  (evil-define-key '(normal insert visual) eshell-mode-map (kbd "<home>") 'eshell-bol)
-  (evil-normalize-keymaps)
-
-  (setq eshell-history-size         10000
-        eshell-buffer-maximum-lines 10000
-        eshell-hist-ignoredups t
-        eshell-scroll-to-bottom-on-input t))
-
-(use-package eshell-git-prompt
-  :after eshell)
-
-(use-package eshell
-  :hook (eshell-first-time-mode . me/configure-eshell)
-  :config
-
-  (with-eval-after-load 'esh-opt
-    (setq eshell-destroy-buffer-when-process-dies t)
-    (setq eshell-visual-commands '("htop" "zsh" "vim")))
-
-  (eshell-git-prompt-use-theme 'powerline))
-
 (use-package fish-mode)
-
-(when (string= system-type "darwin")
-  (setq dired-use-ls-dired t
-        insert-directory-program "/opt/homebrew/bin/gls"
-        dired-listing-switches "-aBhl --group-directories-first"))
-
-(use-package dired
-  :ensure nil
-  :commands (dired dired-jump)
-  :bind (("C-x C-j" . dired-jump))
-  :custom ((dired-listing-switches "-agho --group-directories-first"))
-  :config
-  (setq dired-dwim-target t)
-  (evil-collection-define-key 'normal 'dired-mode-map
-      "h" 'dired-single-up-directory
-      "l" 'dired-single-buffer)
-  )
-
-(use-package dired-single
-  :commands (dired dired-jump))
-
-(use-package all-the-icons-dired
-  :hook (dired-mode . all-the-icons-dired-mode))
-
-(use-package dired-open
-  :commands (dired dired-jump)
-  :config
-  ;; Doesn't work as expected!
-  ;;(add-to-list 'dired-open-functions #'dired-open-xdg t)
-  (setq dired-open-extensions '(("png" . "feh")
-                                ("mkv" . "mpv"))))
-
-(use-package dired-hide-dotfiles
-  ;;:hook (dired-mode . dired-hide-dotfiles-mode)
-  :config
-  (evil-collection-define-key 'normal 'dired-mode-map
-    "H" 'dired-hide-dotfiles-mode))
-
-(setq erc-server "irc.libera.chat"
-      erc-nick "geoffery"
-      erc-user-full-name "Geoffery"
-      erc-autojoin-timing 'ident
-      erc-track-shorten-start 8
-      erc-autojoin-channels-alist '(("libera.chat" "#org-mode" "#evil-mode" "#emacs-beginners" "#emacs-til" "#emacs" "#linux" "#fedora" "#archlinux" "##rust" "##programming"))
-      erc-kill-buffer-on-part t
-      erc-auto-query 'bury
-      ;; Stop displaying channels in the mode line for no good reason.
-      erc-track-exclude-type '("JOIN" "KICK" "NICK" "PART" "QUIT" "MODE" "333" "353")
-      erc-hide-list '("JOIN" "PART" "QUIT" "KICK" "NICK" "MODE" "333" "353"))
