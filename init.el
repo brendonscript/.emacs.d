@@ -255,6 +255,46 @@ there's no active region."
 (customize-set-variable 'desktop-save 't)
 (desktop-save-mode 1)
 
+(setq ediff-diff-options "")
+(setq ediff-custom-diff-options "-u")
+(setq ediff-window-setup-function 'ediff-setup-windows-plain)
+(setq ediff-split-window-function 'split-window-vertically)
+
+(use-package smerge-mode
+  :ensure nil
+  :init (setq smerge-command-prefix "")
+  :config
+  (defhydra hydra/smerge
+    (:color pink :hint nil :post (smerge-auto-leave))
+    "
+^Move^       ^Keep^               ^Diff^                 ^Other^
+^^-----------^^-------------------^^---------------------^^-------
+_n_ext       _b_ase               _<_: upper/base        _C_ombine
+_p_rev       _u_pper              _=_: upper/lower       _r_esolve
+^^           _l_ower              _>_: base/lower        _k_ill current
+^^           _a_ll                _R_efine
+^^           _RET_: current       _E_diff
+"
+    ("n" smerge-next)
+    ("p" smerge-prev)
+    ("b" smerge-keep-base)
+    ("u" smerge-keep-upper)
+    ("l" smerge-keep-lower)
+    ("a" smerge-keep-all)
+    ("RET" smerge-keep-current)
+    ("\C-m" smerge-keep-current)
+    ("<" smerge-diff-base-upper)
+    ("=" smerge-diff-upper-lower)
+    (">" smerge-diff-base-lower)
+    ("R" smerge-refine)
+    ("E" smerge-ediff)
+    ("C" smerge-combine-with-next)
+    ("r" smerge-resolve)
+    ("k" smerge-kill-current)
+    ("q" nil "cancel" :color blue))
+
+  (bind-key "C-c g d" 'hydra/smerge/body))
+
 (defun me/open-config ()
     (interactive)
     (find-file (expand-file-name (concat user-emacs-directory "README.org"))))
@@ -293,10 +333,6 @@ there's no active region."
 (global-set-key (kbd "M-v") 'me/scroll-half-page-up)
 
 (defun me/evil-keybinds ()
-  ;; Rebind Universal Argument
-  (define-key evil-motion-state-map (kbd "M-u") 'universal-argument)
-  (define-key evil-insert-state-map (kbd "C-u") 'universal-argument)
-
   ;; Exit insert with Emacs C-g bind
   (define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state)
 
@@ -309,15 +345,29 @@ there's no active region."
   (evil-global-set-key 'motion "H" 'evil-first-non-blank-of-visual-line)
 
   (evil-global-set-key 'motion "gb" 'consult-buffer)
-  (define-key evil-normal-state-map (kbd "q") 'my-evil-record-macro))
 
-<<<<<<< HEAD
+  ;; Universal Argument since C-u is taken by jumping up in normal and visual
+  (evil-global-set-key 'motion "gu" 'universal-argument)
+  (evil-global-set-key 'normal "gu" 'universal-argument)
+  (evil-global-set-key 'visual "gu" 'universal-argument)
+  (define-key evil-insert-state-map (kbd "C-u") 'universal-argument)
+
+  ;; Macros
+  (define-key evil-normal-state-map (kbd "q") 'my-evil-record-macro)
+
+  ;; Unbinds
+  (define-key evil-normal-state-map (kbd "g ?") nil))
+
+(defun me/avy-evil-keybinds ()
+  (evil-global-set-key 'motion (kbd "C-:") 'avy-resume)
+  (evil-global-set-key 'motion (kbd "C-S-f") 'avy-resume)
+  (evil-global-set-key 'motion (kbd "C-f") 'avy-goto-char-timer))
+
 (defun me/avy-keybinds ()
   (bind-key "C-:" 'avy-resume)
-  (bind-key "C-f" 'avy-goto-char-timer))
-=======
-(defun me/avy-keybinds ())
->>>>>>> meow
+  (bind-key "C-S-f" 'avy-resume)
+  (bind-key "C-f" 'avy-goto-char-timer)
+  (me/avy-evil-keybinds))
 
 (defun me/vertico-keybinds ()
   (bind-key "C-j" 'vertico-next 'vertico-map)
@@ -379,97 +429,6 @@ there's no active region."
 
   (bind-key "M-s" 'consult-history 'minibuffer-local-map)                 ;; orig. next-matching-history-element
   (bind-key "M-r" 'consult-history 'minibuffer-local-map))
-
-(defun me/meow-keybinds ()
-  (setq meow-cheatsheet-layout meow-cheatsheet-layout-qwerty)
-
-  (meow-motion-overwrite-define-key
-   '("j" . meow-next)
-   '("k" . meow-prev)
-   '("<escape>" . ignore))
-
-  (meow-leader-define-key
-   ;; SPC j/k will run the original command in MOTION state.
-   '("j" . "H-j")
-   '("k" . "H-k")
-   ;; Use SPC (0-9) for digit arguments.
-   '("1" . meow-digit-argument)
-   '("2" . meow-digit-argument)
-   '("3" . meow-digit-argument)
-   '("4" . meow-digit-argument)
-   '("5" . meow-digit-argument)
-   '("6" . meow-digit-argument)
-   '("7" . meow-digit-argument)
-   '("8" . meow-digit-argument)
-   '("9" . meow-digit-argument)
-   '("0" . meow-digit-argument)
-   '("b" . consult-buffer)
-   '("/" . meow-keypad-describe-key)
-   '("?" . meow-cheatsheet))
-  (meow-normal-define-key
-   '("0" . meow-expand-0)
-   '("9" . meow-expand-9)
-   '("8" . meow-expand-8)
-   '("7" . meow-expand-7)
-   '("6" . meow-expand-6)
-   '("5" . meow-expand-5)
-   '("4" . meow-expand-4)
-   '("3" . meow-expand-3)
-   '("2" . meow-expand-2)
-   '("1" . meow-expand-1)
-   '("-" . negative-argument)
-   '(";" . meow-reverse)
-   '("," . meow-inner-of-thing)
-   '("." . meow-bounds-of-thing)
-   '("[" . meow-beginning-of-thing)
-   '("]" . meow-end-of-thing)
-   '("a" . meow-append)
-   '("A" . meow-open-below)
-   '("b" . meow-back-word)
-   '("B" . meow-back-symbol)
-   '("c" . meow-change)
-   '("d" . meow-delete)
-   '("D" . meow-backward-delete)
-   '("e" . meow-next-word)
-   '("E" . meow-next-symbol)
-   '("f" . meow-find)
-   '("g" . meow-cancel-selection)
-   '("G" . meow-grab)
-   '("h" . meow-left)
-   '("H" . meow-left-expand)
-   '("i" . meow-insert)
-   '("I" . meow-open-above)
-   '("j" . meow-next)
-   '("J" . meow-next-expand)
-   '("k" . meow-prev)
-   '("K" . meow-prev-expand)
-   '("l" . meow-right)
-   '("L" . meow-right-expand)
-   '("m" . meow-join)
-   '("n" . meow-search)
-   '("o" . meow-block)
-   '("O" . meow-to-block)
-   '("p" . meow-yank)
-   '("q" . meow-quit)
-   '("Q" . meow-goto-line)
-   '("r" . meow-replace)
-   '("R" . meow-swap-grab)
-   '("s" . meow-kill)
-   '("t" . meow-till)
-   '("u" . meow-undo)
-   '("U" . undo-tree-redo)
-   '("v" . meow-visit)
-   '("w" . meow-mark-word)
-   '("W" . meow-mark-symbol)
-   '("x" . meow-line)
-   '("X" . meow-goto-line)
-   '("y" . meow-save)
-   '("Y" . meow-sync-grab)
-   '("z" . meow-pop-selection)
-   '("'" . repeat)
-   '("<escape>" . ignore)
-   '("C-d" . me/scroll-half-page-down)
-   '("C-b" . me/scroll-half-page-up)))
 
 (defun me/exec-path-from-shell-config ()
   (when (memq window-system '(mac ns x))
@@ -586,41 +545,6 @@ there's no active region."
   (bind-key "C-c p f" 'consult-project-extra-find)
   (bind-key "C-c p o" 'consult-project-extra-find-other-window))
 
-(defun me/meow-init ()
-  (setq meow-mode-state-list '((authinfo-mode . normal)
-                               (beancount-mode . normal)
-                               (bibtex-mode . normal)
-                               (cider-repl-mode . normal)
-                               (cider-test-report-mode . normal)
-                               (cider-browse-spec-view-mode . motion)
-                               (cargo-process-mode . normal)
-                               (conf-mode . normal)
-                               (deadgrep-edit-mode . normal)
-                               (deft-mode . normal)
-                               (diff-mode . normal)
-                               (ediff-mode . motion)
-                               (gud-mode . normal)
-                               (haskell-interactive-mode . normal)
-                               (help-mode . normal)
-                               (helpful-mode . normal)
-                               (json-mode . normal)
-                               (jupyter-repl-mode . normal)
-                               (mix-mode . normal)
-                               (occur-edit-mode . normal)
-                               (pass-view-mode . normal)
-                               (prog-mode . normal)
-                               (py-shell-mode . normal)
-                               (restclient-mode . normal)
-                               (telega-chat-mode . normal)
-                               (term-mode . normal)
-                               (text-mode . normal)
-                               (vterm-mode . normal)
-                               (Custom-mode . normal))))
-(defun me/meow-config ()
-  (me/meow-keybinds)
-  (meow-global-mode 1)
-  (global-set-key (kbd "C-h k") 'helpful-key))
-
 (use-package exec-path-from-shell
   :config
   (me/exec-path-from-shell-config))
@@ -632,20 +556,23 @@ there's no active region."
 
 (use-package s)
 
-(use-package persistent-scratch
-  :after (no-littering org)
-  :custom ((persistent-scratch-autosave-interval 180))
-  :config
-  (add-hook 'after-init-hook 'persistent-scratch-setup-default))
+(use-package evil
+  :init (me/evil-init)
+  :config (me/evil-config))
 
-(use-package meow
-  :init (me/meow-init)
-  :config (me/meow-config))
-
-(use-package key-chord
+(use-package evil-collection
+  :after evil
+  :diminish evil-collection-unimpaired-mode
   :config
-  (key-chord-define meow-insert-state-keymap "jk" 'meow-insert-exit)
-  (key-chord-mode 1))
+  (evil-collection-init))
+
+(use-package evil-escape
+  :after evil
+  :config (me/evil-escape-config))
+
+(use-package evil-org
+  :after org
+  :config (me/evil-org-config))
 
 (use-package undo-tree
   :diminish undo-tree-mode
@@ -687,6 +614,8 @@ there's no active region."
   :init (which-key-mode)
   :diminish which-key-mode
   :config
+  (setq which-key-allow-evil-operators t)
+  (setq which-key-sort-order 'which-key-key-order-alpha)
   (setq which-key-use-C-h-commands nil)
   (setq which-key-idle-delay 0.5))
 
@@ -725,7 +654,16 @@ there's no active region."
 
 
 
-
+(use-package helpful
+  :commands (helpful-callable helpful-variable helpful-command helpful-key helpful-at-point)
+  :bind
+  ("H-d" . helpful-at-point)
+  ([remap describe-function] . helpful-function)
+  ([remap describe-command] . helpful-command)
+  ([remap describe-variable] . helpful-variable)
+  ([remap describe-key] . helpful-key)
+  (:map evil-motion-state-map
+        ("K" . helpful-at-point)))
 
 
 
@@ -1008,16 +946,7 @@ there's no active region."
   ;; function unless you use something similar
   (add-hook 'kb/themes-hooks #'(lambda () (interactive) (kind-icon-reset-cache))))
 
-(use-package helpful
-  :commands (helpful-callable helpful-variable helpful-command helpful-key helpful-at-point)
-  :bind
-  ("H-d" . helpful-at-point)
-  ([remap describe-function] . helpful-function)
-  ([remap describe-command] . helpful-command)
-  ([remap describe-variable] . helpful-variable))
-
-(use-package hydra
-  :defer t)
+(use-package hydra :defer t)
 
 (defhydra me/hydra-text-scale (:timeout 4)
   "scale text"
@@ -1319,6 +1248,13 @@ there's no active region."
 
 (defun me/org-agenda-keybinds ()
   (progn
+    (evil-define-key 'motion org-agenda-mode-map (kbd "sf") 'org-agenda-filter)
+    (evil-define-key 'motion org-agenda-mode-map (kbd "zc") 'evil-close-fold)
+    (evil-define-key 'motion org-agenda-mode-map (kbd "zo") 'evil-open-fold)
+    (evil-define-key 'motion org-agenda-mode-map (kbd "zr") 'evil-open-folds)
+    (evil-define-key 'motion org-agenda-mode-map (kbd "zm") 'evil-close-folds)
+    (evil-define-key 'motion org-agenda-mode-map (kbd "zO") 'evil-open-fold-rec)
+    (evil-define-key 'motion org-agenda-mode-map (kbd "za") 'evil-toggle-fold)
     ))
 
 (defun me/org-capture-setup ()
@@ -1508,7 +1444,7 @@ there's no active region."
   :hook (org-mode . me/org-mode-visual-fill))
 
 (use-package org-super-agenda
-  :after (org)
+  :after (evil evil-collection evil-org org)
   :init (me/org-agenda-keybinds)
   :config
   (org-super-agenda-mode)
@@ -1763,39 +1699,6 @@ there's no active region."
 
 (add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'me/org-babel-tangle-config)))
 
-(defun me/lsp-mode-setup ()
-  (setq lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
-  (lsp-headerline-breadcrumb-mode))
-
-(use-package lsp-mode
-  :commands (lsp lsp-deferred)
-  :hook (lsp-mode . me/lsp-mode-setup)
-  :init
-  ;(setq lsp-keymap-prefix "C-c l")  ;; Or 'C-l', 's-l'
-  :config
-  (lsp-enable-which-key-integration t))
-
-(use-package lsp-ui
-  :hook (lsp-mode . lsp-ui-mode)
-  :custom
-  (lsp-ui-doc-position 'bottom))
-
-(use-package lsp-treemacs
-  :after lsp)
-
-(use-package typescript-mode
-  :mode "\\.ts\\'"
-  :hook (typescript-mode . lsp-deferred)
-  :config
-  (setq typescript-indent-level 2))
-
-(use-package pyvenv
-  :after python-mode
-  :config
-  (pyvenv-mode 1))
-
-(use-package json-mode)
-
 (use-package magit
   :bind (("C-c g s" . magit))
   :commands magit-status
@@ -1814,8 +1717,7 @@ there's no active region."
 
 (use-package format-all
   :hook (prog-mode . format-all-mode)
-  :bind(("C-c F" . format-all-buffer)
-        ("C-c x f b" . format-all-buffer)))
+  :bind(("C-c F" . format-all-buffer)))
 
 (use-package term
   :commands term
@@ -1848,6 +1750,11 @@ there's no active region."
   ;; Truncate buffer for performance
   (add-to-list 'eshell-output-filter-functions 'eshell-truncate-buffer)
 
+  ;; Bind some useful keys for evil-mode
+  (evil-define-key '(normal insert visual) eshell-mode-map (kbd "C-r") 'counsel-esh-history)
+  (evil-define-key '(normal insert visual) eshell-mode-map (kbd "<home>") 'eshell-bol)
+  (evil-normalize-keymaps)
+
   (setq eshell-history-size         10000
         eshell-buffer-maximum-lines 10000
         eshell-hist-ignoredups t
@@ -1879,7 +1786,11 @@ there's no active region."
   :bind (("C-x C-j" . dired-jump))
   :custom ((dired-listing-switches "-agho --group-directories-first"))
   :config
-  (setq dired-dwim-target t))
+  (setq dired-dwim-target t)
+  (evil-collection-define-key 'normal 'dired-mode-map
+      "h" 'dired-single-up-directory
+      "l" 'dired-single-buffer)
+  )
 
 (use-package dired-single
   :commands (dired dired-jump))
@@ -1895,7 +1806,11 @@ there's no active region."
   (setq dired-open-extensions '(("png" . "feh")
                                 ("mkv" . "mpv"))))
 
-(use-package dired-hide-dotfiles)
+(use-package dired-hide-dotfiles
+  ;;:hook (dired-mode . dired-hide-dotfiles-mode)
+  :config
+  (evil-collection-define-key 'normal 'dired-mode-map
+    "H" 'dired-hide-dotfiles-mode))
 
 (setq erc-server "irc.libera.chat"
       erc-nick "geoffery"

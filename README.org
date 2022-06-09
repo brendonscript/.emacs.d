@@ -4,16 +4,6 @@
 #+FILETAGS: :emacs:config:
 #+CATEGORY: computer
 
-* Readme
-- [[file:~/Code/dotfiles/.config/emacs/config/scratch/config.org::*Consult][Old Configuration]]
-- [[https://github.com/caisah/emacs.dz][Inspiration]]
-** Tasks
-*** TODO Organize Keybindings
-Put everything in functions and call inside the package configuration?
-Use ~(require 'package)~ to confirm its loaded
-Use ~(add-hook)~ to configure bindings on modes
-Use ~(bind-key "C-x M-$" 'ispell-buffer)~ for global binds
-**** TODO Document Keybindings
 * Init.el Header
 
 #+begin_src emacs-lisp
@@ -303,7 +293,8 @@ UTF-8 ALL THE THINGS
 
 #+end_src
 
-** TODO Categorize
+** Random Emacs Functions
+Need to organize
 #+begin_src emacs-lisp
   (defun me/comment-or-uncomment-region-or-line ()
     "Comments or uncomments the region or the current line if
@@ -424,7 +415,7 @@ Always try to reuse the same window for the new buffer and disable auto resizing
     (customize-set-variable 'desktop-save 't)
     (desktop-save-mode 1)
 
-  #+end_
+  #+end_src
 ** Ediff
 #+begin_src emacs-lisp
   (setq ediff-diff-options "")
@@ -525,10 +516,6 @@ Always try to reuse the same window for the new buffer and disable auto resizing
 ** Evil
 #+begin_src emacs-lisp
   (defun me/evil-keybinds ()
-    ;; Rebind Universal Argument
-    (define-key evil-motion-state-map (kbd "M-u") 'universal-argument)
-    (define-key evil-insert-state-map (kbd "C-u") 'universal-argument)
-
     ;; Exit insert with Emacs C-g bind
     (define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state)
 
@@ -541,14 +528,31 @@ Always try to reuse the same window for the new buffer and disable auto resizing
     (evil-global-set-key 'motion "H" 'evil-first-non-blank-of-visual-line)
 
     (evil-global-set-key 'motion "gb" 'consult-buffer)
-    (define-key evil-normal-state-map (kbd "q") 'my-evil-record-macro))
+
+    ;; Universal Argument since C-u is taken by jumping up in normal and visual
+    (evil-global-set-key 'motion "gu" 'universal-argument)
+    (evil-global-set-key 'normal "gu" 'universal-argument)
+    (evil-global-set-key 'visual "gu" 'universal-argument)
+    (define-key evil-insert-state-map (kbd "C-u") 'universal-argument)
+
+    ;; Macros
+    (define-key evil-normal-state-map (kbd "q") 'my-evil-record-macro)
+
+    ;; Unbinds
+    (define-key evil-normal-state-map (kbd "g ?") nil))
 #+end_src
 ** Avy
 #+begin_src emacs-lisp
+  (defun me/avy-evil-keybinds ()
+    (evil-global-set-key 'motion (kbd "C-:") 'avy-resume)
+    (evil-global-set-key 'motion (kbd "C-S-f") 'avy-resume)
+    (evil-global-set-key 'motion (kbd "C-f") 'avy-goto-char-timer))
 
- (defun me/avy-keybinds ()
+  (defun me/avy-keybinds ()
     (bind-key "C-:" 'avy-resume)
-    (bind-key "C-f" 'avy-goto-char-timer))
+    (bind-key "C-S-f" 'avy-resume)
+    (bind-key "C-f" 'avy-goto-char-timer)
+    (me/avy-evil-keybinds))
 #+end_src
 ** Vertico
 #+begin_src emacs-lisp
@@ -616,7 +620,7 @@ Always try to reuse the same window for the new buffer and disable auto resizing
     (bind-key "M-s" 'consult-history 'minibuffer-local-map)                 ;; orig. next-matching-history-element
     (bind-key "M-r" 'consult-history 'minibuffer-local-map))
 #+end_src
-** Meow
+** *DISABLED* Meow
 #+begin_src emacs-lisp :tangle no
   (defun me/meow-keybinds ()
     (setq meow-cheatsheet-layout meow-cheatsheet-layout-qwerty)
@@ -862,7 +866,7 @@ For using my favorite bind =jk= to easily exit insert mode
     (bind-key "C-c p f" 'consult-project-extra-find)
     (bind-key "C-c p o" 'consult-project-extra-find-other-window))
 #+end_src
-** Meow
+** *DISABLED* Meow
 #+begin_src emacs-lisp :tangle no
   (defun me/meow-init ()
     (setq meow-mode-state-list '((authinfo-mode . normal)
@@ -924,22 +928,22 @@ For using my favorite bind =jk= to easily exit insert mode
 #+begin_src emacs-lisp
   (use-package s)
 #+end_src
-** persistent-scratch
-#+begin_src emacs-lisp
+** *DISABLED* persistent-scratch
+#+begin_src emacs-lisp :tangle no
   (use-package persistent-scratch
     :after (no-littering org)
     :custom ((persistent-scratch-autosave-interval 180))
     :config
     (add-hook 'after-init-hook 'persistent-scratch-setup-default))
 #+end_src
-** meow
+** *DISABLED* meow
 #+begin_src emacs-lisp :tangle no
 
   (use-package meow
     :init (me/meow-init)
     :config (me/meow-config))
 #+end_src
-** key-chord
+** *DISABLED* key-chord
 #+begin_src emacs-lisp :tangle no
   (use-package key-chord
     :config
@@ -1040,9 +1044,10 @@ For using my favorite bind =jk= to easily exit insert mode
     :init (which-key-mode)
     :diminish which-key-mode
     :config
+    (setq which-key-allow-evil-operators t)
+    (setq which-key-sort-order 'which-key-key-order-alpha)
     (setq which-key-use-C-h-commands nil)
     (setq which-key-idle-delay 0.5))
-
 #+end_src
 ** vertico
 #+begin_src emacs-lisp
