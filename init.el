@@ -312,8 +312,6 @@ there's no active region."
   (define-key evil-normal-state-map (kbd "q") 'my-evil-record-macro))
 
 (defun me/avy-keybinds ()
-  (evil-global-set-key 'motion (kbd "C-:") 'avy-resume)
-  (evil-global-set-key 'motion (kbd "C-f") 'avy-goto-char-timer)
   (bind-key "C-:" 'avy-resume)
   (bind-key "C-f" 'avy-goto-char-timer))
 
@@ -1099,6 +1097,8 @@ there's no active region."
 
 (defun me/org-mode-initial-setup ()
   (setq org-indent-mode-turns-on-hiding-stars t)
+  (setq org-tags-column 0)
+  (setq org-indent-indentation-per-level 2)
   (org-indent-mode)
   (variable-pitch-mode 1)
   (visual-line-mode 1))
@@ -1134,7 +1134,7 @@ there's no active region."
 ;; Archive
 (defconst me/org-archive-location (concat me/org-archive-file "::* From %s"))
 
-(defvar me/org-agenda-files (list me/org-todo-file me/org-projects-file me/org-mobile-file me/org-distractions-file me/org-journal-file me/org-emacs-config-file me/org-archive-file me/org-roam-notes-dir))
+(defvar me/org-agenda-files (list me/org-todo-file me/org-projects-file me/org-mobile-file me/org-distractions-file me/org-journal-file me/org-emacs-config-file me/org-roam-notes-dir))
 (defvar me/org-refile-files (list me/org-todo-file me/org-projects-file me/org-mobile-file me/org-distractions-file me/org-journal-file me/org-archive-file me/org-emacs-note-file))
 
 (defun me/org-settings-setup ()
@@ -1522,10 +1522,9 @@ there's no active region."
                                   (:name "Overdue"
                                          :deadline past)
                                   (:name "Today"
-                                         :date today
-                                         :time-grid t
-                                         :scheduled today
-                                         :scheduled past)
+                                         :scheduled today)
+                                  (:name "Maybe Today"
+                                         :date today)
                                   (:name "Projects"
                                          :todo "PROJ")
                                   (:name "Future"
@@ -1555,10 +1554,10 @@ there's no active region."
                                       ((agenda "" ((org-agenda-span 'day)
                                                    (org-agenda-log-mode t)
                                                    (org-super-agenda-groups
-                                                    '((:order-multi (97
+                                                    '((:order-multi (99
                                                                      (:name "Clocked Today" :log clock)
                                                                      (:name "Done Today" :and (:log t))))
-                                                      (:name "Habits" :habit t :order 99)
+                                                      (:name "Habits" :habit t :order 97)
                                                       (:name "Work" :tag "@work" :order 98)
                                                       (:name "Interupts" :todo "INTR")
                                                       (:name "In Progress" :todo "PROG")
@@ -1567,11 +1566,11 @@ there's no active region."
                                                       (:name "Due Today" :deadline today)
                                                       (:name "Scheduled Earlier" :scheduled past)
                                                       (:name "Today"
-                                                             :time-grid t
+                                                             :scheduled today)
+                                                      (:name "Maybe Today"
                                                              :date today
-                                                             :scheduled today
                                                              )))))
-                                       (alltodo "" ((org-agenda-overriding-header "\nLater")
+                                       (alltodo "" ((org-agenda-overriding-header "\nAll Tasks")
                                                     (org-super-agenda-groups
                                                      '((:discard (:habit t))
                                                        (:name "In Progress"
@@ -1652,6 +1651,12 @@ there's no active region."
                                :sort
                                (date priority)
                                :super-groups org-super-agenda-groups :title "Overview: NEXT tasks"))
+
+  (add-to-list 'org-ql-views '("Archive" :buffers-files org-agenda-files :query
+                               (and (done)
+                                    (not (tags "ARCHIVE")))
+                               :sort
+                               (date priority)))
 
   (add-to-list 'org-ql-views '("Routines" :buffers-files org-agenda-files :query
                                (and
