@@ -572,6 +572,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (key-chord-mode 1))
 
 (use-package evil
+  :demand t
   :preface
   (defun my/evil-record-macro ()
     (interactive)
@@ -603,8 +604,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
         ("k" . evil-previous-visual-line)
         ("L" . evil-end-of-line-or-visual-line)
         ("H" . evil-first-non-blank-of-visual-line)
-        ("gu" . universal-argument)
-        ("gb" . consult-buffer))
+        ("gu" . universal-argument))
 
   :config
   (progn
@@ -788,7 +788,9 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
    ("M-s L" . consult-line-multi)            ;; needed by consult-line to detect isearch
    :map minibuffer-local-map
    ("M-s" . consult-history)                 ;; orig. next-matching-history-element
-   ("M-r" . consult-history))
+   ("M-r" . consult-history)
+   :map evil-motion-state-map
+   ("gb" . consult-buffer))
   :init
   ;; Optionally configure the register formatting. This improves the register
   ;; preview for `consult-register', `consult-register-load',
@@ -1139,6 +1141,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
     (add-hook 'org-agenda-mode-hook 'origami-mode)))
 
 (use-package org
+  :demand t
   :preface
   ;; Functions ;;
   (defun me/org-mode-initial-setup ()
@@ -1176,9 +1179,12 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   ;; Archive ;;
   (defconst me/org-archive-location (concat me/org-archive-file "::* From %s"))
 
+  ;; All Files ;;
+  (defun me/refresh-all-org-files ()
+    (load-library "find-lisp")
+    (find-lisp-find-files "~/Org" "\.org$"))
 
-  ;; Refile ;;
-  (defvar me/org-refile-files me/org-dir)
+  (defvar me/org-all-files (me/refresh-all-org-files))
 
   :bind
   (("C-c c" . org-capture)
@@ -1250,8 +1256,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
     ;; Refile ;;
     (setq org-refile-use-outline-path nil)
     (setq org-refile-allow-creating-parent-nodes 'confirm)
-    (setq org-refile-target-files me/org-refile-files)
-    (setq org-refile-targets '((org-refile-target-files :maxlevel . 6)))
+    (setq org-refile-targets `((,(directory-files-recursively "~/Org/" "^[a-z0-9]*.org$") :maxlevel . 3)))
 
 
     ;; Fonts ;;
@@ -1327,20 +1332,15 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
             ("@errand" . ?e)
             ("@home" . ?h)
             ("@work" . ?w)
+            ("@computer" . ?c)
             (:endgroup)
             ("ARCHIVE" . ?A)
-            ("appointment" . ?a)
-            ("someday" . ?s)
-            ("note" . ?n)
-            ("idea" . ?i)
-            ("personal" . ?p)
             ("bookmark" . ?b)
-            ("health" . ?H)
-            ("fun" . ?f)
-            ("computer" . ?c)
             ("emacs" . ?E)
+            ("idea" . ?i)
+            ("inbox" . ?I)
             ("goal" . ?g)
-            ("routine" . ?r)))
+            ("someday" . ?s)))
 
     (setq org-tag-faces
           '(("@errand" . (:foreground "mediumPurple1" :weight bold))
@@ -1359,8 +1359,12 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
     (evil-define-key 'motion org-agenda-mode-map (kbd "zO") 'evil-open-fold-rec)
     (evil-define-key 'motion org-agenda-mode-map (kbd "za") 'evil-toggle-fold)
 
-    ;; Settings
-    (setq org-agenda-files '("~/Org"))
+    ;; Agenda Settings ;;
+
+    ;; Open links in current window
+    (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file)
+    (setq org-agenda-files '("~/Org/inbox.org" "~/Org/todo.org"))
+    ;;(directory-files-recursively "~/Org/" "^[a-z0-9]*.org$")
     (setq org-agenda-start-on-weekday nil)
     (setq org-agenda-start-with-log-mode t)
     (setq org-agenda-start-day nil)
@@ -1389,8 +1393,13 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
     (setq org-cycle-separator-lines 0)
     (setq org-agenda-category-icon-alist
           `(("work" ,(list (all-the-icons-faicon "cogs")) nil nil :ascent center)
-            ("personal" ,(list (all-the-icons-material "person")) nil nil :ascent center)
+            ("home" ,(list (all-the-icons-material "home")) nil nil :ascent center)
             ("computer" ,(list (all-the-icons-material "computer")) nil nil :ascent center)
+            ("errand" ,(list (all-the-icons-material "location_city")) nil nil :ascent center)
+            ("groceries" ,(list (all-the-icons-material "shopping_basket")) nil nil :ascent center)
+            ("health" ,(list (all-the-icons-material "local_hospital")) nil nil :ascent center)
+            ("routine" ,(list (all-the-icons-material "repeat")) nil nil :ascent center)
+            ("inbox" ,(list (all-the-icons-material "inbox")) nil nil :ascent center)
             ("calendar" ,(list (all-the-icons-faicon "calendar")) nil nil :ascent center)))
     (add-hook 'org-agenda-finalize-hook #'me/org-agenda-place-point 90)
 
@@ -1450,13 +1459,8 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
           '(("TODO" . ?λ)
             ("NEXT" . ?✰)
             ("PROG" . ?∞)
-            ("INTR" . ?‼)
             ("DONE" . ?✔)
-            ("CANCELLED" . ?✘)
-            ("NOTE" . ?✎)
-            ("PROJ" . ?⚙)
-            ("IDEA" . ?⚛)
-            ("DEPR" . ?✘)))
+            ("CANCELLED" . ?✘)))
 
     (setq org-superstar-item-bullet-alist
           '((?* . ?•)
@@ -1507,13 +1511,11 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   :config
   (progn
     (org-super-agenda-mode 1)
-    (setq org-super-agenda-groups '((:habit t :order 99)
+    (setq org-super-agenda-groups '((:habit t :order 98)
                                     (:name "In Progress"
                                            :todo "PROG")
                                     (:name "Next to do"
                                            :todo "NEXT")
-                                    (:name "Interupts"
-                                           :todo "INTR")
                                     (:name "Due Today"
                                            :deadline today)
                                     (:name "Due Soon"
@@ -1521,33 +1523,15 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
                                     (:name "Overdue"
                                            :deadline past)
                                     (:name "Today"
-                                           :scheduled today)
-                                    (:name "Maybe Today"
+                                           :scheduled today
                                            :date today)
-                                    (:name "Projects"
-                                           :todo "PROJ")
+                                    (:name "Scheduled Earlier"
+                                           :scheduled past)
                                     (:name "Future"
                                            :scheduled future)
-                                    (:name "Work"
-                                           :tag "@work"
-                                           :order 97)
                                     (:name "Inbox"
-                                           :tag ("inbox" "mobile"))
-
-                                    (:name "Home" :tag "@home")
-                                    (:name "Appointments"
-                                           :tag "appointment")
-                                    (:name "Grocery List"
-                                           :tag "groceries")
-                                    (:name "Emacs"
-                                           :tag "emacs")
-                                    (:name "Health"
-                                           :tag "health")
-                                    (:name "Errands"
-                                           :tag "@errand")
-                                    (:name "Computer"
-                                           :category "computer")
-                                    (:auto-category t :order 99)))
+                                           :tag "inbox")
+                                    (:auto-group t :order 99)))
 
     (setq org-agenda-custom-commands '(("a" "POG AGENDA"
                                         ((agenda "" ((org-agenda-span 'day)
@@ -1556,60 +1540,36 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
                                                       '((:order-multi (99
                                                                        (:name "Clocked Today" :log clock)
                                                                        (:name "Done Today" :todo ("DONE" "CANCELLED") :and (:log t))))
-                                                        (:name "Habits" :habit t :order 97)
-                                                        (:name "Work" :tag "@work" :order 98)
-                                                        (:name "Interupts" :todo "INTR")
+                                                        (:name "Habits" :habit t :order 98)
                                                         (:name "In Progress" :todo "PROG")
                                                         (:name "Next" :todo "NEXT")
                                                         (:name "Overdue" :deadline past)
                                                         (:name "Due Today" :deadline today)
-                                                        (:name "Scheduled Earlier" :scheduled past)
                                                         (:name "Today"
-                                                               :scheduled today)
-                                                        (:name "Maybe Today"
-                                                               :date today
-                                                               )))))
+                                                               :scheduled today
+                                                               :date today)
+                                                        (:name "Scheduled Earlier" :scheduled past)))))
                                          (alltodo "" ((org-agenda-overriding-header "\nAll Tasks")
                                                       (org-super-agenda-groups
                                                        '((:discard (:habit t))
+                                                         (:discard (:tag "ARCHIVE"))
                                                          (:name "In Progress"
                                                                 :todo "PROG")
                                                          (:name "Next to do"
                                                                 :todo "NEXT")
-                                                         (:name "Interupts"
-                                                                :todo "INTR")
-                                                         (:name "Due Today"
-                                                                :deadline today)
                                                          (:name "Due Soon"
                                                                 :deadline future)
-                                                         (:name "Overdue"
-                                                                :deadline past)
-                                                         (:name "Projects"
-                                                                :todo "PROJ")
                                                          (:name "Future"
                                                                 :scheduled future)
-                                                         (:name "Work"
-                                                                :tag "@work"
-                                                                :order 97)
                                                          (:name "Inbox"
-                                                                :tag ("inbox" "mobile"))
-
-                                                         (:name "Home" :tag "@home")
-                                                         (:name "Appointments"
-                                                                :tag "appointment")
-                                                         (:name "Grocery List"
-                                                                :tag "groceries")
+                                                                :tag "inbox")
                                                          (:name "Emacs"
                                                                 :tag "emacs")
-                                                         (:name "Health"
-                                                                :tag "health")
-                                                         (:name "Errands"
-                                                                :tag "@errand")
-                                                         (:name "Computer"
-                                                                :category "computer")
-                                                         (:auto-category t :order 99)))))))))))
+                                                         (:auto-group t :order 99)))))))))))
 
 (use-package org-ql
+  :after org
+  :demand t
   :bind
   (("C-c a s" . org-ql-search)
    ("C-c a v" . org-ql-view)
@@ -1622,13 +1582,25 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   :config
   (progn
     (setq org-ql-views nil)
+
+    ;; Add these to a hydra or something
+    (defun me/org-ql-bookmarks ()
+      (interactive)
+      (org-ql-search me/org-all-files '(tags "bookmark")))
+
+    (defun me/org-ql-ideas ()
+      (interactive)
+      (org-ql-search me/org-all-files '(tags "idea")))
+
+    (defun me/org-ql-emacs ()
+      (interactive)
+      (org-ql-search me/org-all-files '(tags "emacs")))
+
     (add-to-list 'org-ql-views '("Inbox" :buffers-files org-agenda-files :query
                                  (and
                                   (not
                                    (done))
-                                  (tags "inbox")
-                                  (todo)
-                                  )
+                                  (tags "inbox"))
                                  :sort
                                  (date priority)
                                  :super-groups org-super-agenda-groups :title "Inbox Items"))
@@ -1650,8 +1622,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
                                  :super-groups org-super-agenda-groups :title "Overview: NEXT tasks"))
 
     (add-to-list 'org-ql-views '("Archive" :buffers-files org-agenda-files :query
-                                 (and (done)
-                                      (not (tags "ARCHIVE")))
+                                 (and (done))
                                  :sort
                                  (date priority)))
 
@@ -1673,6 +1644,8 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (use-package org-wild-notifier)
 
 (use-package org-roam
+  :after org
+  :demand t
   :custom
   (org-roam-directory (file-truename me/org-dir))
   :bind
@@ -1724,7 +1697,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
              :unnarrowed t)
             ("t" "topic" plain "\n%?"
              :if-new (file+head "topics/${slug}.org"
-                                "#+TITLE: ${title}\n")
+                                "#+TITLE: ${title}\n#+FILETAGS:\n")
              :unnarrowed t)))
 
     (org-roam-db-autosync-mode)))
