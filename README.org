@@ -688,6 +688,10 @@ You can also use =M-x auto-package-update-now= to update right now!
           (quit-window)
         (call-interactively 'evil-record-macro)))
 
+    (defun me/save-and-kill-this-buffer ()
+      (interactive)
+      (save-buffer)
+      (kill-this-buffer))
     :init
     (progn
       (setq evil-want-integration t
@@ -718,7 +722,9 @@ You can also use =M-x auto-package-update-now= to update right now!
     (progn
       (evil-mode 1)
       (evil-set-initial-state 'messages-buffer-mode 'normal)
-      (evil-set-initial-state 'dashboard-mode 'normal)))
+      (evil-set-initial-state 'dashboard-mode 'normal)
+      (evil-ex-define-cmd "q" #'kill-this-buffer)
+      (evil-ex-define-cmd "wq" #'me/save-and-kill-this-buffer)))
 #+end_src
 ** evil-collection
 #+begin_src emacs-lisp
@@ -787,6 +793,7 @@ You can also use =M-x auto-package-update-now= to update right now!
 ** doom-themes
 #+begin_src emacs-lisp
   (use-package doom-themes
+    :demand t
     :init
     (load-theme 'doom-vibrant t)
     :config
@@ -1465,38 +1472,39 @@ You can also use =M-x auto-package-update-now= to update right now!
       ;; Org Habits ;;
       (require 'org-habit)
       (add-to-list 'org-modules 'org-habit)
-      (setq org-habit-today-glyph ?◌
-            org-habit-completed-glyph ?●
-            org-habit-missed-glyph ?○
-            org-habit-preceding-days 10
-            org-habit-show-habits-only-for-today t
-            org-habit-graph-column 65)
+      (setq
+       org-habit-today-glyph ?◌
+       org-habit-completed-glyph ?●
+       org-habit-missed-glyph ?○
+       org-habit-preceding-days 7
+       org-habit-show-habits-only-for-today t
+       org-habit-graph-column 65)
 
 
       ;; Org Todos ;;
       (setq org-todo-keywords
             '((sequence "TODO(t)" "NEXT(n)" "PROG(p)" "|" "DONE(d!)" "CANCELLED(c!)")))
 
-      (setq org-todo-keyword-faces
-            '(("TODO" . (:foreground "#ff39a3" :weight bold))
-              ("NEXT" . (:foreground "DeepSkyBlue"
-                                     :weight bold))
-              ("PROG"  . (:foreground "orangered"
-                                      :weight bold))
-              ("INTR" . (:foreground "pink"
-                                     :weight bold))
-              ("DONE" . (:foreground "#008080"
-                                     :weight bold))
-              ("CANCELLED" . (:foreground "darkgrey"
-                                          :weight bold))
-              ("NOTE" . (:foreground "#9fc5e8"
-                                     :weight bold))
-              ("PROJ" . (:foreground "#B4A7D6"
-                                     :weight bold))
-              ("IDEA" . (:foreground "VioletRed4"
-                                     :weight bold))
-              ("DEPR" . (:foreground "darkgrey"
-                                     :weight bold))))
+      ;; (setq org-todo-keyword-faces
+      ;;       '(("TODO" . (:foreground "#ff39a3" :weight bold))
+      ;;         ("NEXT" . (:foreground "DeepSkyBlue"
+      ;;                                :weight bold))
+      ;;         ("PROG"  . (:foreground "orangered"
+      ;;                                 :weight bold))
+      ;;         ("INTR" . (:foreground "pink"
+      ;;                                :weight bold))
+      ;;         ("DONE" . (:foreground "#008080"
+      ;;                                :weight bold))
+      ;;         ("CANCELLED" . (:foreground "darkgrey"
+      ;;                                     :weight bold))
+      ;;         ("NOTE" . (:foreground "#9fc5e8"
+      ;;                                :weight bold))
+      ;;         ("PROJ" . (:foreground "#B4A7D6"
+      ;;                                :weight bold))
+      ;;         ("IDEA" . (:foreground "VioletRed4"
+      ;;                                :weight bold))
+      ;;         ("DEPR" . (:foreground "darkgrey"
+      ;;                                :weight bold))))
 
 
       ;; Org Tags ;;
@@ -1515,10 +1523,10 @@ You can also use =M-x auto-package-update-now= to update right now!
               ("goal" . ?g)
               ("someday" . ?s)))
 
-      (setq org-tag-faces
-            '(("@errand" . (:foreground "mediumPurple1" :weight bold))
-              ("@home" . (:foreground "royalblue1" :weight bold))
-              ("@work" . (:foreground "#1CC436" :weight bold))))
+      ;; (setq org-tag-faces
+      ;;       '(("@errand" . (:foreground "mediumPurple1" :weight bold))
+      ;;         ("@home" . (:foreground "royalblue1" :weight bold))
+      ;;         ("@work" . (:foreground "#1CC436" :weight bold))))
 
 
       ;; Org Agenda ;;
@@ -1622,45 +1630,7 @@ You can also use =M-x auto-package-update-now= to update right now!
   (use-package org-contrib
     :after org)
 #+end_src
-** org-superstar
-#+begin_src emacs-lisp
-  (use-package org-superstar
-    :after org
-    :hook (org-mode . org-superstar-mode)
-    :config
-    (progn
-      (cond (IS-MAC (set-face-attribute 'org-superstar-header-bullet nil :inherit 'fixed-pitched :height 200))
-            (IS-WINDOWS (set-face-attribute 'org-superstar-header-bullet nil :inherit 'fixed-pitched :height 90)))
-
-      (setq org-superstar-todo-bullet-alist
-            '(("TODO" . ?λ)
-              ("NEXT" . ?✰)
-              ("PROG" . ?∞)
-              ("DONE" . ?✔)
-              ("CANCELLED" . ?✘)))
-
-      (setq org-superstar-item-bullet-alist
-            '((?* . ?•)
-              (?+ . ?➤)
-              (?- . ?•)))
-
-      (setq org-superstar-headline-bullets-list '("◉" "○" "●" "○" "●" "○" "●"))
-      (setq org-superstar-special-todo-items t)
-      (setq org-superstar-leading-bullet " ")
-      (org-superstar-restart)))
-#+end_src
-** visual-fill-column
-#+begin_src emacs-lisp
-  (use-package visual-fill-column
-    :preface
-    (defun me/org-mode-visual-fill ()
-      (setq visual-fill-column-width 100
-            visual-fill-column-center-text t)
-      (visual-fill-column-mode 1))
-
-    :hook (org-mode . me/org-mode-visual-fill))
-#+end_src
-** org-pretty-tags
+** *DISABLED* org-pretty-tags
 #+begin_src emacs-lisp
   (use-package org-pretty-tags
     :disabled t
@@ -1828,6 +1798,25 @@ You can also use =M-x auto-package-update-now= to update right now!
   (use-package org-sidebar
     :bind (("C-c a T" . org-sidebar-tree-toggle)))
 #+end_src
+** org-modern
+#+begin_src emacs-lisp
+  (use-package org-modern
+    :demand t
+    :after org
+    :init
+    (setq
+     ;; Edit settings
+     org-auto-align-tags nil
+     org-tags-column 0
+     org-catch-invisible-edits 'show-and-error
+     org-insert-heading-respect-content t
+     ;; Agenda styling
+     org-agenda-tags-column 0)
+    :config
+    (set-face-attribute 'org-modern-symbol nil :family "Fira Code Retina")
+    (setq org-modern-checkbox nil)
+    (global-org-modern-mode))
+#+end_src
 ** org-wild-notifier
 #+begin_src emacs-lisp
   (use-package org-wild-notifier)
@@ -1893,13 +1882,54 @@ You can also use =M-x auto-package-update-now= to update right now!
 
       (org-roam-db-autosync-mode)))
 #+end_src
+** *DISABLED* org-superstar
+#+begin_src emacs-lisp
+  (use-package org-superstar
+    :disabled t
+    :after org
+    :hook (org-mode . org-superstar-mode)
+    :config
+    (progn
+      (cond (IS-MAC (set-face-attribute 'org-superstar-header-bullet nil :inherit 'fixed-pitched :height 200))
+            (IS-WINDOWS (set-face-attribute 'org-superstar-header-bullet nil :inherit 'fixed-pitched :height 90)))
+
+      (setq org-superstar-todo-bullet-alist
+            '(("TODO" . ?λ)
+              ("NEXT" . ?✰)
+              ("PROG" . ?∞)
+              ("DONE" . ?✔)
+              ("CANCELLED" . ?✘)))
+
+      (setq org-superstar-item-bullet-alist
+            '((?* . ?•)
+              (?+ . ?➤)
+              (?- . ?•)))
+
+      (setq org-superstar-headline-bullets-list '("◉" "○" "●" "○" "●" "○" "●"))
+      (setq org-superstar-special-todo-items t)
+      (setq org-superstar-leading-bullet " ")
+      (org-superstar-restart)))
+#+end_src
+** visual-fill-column
+#+begin_src emacs-lisp
+  (use-package visual-fill-column
+    :preface
+    (defun me/org-mode-visual-fill ()
+      (setq visual-fill-column-width 100
+            visual-fill-column-center-text t)
+      (visual-fill-column-mode 1))
+
+    :hook (org-mode . me/org-mode-visual-fill))
+#+end_src
 ** magit
 #+begin_src emacs-lisp
   (use-package magit
     :bind (("C-c g s" . magit))
     :commands magit-status
     :custom
-    (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
+    (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
+    :config
+    (add-hook 'with-editor-mode-hook #'evil-insert-state))
 #+end_src
 ** forge
 #+begin_src emacs-lisp
@@ -1936,6 +1966,32 @@ You can also use =M-x auto-package-update-now= to update right now!
 ** fish-mode
 #+begin_src emacs-lisp
   (use-package fish-mode)
+#+end_src
+** diminish
+#+begin_src emacs-lisp
+  (use-package diminish
+    :demand t)
+#+end_src
+** dashboard
+#+begin_src emacs-lisp
+  (use-package dashboard
+    :init (setq initial-buffer-choice (lambda () (get-buffer "*dashboard*")))
+    :custom ((dashboard-agenda-sort-strategy '(todo-state-down)))
+    :config
+    (setq dashboard-week-agenda nil)
+    (setq dashboard-set-heading-icons t)
+    (setq dashboard-set-file-icons t)
+    (setq dashboard-set-navigator t)
+    (setq dashboard-set-init-info t)
+    (setq dashboard-image-banner-max-height 220)
+    (setq dashboard-filter-agenda-entry 'dashboard-filter-agenda-by-todo)
+    (dashboard-setup-startup-hook))
+#+end_src
+** page-break-lines
+#+begin_src emacs-lisp
+  (use-package page-break-lines
+    :config
+    (global-page-break-lines-mode))
 #+end_src
 * Templates
 #+begin_src emacs-lisp :noweb-ref auto-commit :tangle no

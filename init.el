@@ -580,6 +580,10 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
         (quit-window)
       (call-interactively 'evil-record-macro)))
 
+  (defun me/save-and-kill-this-buffer ()
+    (interactive)
+    (save-buffer)
+    (kill-this-buffer))
   :init
   (progn
     (setq evil-want-integration t
@@ -610,7 +614,9 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (progn
     (evil-mode 1)
     (evil-set-initial-state 'messages-buffer-mode 'normal)
-    (evil-set-initial-state 'dashboard-mode 'normal)))
+    (evil-set-initial-state 'dashboard-mode 'normal)
+    (evil-ex-define-cmd "q" #'kill-this-buffer)
+    (evil-ex-define-cmd "wq" #'me/save-and-kill-this-buffer)))
 
 (use-package evil-collection
   :after evil
@@ -662,6 +668,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
     (setq avy-timeout-seconds 0.5)))
 
 (use-package doom-themes
+  :demand t
   :init
   (load-theme 'doom-vibrant t)
   :config
@@ -1292,38 +1299,39 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
     ;; Org Habits ;;
     (require 'org-habit)
     (add-to-list 'org-modules 'org-habit)
-    (setq org-habit-today-glyph ?◌
-          org-habit-completed-glyph ?●
-          org-habit-missed-glyph ?○
-          org-habit-preceding-days 10
-          org-habit-show-habits-only-for-today t
-          org-habit-graph-column 65)
+    (setq
+     org-habit-today-glyph ?◌
+     org-habit-completed-glyph ?●
+     org-habit-missed-glyph ?○
+     org-habit-preceding-days 7
+     org-habit-show-habits-only-for-today t
+     org-habit-graph-column 65)
 
 
     ;; Org Todos ;;
     (setq org-todo-keywords
           '((sequence "TODO(t)" "NEXT(n)" "PROG(p)" "|" "DONE(d!)" "CANCELLED(c!)")))
 
-    (setq org-todo-keyword-faces
-          '(("TODO" . (:foreground "#ff39a3" :weight bold))
-            ("NEXT" . (:foreground "DeepSkyBlue"
-                                   :weight bold))
-            ("PROG"  . (:foreground "orangered"
-                                    :weight bold))
-            ("INTR" . (:foreground "pink"
-                                   :weight bold))
-            ("DONE" . (:foreground "#008080"
-                                   :weight bold))
-            ("CANCELLED" . (:foreground "darkgrey"
-                                        :weight bold))
-            ("NOTE" . (:foreground "#9fc5e8"
-                                   :weight bold))
-            ("PROJ" . (:foreground "#B4A7D6"
-                                   :weight bold))
-            ("IDEA" . (:foreground "VioletRed4"
-                                   :weight bold))
-            ("DEPR" . (:foreground "darkgrey"
-                                   :weight bold))))
+    ;; (setq org-todo-keyword-faces
+    ;;       '(("TODO" . (:foreground "#ff39a3" :weight bold))
+    ;;         ("NEXT" . (:foreground "DeepSkyBlue"
+    ;;                                :weight bold))
+    ;;         ("PROG"  . (:foreground "orangered"
+    ;;                                 :weight bold))
+    ;;         ("INTR" . (:foreground "pink"
+    ;;                                :weight bold))
+    ;;         ("DONE" . (:foreground "#008080"
+    ;;                                :weight bold))
+    ;;         ("CANCELLED" . (:foreground "darkgrey"
+    ;;                                     :weight bold))
+    ;;         ("NOTE" . (:foreground "#9fc5e8"
+    ;;                                :weight bold))
+    ;;         ("PROJ" . (:foreground "#B4A7D6"
+    ;;                                :weight bold))
+    ;;         ("IDEA" . (:foreground "VioletRed4"
+    ;;                                :weight bold))
+    ;;         ("DEPR" . (:foreground "darkgrey"
+    ;;                                :weight bold))))
 
 
     ;; Org Tags ;;
@@ -1342,10 +1350,10 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
             ("goal" . ?g)
             ("someday" . ?s)))
 
-    (setq org-tag-faces
-          '(("@errand" . (:foreground "mediumPurple1" :weight bold))
-            ("@home" . (:foreground "royalblue1" :weight bold))
-            ("@work" . (:foreground "#1CC436" :weight bold))))
+    ;; (setq org-tag-faces
+    ;;       '(("@errand" . (:foreground "mediumPurple1" :weight bold))
+    ;;         ("@home" . (:foreground "royalblue1" :weight bold))
+    ;;         ("@work" . (:foreground "#1CC436" :weight bold))))
 
 
     ;; Org Agenda ;;
@@ -1446,40 +1454,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 (use-package org-contrib
   :after org)
-
-(use-package org-superstar
-  :after org
-  :hook (org-mode . org-superstar-mode)
-  :config
-  (progn
-    (cond (IS-MAC (set-face-attribute 'org-superstar-header-bullet nil :inherit 'fixed-pitched :height 200))
-          (IS-WINDOWS (set-face-attribute 'org-superstar-header-bullet nil :inherit 'fixed-pitched :height 90)))
-
-    (setq org-superstar-todo-bullet-alist
-          '(("TODO" . ?λ)
-            ("NEXT" . ?✰)
-            ("PROG" . ?∞)
-            ("DONE" . ?✔)
-            ("CANCELLED" . ?✘)))
-
-    (setq org-superstar-item-bullet-alist
-          '((?* . ?•)
-            (?+ . ?➤)
-            (?- . ?•)))
-
-    (setq org-superstar-headline-bullets-list '("◉" "○" "●" "○" "●" "○" "●"))
-    (setq org-superstar-special-todo-items t)
-    (setq org-superstar-leading-bullet " ")
-    (org-superstar-restart)))
-
-(use-package visual-fill-column
-  :preface
-  (defun me/org-mode-visual-fill ()
-    (setq visual-fill-column-width 100
-          visual-fill-column-center-text t)
-    (visual-fill-column-mode 1))
-
-  :hook (org-mode . me/org-mode-visual-fill))
 
 (use-package org-pretty-tags
   :disabled t
@@ -1641,6 +1615,23 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (use-package org-sidebar
   :bind (("C-c a T" . org-sidebar-tree-toggle)))
 
+(use-package org-modern
+  :demand t
+  :after org
+  :init
+  (setq
+   ;; Edit settings
+   org-auto-align-tags nil
+   org-tags-column 0
+   org-catch-invisible-edits 'show-and-error
+   org-insert-heading-respect-content t
+   ;; Agenda styling
+   org-agenda-tags-column 0)
+  :config
+  (set-face-attribute 'org-modern-symbol nil :family "Fira Code Retina")
+  (setq org-modern-checkbox nil)
+  (global-org-modern-mode))
+
 (use-package org-wild-notifier)
 
 (use-package org-roam
@@ -1702,11 +1693,48 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
     (org-roam-db-autosync-mode)))
 
+(use-package org-superstar
+  :disabled t
+  :after org
+  :hook (org-mode . org-superstar-mode)
+  :config
+  (progn
+    (cond (IS-MAC (set-face-attribute 'org-superstar-header-bullet nil :inherit 'fixed-pitched :height 200))
+          (IS-WINDOWS (set-face-attribute 'org-superstar-header-bullet nil :inherit 'fixed-pitched :height 90)))
+
+    (setq org-superstar-todo-bullet-alist
+          '(("TODO" . ?λ)
+            ("NEXT" . ?✰)
+            ("PROG" . ?∞)
+            ("DONE" . ?✔)
+            ("CANCELLED" . ?✘)))
+
+    (setq org-superstar-item-bullet-alist
+          '((?* . ?•)
+            (?+ . ?➤)
+            (?- . ?•)))
+
+    (setq org-superstar-headline-bullets-list '("◉" "○" "●" "○" "●" "○" "●"))
+    (setq org-superstar-special-todo-items t)
+    (setq org-superstar-leading-bullet " ")
+    (org-superstar-restart)))
+
+(use-package visual-fill-column
+  :preface
+  (defun me/org-mode-visual-fill ()
+    (setq visual-fill-column-width 100
+          visual-fill-column-center-text t)
+    (visual-fill-column-mode 1))
+
+  :hook (org-mode . me/org-mode-visual-fill))
+
 (use-package magit
   :bind (("C-c g s" . magit))
   :commands magit-status
   :custom
-  (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
+  (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
+  :config
+  (add-hook 'with-editor-mode-hook #'evil-insert-state))
 
 ;; NOTE: Make sure to configure a GitHub token before using this package!
 ;; - https://magit.vc/manual/forge/Token-Creation.html#Token-Creation
@@ -1733,3 +1761,23 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (setq vterm-max-scrollback 10000))
 
 (use-package fish-mode)
+
+(use-package diminish
+  :demand t)
+
+(use-package dashboard
+  :init (setq initial-buffer-choice (lambda () (get-buffer "*dashboard*")))
+  :custom ((dashboard-agenda-sort-strategy '(todo-state-down)))
+  :config
+  (setq dashboard-week-agenda nil)
+  (setq dashboard-set-heading-icons t)
+  (setq dashboard-set-file-icons t)
+  (setq dashboard-set-navigator t)
+  (setq dashboard-set-init-info t)
+  (setq dashboard-image-banner-max-height 220)
+  (setq dashboard-filter-agenda-entry 'dashboard-filter-agenda-by-todo)
+  (dashboard-setup-startup-hook))
+
+(use-package page-break-lines
+  :config
+  (global-page-break-lines-mode))
