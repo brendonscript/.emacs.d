@@ -153,7 +153,8 @@
          ("C-c e e" . me/open-config)
          ("C-c e q" . save-buffers-kill-emacs)
          ("C-v" . me/scroll-half-page-down)
-         ("M-v" . me/scroll-half-page-up))
+         ("M-v" . me/scroll-half-page-up)
+         ("M-o" . other-window-prefix))
   :config
   (progn
     ;; Startup ;;
@@ -317,9 +318,7 @@
             mac-control-modifier 'super
             mac-right-command-modifier 'control
             mac-right-option-modifier 'meta
-            ns-function-modifier 'hyper))
-
-    ))
+            ns-function-modifier 'hyper))))
 
 (use-package ediff
   :ensure nil
@@ -429,6 +428,9 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   :config (dash-register-info-lookup))
 
 (use-package s)
+
+(use-package posframe
+  :demand t)
 
 (use-package persistent-scratch
   :disabled t
@@ -574,7 +576,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (use-package evil
   :demand t
   :preface
-  (defun my/evil-record-macro ()
+  (defun me/evil-record-macro ()
     (interactive)
     (if buffer-read-only
         (quit-window)
@@ -598,7 +600,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
         ("C-g" . evil-normal-state)
         ("C-u" . universal-argument)
         :map evil-normal-state-map
-        ("q" . my/evil-record-macro)
+        ("q" . me/evil-record-macro)
         ("g ?" . nil)
         ("gu" . universal-argument)
         :map evil-visual-state-map
@@ -616,7 +618,11 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
     (evil-set-initial-state 'messages-buffer-mode 'normal)
     (evil-set-initial-state 'dashboard-mode 'normal)
     (evil-ex-define-cmd "q" #'kill-this-buffer)
-    (evil-ex-define-cmd "wq" #'me/save-and-kill-this-buffer)))
+    (evil-ex-define-cmd "wq" #'me/save-and-kill-this-buffer)
+
+
+
+    ))
 
 (use-package evil-collection
   :after evil
@@ -648,6 +654,60 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
     (require 'evil-org-agenda)
     (evil-org-agenda-set-keys)))
 
+(use-package evil-commentary
+  :after evil
+  :config
+  (evil-commentary-mode))
+
+(use-package evil-nerd-commenter
+  :after evil
+  :config
+  (evilnc-default-hotkeys nil t))
+
+(use-package evil-matchit
+  :after evil
+  :config
+  (global-evil-matchit-mode 1))
+
+(use-package evil-goggles
+  :after evil
+  :config
+  (progn
+    (setq evil-goggles-pulse t)
+    (setq evil-goggles-duration 0.4)
+    (setq evil-goggles-blocking-duration 0.1)
+    (evil-goggles-mode)
+    (evil-goggles-use-diff-faces)))
+
+(use-package evil-surround
+  :after evil
+  :config
+  (global-evil-surround-mode 1))
+
+(use-package evil-owl
+  :config
+  (setq evil-owl-display-method 'posframe
+        evil-owl-extra-posframe-args '(:width 50 :height 20)
+        evil-owl-max-string-length 50)
+  (evil-owl-mode))
+
+(use-package general
+  :demand t
+  :after evil
+  :config
+  ;; this will bind the prefixes to `my-prefix-map'
+  (general-define-key
+   :states '(emacs insert normal)
+   :prefix-map 'me/leader-prefix-map
+   :global-prefix "C-c"
+   :non-normal-prefix "M-SPC"
+   :prefix "SPC")
+
+  (general-create-definer leader-map
+    :keymaps 'me/leader-prefix-map))
+
+                                        ;(leader-map "A" 'org-agenda))
+
 (use-package god-mode
   :disabled t
   :defer t)
@@ -658,6 +718,8 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (global-undo-tree-mode))
 
 (use-package avy
+  :after evil
+  :demand t
   :bind (("C-S-f" . avy-resume)
          ("C-f" . avy-goto-char-timer)
          :map evil-motion-state-map
@@ -665,7 +727,9 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
          ("C-f" . avy-goto-char-timer))
   :config
   (progn
-    (setq avy-timeout-seconds 0.5)))
+    (setq avy-timeout-seconds 0.5)
+    (evil-define-key '(normal visual motion) 'global (kbd "s") 'avy-goto-char-timer)
+    (evil-define-key '(normal visual motion) 'global (kbd "S") 'avy-resume)))
 
 (use-package doom-themes
   :demand t
@@ -691,6 +755,10 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   ;; This configuration to is fix a bug where certain windows would not display
   ;; their full content due to the overlapping modeline
   :config (advice-add #'fit-window-to-buffer :before (lambda (&rest _) (redisplay t))))
+
+(use-package solaire-mode
+  :config
+  (solaire-global-mode +1))
 
 (use-package all-the-icons)
 
@@ -1212,7 +1280,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
     ;; Hooks ;;
     (add-hook 'org-mode-hook 'me/org-mode-initial-setup)
 
-
     ;; Directories ;;
     (setq org-directory me/org-dir)
     (setq org-archive-location me/org-archive-location)
@@ -1221,7 +1288,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
     ;; Visuals ;;
     (setq org-ellipsis " ▼ ")
     (setq org-pretty-entities t)
-
+    (setq org-fontify-todo-headline t)
 
     ;; Behavior ;;
     (setq org-cycle-emulate-tab 'white)
@@ -1312,26 +1379,16 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
     (setq org-todo-keywords
           '((sequence "TODO(t)" "NEXT(n)" "PROG(p)" "|" "DONE(d!)" "CANCELLED(c!)")))
 
-    ;; (setq org-todo-keyword-faces
-    ;;       '(("TODO" . (:foreground "#ff39a3" :weight bold))
-    ;;         ("NEXT" . (:foreground "DeepSkyBlue"
-    ;;                                :weight bold))
-    ;;         ("PROG"  . (:foreground "orangered"
-    ;;                                 :weight bold))
-    ;;         ("INTR" . (:foreground "pink"
-    ;;                                :weight bold))
-    ;;         ("DONE" . (:foreground "#008080"
-    ;;                                :weight bold))
-    ;;         ("CANCELLED" . (:foreground "darkgrey"
-    ;;                                     :weight bold))
-    ;;         ("NOTE" . (:foreground "#9fc5e8"
-    ;;                                :weight bold))
-    ;;         ("PROJ" . (:foreground "#B4A7D6"
-    ;;                                :weight bold))
-    ;;         ("IDEA" . (:foreground "VioletRed4"
-    ;;                                :weight bold))
-    ;;         ("DEPR" . (:foreground "darkgrey"
-    ;;                                :weight bold))))
+    (setq org-todo-keyword-faces
+          '(("TODO" . (:foreground "#00ff66" :weight bold))
+            ("NEXT" . (:foreground "#66ffff"
+                                   :weight bold))
+            ("PROG"  . (:foreground "#ff0066"
+                                    :weight bold))
+            ("DONE" . (:foreground "darkgrey"
+                                   :weight bold))
+            ("CANCELLED" . (:foreground "darkgrey"
+                                        :weight bold))))
 
 
     ;; Org Tags ;;
@@ -1423,7 +1480,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
     (setq org-capture-templates
           '(("c" "Current" entry
              (file me/org-inbox-file)
-             "* PROG %?\n" :prepend t :clock-in t :clock-keep t :clock-resume t)
+             "* PROG %?\n%t\n" :prepend t :clock-in t :clock-keep t :clock-resume t)
             ("e" "Emacs Task" entry
              (file+headline me/org-todo-file "Emacs")
              "* TODO %?\n%U\n" :prepend t)
@@ -1556,7 +1613,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   :config
   (progn
     (setq org-ql-views nil)
-
+    (evil-define-key 'motion org-ql-view-list-map (kbd "RET") 'org-ql-view-switch)
     ;; Add these to a hydra or something
     (defun me/org-ql-bookmarks ()
       (interactive)
@@ -1619,20 +1676,28 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   :demand t
   :after org
   :init
-  (setq
-   ;; Edit settings
-   org-auto-align-tags nil
-   org-tags-column 0
-   org-catch-invisible-edits 'show-and-error
-   org-insert-heading-respect-content t
-   ;; Agenda styling
-   org-agenda-tags-column 0)
+  (setq org-auto-align-tags nil
+        org-tags-column 0
+        org-catch-invisible-edits 'show-and-error
+        org-insert-heading-respect-content t
+        org-agenda-tags-column 0)
   :config
   (set-face-attribute 'org-modern-symbol nil :family "Fira Code Retina")
   (setq org-modern-checkbox nil)
+  (setq org-modern-keyword "‣")
+
+  (setq org-modern-todo-faces
+        (quote (("TODO" :inverse-video t :weight semibold :foreground "#00ff66" :inherit (org-modern-label))
+                ("NEXT" :inverse-video t :weight semibold :foreground "#66ffff" :inherit (org-modern-label))
+                ("PROG" :inverse-video t :weight semibold :foreground "#ff0066" :inherit (org-modern-label))
+                ("DONE" :inverse-video t :weight semibold :foreground "darkgrey" :inherit (org-modern-label))
+                ("CANCELLED" :inverse-video t :weight semibold :foreground "darkgrey" :inherit (org-modern-label)))))
   (global-org-modern-mode))
 
-(use-package org-wild-notifier)
+(use-package org-wild-notifier
+  :after org
+  :config
+  (org-wild-notifier-mode))
 
 (use-package org-roam
   :after org
@@ -1692,6 +1757,16 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
              :unnarrowed t)))
 
     (org-roam-db-autosync-mode)))
+
+(use-package org-pomodoro
+  :after org
+  :bind (("C-c o c" . org-pomodoro))
+  :config
+  (progn
+    (setq org-pomodoro-manual-break t)
+    (setq org-pomodoro-length 30)
+    (setq org-pomodoro-short-break-length 10)
+    (setq org-pomodoro-long-break-length 45)))
 
 (use-package org-superstar
   :disabled t
@@ -1776,7 +1851,22 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (setq dashboard-set-navigator t)
   (setq dashboard-set-init-info t)
   (setq dashboard-match-agenda-entry "-routine")
-  (setq dashboard-image-banner-max-height 220)
+  (setq dashboard-image-banner-max-height 190)
+
+  ;; Format: "(icon title help action face prefix suffix)"
+  (setq dashboard-navigator-buttons
+        `(;; line1
+          ((,(all-the-icons-faicon "calendar" :height 1.1 :v-adjust 0.0)
+            "Agenda"
+            "Browse Agenda"
+            (lambda (&rest _) (org-agenda)))
+           (,(all-the-icons-faicon "list" :height 1.1 :v-adjust 0.0)
+            "Views"
+            "Browse Views"
+            (lambda (&rest _) (org-ql-view-sidebar)))
+           ("⚙" nil "Open Config" (lambda (&rest _) (me/open-config)) success))))
+
+  (setq dashboard-projects-backend 'project-el)
   (dashboard-setup-startup-hook))
 
 (use-package page-break-lines

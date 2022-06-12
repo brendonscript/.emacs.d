@@ -228,7 +228,8 @@ You can also use =M-x auto-package-update-now= to update right now!
            ("C-c e e" . me/open-config)
            ("C-c e q" . save-buffers-kill-emacs)
            ("C-v" . me/scroll-half-page-down)
-           ("M-v" . me/scroll-half-page-up))
+           ("M-v" . me/scroll-half-page-up)
+           ("M-o" . other-window-prefix))
     :config
     (progn
       ;; Startup ;;
@@ -392,9 +393,7 @@ You can also use =M-x auto-package-update-now= to update right now!
               mac-control-modifier 'super
               mac-right-command-modifier 'control
               mac-right-option-modifier 'meta
-              ns-function-modifier 'hyper))
-
-      ))
+              ns-function-modifier 'hyper))))
 #+end_src
 * Builtins
 ** Ediff
@@ -528,6 +527,11 @@ You can also use =M-x auto-package-update-now= to update right now!
 
 #+begin_src emacs-lisp
   (use-package s)
+#+end_src
+** posframe
+#+begin_src emacs-lisp
+  (use-package posframe
+    :demand t)
 #+end_src
 ** *DISABLED* persistent-scratch
 #+begin_src emacs-lisp
@@ -682,7 +686,7 @@ You can also use =M-x auto-package-update-now= to update right now!
   (use-package evil
     :demand t
     :preface
-    (defun my/evil-record-macro ()
+    (defun me/evil-record-macro ()
       (interactive)
       (if buffer-read-only
           (quit-window)
@@ -706,7 +710,7 @@ You can also use =M-x auto-package-update-now= to update right now!
           ("C-g" . evil-normal-state)
           ("C-u" . universal-argument)
           :map evil-normal-state-map
-          ("q" . my/evil-record-macro)
+          ("q" . me/evil-record-macro)
           ("g ?" . nil)
           ("gu" . universal-argument)
           :map evil-visual-state-map
@@ -724,7 +728,11 @@ You can also use =M-x auto-package-update-now= to update right now!
       (evil-set-initial-state 'messages-buffer-mode 'normal)
       (evil-set-initial-state 'dashboard-mode 'normal)
       (evil-ex-define-cmd "q" #'kill-this-buffer)
-      (evil-ex-define-cmd "wq" #'me/save-and-kill-this-buffer)))
+      (evil-ex-define-cmd "wq" #'me/save-and-kill-this-buffer)
+
+
+
+      ))
 #+end_src
 ** evil-collection
 #+begin_src emacs-lisp
@@ -765,6 +773,74 @@ You can also use =M-x auto-package-update-now= to update right now!
       (require 'evil-org-agenda)
       (evil-org-agenda-set-keys)))
 #+end_src
+** evil-commentary
+#+begin_src emacs-lisp
+  (use-package evil-commentary
+    :after evil
+    :config
+    (evil-commentary-mode))
+#+end_src
+** evil-nerd-commenter
+#+begin_src emacs-lisp
+  (use-package evil-nerd-commenter
+    :after evil
+    :config
+    (evilnc-default-hotkeys nil t))
+#+end_src
+** evil-matchit
+#+begin_src emacs-lisp
+  (use-package evil-matchit
+    :after evil
+    :config
+    (global-evil-matchit-mode 1))
+#+end_src
+** evil-goggles
+#+begin_src emacs-lisp
+  (use-package evil-goggles
+    :after evil
+    :config
+    (progn
+      (setq evil-goggles-pulse t)
+      (setq evil-goggles-duration 0.4)
+      (setq evil-goggles-blocking-duration 0.1)
+      (evil-goggles-mode)
+      (evil-goggles-use-diff-faces)))
+#+end_src
+** evil-surround
+#+begin_src emacs-lisp
+  (use-package evil-surround
+    :after evil
+    :config
+    (global-evil-surround-mode 1))
+#+end_src
+** evil-owl
+#+begin_src emacs-lisp
+  (use-package evil-owl
+    :config
+    (setq evil-owl-display-method 'posframe
+          evil-owl-extra-posframe-args '(:width 50 :height 20)
+          evil-owl-max-string-length 50)
+    (evil-owl-mode))
+#+end_src
+** general
+#+begin_src emacs-lisp
+  (use-package general
+    :demand t
+    :after evil
+    :config
+    ;; this will bind the prefixes to `my-prefix-map'
+    (general-define-key
+     :states '(emacs insert normal)
+     :prefix-map 'me/leader-prefix-map
+     :global-prefix "C-c"
+     :non-normal-prefix "M-SPC"
+     :prefix "SPC")
+
+    (general-create-definer leader-map
+      :keymaps 'me/leader-prefix-map))
+
+                                          ;(leader-map "A" 'org-agenda))
+#+end_src
 ** *DISABLED* god-mode
 #+begin_src emacs-lisp
   (use-package god-mode
@@ -781,6 +857,8 @@ You can also use =M-x auto-package-update-now= to update right now!
 ** avy
 #+begin_src emacs-lisp
   (use-package avy
+    :after evil
+    :demand t
     :bind (("C-S-f" . avy-resume)
            ("C-f" . avy-goto-char-timer)
            :map evil-motion-state-map
@@ -788,7 +866,9 @@ You can also use =M-x auto-package-update-now= to update right now!
            ("C-f" . avy-goto-char-timer))
     :config
     (progn
-      (setq avy-timeout-seconds 0.5)))
+      (setq avy-timeout-seconds 0.5)
+      (evil-define-key '(normal visual motion) 'global (kbd "s") 'avy-goto-char-timer)
+      (evil-define-key '(normal visual motion) 'global (kbd "S") 'avy-resume)))
 #+end_src
 ** doom-themes
 #+begin_src emacs-lisp
@@ -818,6 +898,12 @@ You can also use =M-x auto-package-update-now= to update right now!
     ;; This configuration to is fix a bug where certain windows would not display
     ;; their full content due to the overlapping modeline
     :config (advice-add #'fit-window-to-buffer :before (lambda (&rest _) (redisplay t))))
+#+end_src
+** solaire-mode
+#+begin_src emacs-lisp
+  (use-package solaire-mode
+    :config
+    (solaire-global-mode +1))
 #+end_src
 ** all-the-icons
 *NOTE:* The first time you load your configuration on a new machine, you'll need to run `M-x all-the-icons-install-fonts` so that mode line icons display correctly.
@@ -1385,7 +1471,6 @@ You can also use =M-x auto-package-update-now= to update right now!
       ;; Hooks ;;
       (add-hook 'org-mode-hook 'me/org-mode-initial-setup)
 
-
       ;; Directories ;;
       (setq org-directory me/org-dir)
       (setq org-archive-location me/org-archive-location)
@@ -1394,7 +1479,7 @@ You can also use =M-x auto-package-update-now= to update right now!
       ;; Visuals ;;
       (setq org-ellipsis " ▼ ")
       (setq org-pretty-entities t)
-
+      (setq org-fontify-todo-headline t)
 
       ;; Behavior ;;
       (setq org-cycle-emulate-tab 'white)
@@ -1485,26 +1570,16 @@ You can also use =M-x auto-package-update-now= to update right now!
       (setq org-todo-keywords
             '((sequence "TODO(t)" "NEXT(n)" "PROG(p)" "|" "DONE(d!)" "CANCELLED(c!)")))
 
-      ;; (setq org-todo-keyword-faces
-      ;;       '(("TODO" . (:foreground "#ff39a3" :weight bold))
-      ;;         ("NEXT" . (:foreground "DeepSkyBlue"
-      ;;                                :weight bold))
-      ;;         ("PROG"  . (:foreground "orangered"
-      ;;                                 :weight bold))
-      ;;         ("INTR" . (:foreground "pink"
-      ;;                                :weight bold))
-      ;;         ("DONE" . (:foreground "#008080"
-      ;;                                :weight bold))
-      ;;         ("CANCELLED" . (:foreground "darkgrey"
-      ;;                                     :weight bold))
-      ;;         ("NOTE" . (:foreground "#9fc5e8"
-      ;;                                :weight bold))
-      ;;         ("PROJ" . (:foreground "#B4A7D6"
-      ;;                                :weight bold))
-      ;;         ("IDEA" . (:foreground "VioletRed4"
-      ;;                                :weight bold))
-      ;;         ("DEPR" . (:foreground "darkgrey"
-      ;;                                :weight bold))))
+      (setq org-todo-keyword-faces
+            '(("TODO" . (:foreground "#00ff66" :weight bold))
+              ("NEXT" . (:foreground "#66ffff"
+                                     :weight bold))
+              ("PROG"  . (:foreground "#ff0066"
+                                      :weight bold))
+              ("DONE" . (:foreground "darkgrey"
+                                     :weight bold))
+              ("CANCELLED" . (:foreground "darkgrey"
+                                          :weight bold))))
 
 
       ;; Org Tags ;;
@@ -1596,7 +1671,7 @@ You can also use =M-x auto-package-update-now= to update right now!
       (setq org-capture-templates
             '(("c" "Current" entry
                (file me/org-inbox-file)
-               "* PROG %?\n" :prepend t :clock-in t :clock-keep t :clock-resume t)
+               "* PROG %?\n%t\n" :prepend t :clock-in t :clock-keep t :clock-resume t)
               ("e" "Emacs Task" entry
                (file+headline me/org-todo-file "Emacs")
                "* TODO %?\n%U\n" :prepend t)
@@ -1737,7 +1812,7 @@ You can also use =M-x auto-package-update-now= to update right now!
     :config
     (progn
       (setq org-ql-views nil)
-
+      (evil-define-key 'motion org-ql-view-list-map (kbd "RET") 'org-ql-view-switch)
       ;; Add these to a hydra or something
       (defun me/org-ql-bookmarks ()
         (interactive)
@@ -1804,22 +1879,30 @@ You can also use =M-x auto-package-update-now= to update right now!
     :demand t
     :after org
     :init
-    (setq
-     ;; Edit settings
-     org-auto-align-tags nil
-     org-tags-column 0
-     org-catch-invisible-edits 'show-and-error
-     org-insert-heading-respect-content t
-     ;; Agenda styling
-     org-agenda-tags-column 0)
+    (setq org-auto-align-tags nil
+          org-tags-column 0
+          org-catch-invisible-edits 'show-and-error
+          org-insert-heading-respect-content t
+          org-agenda-tags-column 0)
     :config
     (set-face-attribute 'org-modern-symbol nil :family "Fira Code Retina")
     (setq org-modern-checkbox nil)
+    (setq org-modern-keyword "‣")
+
+    (setq org-modern-todo-faces
+          (quote (("TODO" :inverse-video t :weight semibold :foreground "#00ff66" :inherit (org-modern-label))
+                  ("NEXT" :inverse-video t :weight semibold :foreground "#66ffff" :inherit (org-modern-label))
+                  ("PROG" :inverse-video t :weight semibold :foreground "#ff0066" :inherit (org-modern-label))
+                  ("DONE" :inverse-video t :weight semibold :foreground "darkgrey" :inherit (org-modern-label))
+                  ("CANCELLED" :inverse-video t :weight semibold :foreground "darkgrey" :inherit (org-modern-label)))))
     (global-org-modern-mode))
 #+end_src
 ** org-wild-notifier
 #+begin_src emacs-lisp
-  (use-package org-wild-notifier)
+    (use-package org-wild-notifier
+      :after org
+      :config
+      (org-wild-notifier-mode))
 #+end_src
 ** org-roam
 #+begin_src emacs-lisp
@@ -1881,6 +1964,18 @@ You can also use =M-x auto-package-update-now= to update right now!
                :unnarrowed t)))
 
       (org-roam-db-autosync-mode)))
+#+end_src
+** org-pomodoro
+#+begin_src emacs-lisp
+  (use-package org-pomodoro
+    :after org
+    :bind (("C-c o c" . org-pomodoro))
+    :config
+    (progn
+      (setq org-pomodoro-manual-break t)
+      (setq org-pomodoro-length 30)
+      (setq org-pomodoro-short-break-length 10)
+      (setq org-pomodoro-long-break-length 45)))
 #+end_src
 ** *DISABLED* org-superstar
 #+begin_src emacs-lisp
@@ -1985,7 +2080,22 @@ You can also use =M-x auto-package-update-now= to update right now!
     (setq dashboard-set-navigator t)
     (setq dashboard-set-init-info t)
     (setq dashboard-match-agenda-entry "-routine")
-    (setq dashboard-image-banner-max-height 220)
+    (setq dashboard-image-banner-max-height 190)
+
+    ;; Format: "(icon title help action face prefix suffix)"
+    (setq dashboard-navigator-buttons
+          `(;; line1
+            ((,(all-the-icons-faicon "calendar" :height 1.1 :v-adjust 0.0)
+              "Agenda"
+              "Browse Agenda"
+              (lambda (&rest _) (org-agenda)))
+             (,(all-the-icons-faicon "list" :height 1.1 :v-adjust 0.0)
+              "Views"
+              "Browse Views"
+              (lambda (&rest _) (org-ql-view-sidebar)))
+             ("⚙" nil "Open Config" (lambda (&rest _) (me/open-config)) success))))
+
+    (setq dashboard-projects-backend 'project-el)
     (dashboard-setup-startup-hook))
 #+end_src
 ** page-break-lines
