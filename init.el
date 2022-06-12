@@ -697,7 +697,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   :config
   ;; this will bind the prefixes to `my-prefix-map'
   (general-define-key
-   :states '(emacs insert normal)
+   :states '(emacs insert normal visual motion)
    :prefix-map 'me/leader-prefix-map
    :global-prefix "C-c"
    :non-normal-prefix "M-SPC"
@@ -1195,7 +1195,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
     (global-set-key (kbd "C-c T f") 'me/hydra-text-scale/body)))
 
 (use-package origami
-  :demand t
   :config
   (progn
     (with-eval-after-load 'org-super-agenda
@@ -1213,6 +1212,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
         (when (re-search-forward (rx-to-string `(seq bol " " ,it)) nil t)
           (origami-close-node (current-buffer) (point)))))
     (add-hook 'org-agenda-finalize-hook 'me/org-super-agenda-origami-fold-default)
+    (global-origami-mode)
     (add-hook 'org-agenda-mode-hook 'origami-mode)))
 
 (use-package org
@@ -1836,9 +1836,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (setq vterm-max-scrollback 10000))
 
 (use-package fish-mode)
-
-(use-package diminish
-  :demand t)
 
 (use-package dashboard
   :init (setq initial-buffer-choice (lambda () (get-buffer "*dashboard*")))

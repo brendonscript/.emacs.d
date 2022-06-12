@@ -830,7 +830,7 @@ You can also use =M-x auto-package-update-now= to update right now!
     :config
     ;; this will bind the prefixes to `my-prefix-map'
     (general-define-key
-     :states '(emacs insert normal)
+     :states '(emacs insert normal visual motion)
      :prefix-map 'me/leader-prefix-map
      :global-prefix "C-c"
      :non-normal-prefix "M-SPC"
@@ -1384,7 +1384,6 @@ You can also use =M-x auto-package-update-now= to update right now!
 ** origami
 #+begin_src emacs-lisp
   (use-package origami
-    :demand t
     :config
     (progn
       (with-eval-after-load 'org-super-agenda
@@ -1402,6 +1401,7 @@ You can also use =M-x auto-package-update-now= to update right now!
           (when (re-search-forward (rx-to-string `(seq bol " " ,it)) nil t)
             (origami-close-node (current-buffer) (point)))))
       (add-hook 'org-agenda-finalize-hook 'me/org-super-agenda-origami-fold-default)
+      (global-origami-mode)
       (add-hook 'org-agenda-mode-hook 'origami-mode)))
 #+end_src
 ** org
@@ -2061,11 +2061,6 @@ You can also use =M-x auto-package-update-now= to update right now!
 ** fish-mode
 #+begin_src emacs-lisp
   (use-package fish-mode)
-#+end_src
-** diminish
-#+begin_src emacs-lisp
-  (use-package diminish
-    :demand t)
 #+end_src
 ** dashboard
 #+begin_src emacs-lisp
