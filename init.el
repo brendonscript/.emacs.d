@@ -1770,12 +1770,13 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   :custom ((dashboard-agenda-sort-strategy '(todo-state-down)))
   :config
   (setq dashboard-week-agenda nil)
+  (setq dashboard-filter-agenda-entry 'dashboard-filter-agenda-by-todo)
   (setq dashboard-set-heading-icons t)
   (setq dashboard-set-file-icons t)
   (setq dashboard-set-navigator t)
   (setq dashboard-set-init-info t)
+  (setq dashboard-match-agenda-entry "-routine")
   (setq dashboard-image-banner-max-height 220)
-  (setq dashboard-filter-agenda-entry 'dashboard-filter-agenda-by-todo)
   (dashboard-setup-startup-hook))
 
 (use-package page-break-lines

@@ -1979,12 +1979,13 @@ You can also use =M-x auto-package-update-now= to update right now!
     :custom ((dashboard-agenda-sort-strategy '(todo-state-down)))
     :config
     (setq dashboard-week-agenda nil)
+    (setq dashboard-filter-agenda-entry 'dashboard-filter-agenda-by-todo)
     (setq dashboard-set-heading-icons t)
     (setq dashboard-set-file-icons t)
     (setq dashboard-set-navigator t)
     (setq dashboard-set-init-info t)
+    (setq dashboard-match-agenda-entry "-routine")
     (setq dashboard-image-banner-max-height 220)
-    (setq dashboard-filter-agenda-entry 'dashboard-filter-agenda-by-todo)
     (dashboard-setup-startup-hook))
 #+end_src
 ** page-break-lines
