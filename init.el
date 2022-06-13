@@ -573,6 +573,40 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (key-chord-define meow-insert-state-keymap "jk" 'meow-insert-exit)
   (key-chord-mode 1))
 
+(use-package general
+  :demand t
+  :config
+  (progn
+    (general-evil-setup t)
+
+    ;; Leader Def ;;
+    (general-define-key
+     :states '(emacs insert normal visual motion)
+     :prefix-map 'me/leader-prefix-map
+     :global-prefix "C-c"
+     :non-normal-prefix "M-SPC"
+     :prefix "SPC")
+
+
+    (general-create-definer leader-map
+      :keymaps 'me/leader-prefix-map)
+
+    (general-create-definer local-leader-map
+     :states '(emacs insert normal visual motion)
+     :global-prefix "C-c ,"
+     :non-normal-prefix "M-SPC ,"
+     :prefix "SPC ,")
+
+    (leader-map
+      "SPC" 'consult-buffer
+      ";" 'execute-extended-command
+      "m" (general-simulate-key "C-c")
+      "M" (general-simulate-key "C-c C-x")
+      "x" (general-simulate-key "C-x")
+      "bd" 'kill-this-buffer
+      "bb" 'consult-buffer
+      "bB" 'ibuffer-list-buffers)))
+
 (use-package evil
   :demand t
   :preface
@@ -619,10 +653,8 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
     (evil-set-initial-state 'dashboard-mode 'normal)
     (evil-ex-define-cmd "q" #'kill-this-buffer)
     (evil-ex-define-cmd "wq" #'me/save-and-kill-this-buffer)
-
-
-
-    ))
+    (setq me/window-map (cons 'keymap evil-window-map))
+    (leader-map "w" me/window-map)))
 
 (use-package evil-collection
   :after evil
@@ -690,23 +722,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
         evil-owl-extra-posframe-args '(:width 50 :height 20)
         evil-owl-max-string-length 50)
   (evil-owl-mode))
-
-(use-package general
-  :demand t
-  :after evil
-  :config
-  ;; this will bind the prefixes to `my-prefix-map'
-  (general-define-key
-   :states '(emacs insert normal visual motion)
-   :prefix-map 'me/leader-prefix-map
-   :global-prefix "C-c"
-   :non-normal-prefix "M-SPC"
-   :prefix "SPC")
-
-  (general-create-definer leader-map
-    :keymaps 'me/leader-prefix-map))
-
-                                        ;(leader-map "A" 'org-agenda))
 
 (use-package god-mode
   :disabled t
@@ -1122,77 +1137,43 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (use-package hydra
   :config
   (progn
-
-    (defhydra me/hydra-text-scale (:timeout 4)
-      "scale text"
-      ("j" text-scale-increase "in")
-      ("k" text-scale-decrease "out")
-      ("f" nil "finished" :exit t))
-
-    (defhydra me/hydra-buffers (:color blue :hint nil)
+    (defhydra me/hydra-evil-windows (:hint nil
+                                           :pre (winner-mode 1)
+                                           :post (redraw-display))
       "
-                                                                         ╭─────────┐
-       Move to Window         Switch                  Do                 │ Buffers │
-    ╭────────────────────────────────────────────────────────────────────┴─────────╯
-             ^_k_^          [_b_] switch             [_d_] kill the buffer
-             ^^↑^^          [_i_] ibuffer            [_r_] toggle read-only mode
-         _h_ ←   → _l_      [_a_] alternate          [_u_] revert buffer changes
-             ^^↓^^          [_o_] other              [_w_] save buffer
-             ^_j_^
-    --------------------------------------------------------------------------------
-                "
-      ("<tab>" hydra-master/body "back")
-      ("<ESC>" nil "quit")
-      ("a" me/alternate-buffer)
-      ("b" consult-buffer)
-      ("d" kill-current-buffer)
-      ("i" ibuffer)
-      ("o" other-window)
-      ("h" windmove-left  :color red)
-      ("k" windmove-up    :color red)
-      ("j" windmove-down  :color red)
-      ("l" windmove-right :color red)
-      ("r" read-only-mode)
-      ("u" revert-buffer)
-      ("w" save-buffer))
+Movement & RESIZE^^^^
+^ ^ _k_ ^ ^       _f__d_ file/dired  _o_nly win             ^Move _C-k_
+_h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
+^ ^ _j_ ^ ^       _u_ _r_ undo/redo  _s_plit _v_ertically   ^_C-h_ _C-l_"
+      ;; For some reason the evil
+      ;; commands behave better than
+      ;; the emacs ones
+      ("j" evil-window-down)
+      ("k" evil-window-up)
+      ("l" evil-window-right)
+      ("h" evil-window-left)
+      ("J" evil-window-increase-height)
+      ("K" evil-window-decrease-height)
+      ("L" evil-window-increase-width)
+      ("H" evil-window-decrease-width)
+      ("u" winner-undo)
+      ("r" (progn (winner-undo) (setq this-command 'winner-undo)))
+      ("d" ranger  :color blue)
+      ("f" find-file)
+      ("b" consult-buffer  :color blue)
+      ("B" me/alternate-buffer)
+      ("o" delete-other-windows :color blue)
+      ("x" delete-window)
+      ("s" split-window-horizontally)
+      ("v" split-window-vertically)
+      ("C-w" evil-window-next :color blue)
+      ("C-k" evil-window-move-very-top :color blue)
+      ("C-j" evil-window-move-very-bottom :color blue)
+      ("C-h" evil-window-move-far-left :color blue)
+      ("C-l" evil-window-move-far-right :color blue)
+      ("SPC" balance-windows  :color blue))
 
-    (defhydra me/hydra-windows (:color blue :hint nil)
-      "
-                                                                         ╭─────────┐
-       Move to      Size    Scroll        Split                    Do    │ Windows │
-    ╭────────────────────────────────────────────────────────────────────┴─────────╯
-          ^_k_^           ^_K_^       ^_p_^    ╭─┬─┐^ ^        ╭─┬─┐^ ^         ↺ [_u_] undo layout
-          ^^↑^^           ^^↑^^       ^^↑^^    │ │ │_v_ertical ├─┼─┤_b_alance   ↻ [_r_] restore layout
-      _h_ ←   → _l_   _H_ ←   → _L_   ^^ ^^    ╰─┴─╯^ ^        ╰─┴─╯^ ^         ✗ [_d_] close window
-          ^^↓^^           ^^↓^^       ^^↓^^    ╭───┐^ ^        ╭───┐^ ^         ⇋ [_w_] cycle window
-          ^_j_^           ^_J_^       ^_n_^    ├───┤_s_tack    │   │_z_oom
-          ^^ ^^           ^^ ^^       ^^ ^^    ╰───╯^ ^        ╰───╯^ ^
-    --------------------------------------------------------------------------------
-              "
-      ("<tab>" hydra-master/body "back")
-      ("<ESC>" nil "quit")
-      ("n" scroll-other-window :color red)
-      ("p" scroll-other-window-down :color red)
-      ("b" balance-windows)
-      ("d" delete-window)
-      ("H" shrink-window-horizontally :color red)
-      ("h" windmove-left :color red)
-      ("J" shrink-window :color red)
-      ("j" windmove-down :color red)
-      ("K" enlarge-window :color red)
-      ("k" windmove-up :color red)
-      ("L" enlarge-window-horizontally :color red)
-      ("l" windmove-right :color red)
-      ("r" winner-redo :color red)
-      ("s" split-window-vertically :color red)
-      ("u" winner-undo :color red)
-      ("v" split-window-horizontally :color red)
-      ("w" other-window)
-      ("z" delete-other-windows))
-
-    (global-set-key (kbd "C-c W") 'me/hydra-windows/body)
-    (global-set-key (kbd "C-c b") 'me/hydra-buffers/body)
-    (global-set-key (kbd "C-c T f") 'me/hydra-text-scale/body)))
+    (leader-map "W" 'me/hydra-evil-windows/body)))
 
 (use-package origami
   :config
@@ -1214,6 +1195,8 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
     (add-hook 'org-agenda-finalize-hook 'me/org-super-agenda-origami-fold-default)
     (global-origami-mode)
     (add-hook 'org-agenda-mode-hook 'origami-mode)))
+
+(use-package ranger)
 
 (use-package org
   :demand t
@@ -1261,6 +1244,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
   (defvar me/org-all-files (me/refresh-all-org-files))
 
+
   :bind
   (("C-c c" . org-capture)
    ("C-c a a" . org-agenda)
@@ -1279,6 +1263,16 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
     ;; Hooks ;;
     (add-hook 'org-mode-hook 'me/org-mode-initial-setup)
+    (add-hook 'org-src-mode-hook 'evil-normalize-keymaps)
+
+
+
+    ;; General ;;
+    (local-leader-map :keymaps 'org-mode-map
+      "t" 'org-set-tags-command)
+
+    (local-leader-map :keymaps 'org-src-mode-map
+      "t" 'org-edit-src-exit)
 
     ;; Directories ;;
     (setq org-directory me/org-dir)
@@ -1825,11 +1819,11 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 (use-package format-all
   :hook (prog-mode . format-all-mode)
-  :bind(("C-c F" . format-all-buffer)))
+  :general (leader-map "=" 'format-all-buffer))
 
 (use-package vterm
   :commands vterm
-  :bind (("C-c t" . vterm))
+  :general (leader-map "T" 'vterm)
   :config
   (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *")  ;; Set this to match your custom shell prompt
   (setq vterm-shell "fish")                       ;; Set this to customize the shell to launch
