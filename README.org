@@ -145,17 +145,17 @@ You can also use =M-x auto-package-update-now= to update right now!
 
   ;; NOTE: If you want to move everything out of the ~/.emacs.d folder
   ;; reliably, set `user-emacs-directory` before loading no-littering!
-                                          ;(setq user-emacs-directory "~/.cache/emacs")
+					  ;(setq user-emacs-directory "~/.cache/emacs")
 
   (use-package no-littering
     :demand t
     :config
-
-    ;; no-littering doesn't set this by default so we must place
-    ;; auto save files in the same path as it uses for sessions
-    (setq auto-save-file-name-transforms
-          `((".*" ,(no-littering-expand-var-file-name "auto-save/") t))))
-
+    (setq message-auto-save-directory
+	  ;; no-littering doesn't set this by default so we must place
+	  ;; auto save files in the same path as it uses for sessions
+	  (setq auto-save-file-name-transforms
+		`((".*" ,(no-littering-expand-var-file-name "auto-save/") t)
+		  ("*.txt" ,(no-littering-expand-var-file-name "auto-save/") t)))))
 #+end_src
 
 * Emacs Defaults
@@ -224,12 +224,19 @@ You can also use =M-x auto-package-update-now= to update right now!
       (interactive)
       (me/scroll-half-page t))
 
-    :bind (("<escape>" . keyboard-escape-quit)
-           ("C-c e e" . me/open-config)
-           ("C-c e q" . save-buffers-kill-emacs)
-           ("C-v" . me/scroll-half-page-down)
-           ("M-v" . me/scroll-half-page-up)
-           ("M-o" . other-window-prefix))
+    (defun me/buffer-to-side-window ()
+      "Place the current buffer in the side window at the bottom."
+      (interactive)
+      (let ((buf (current-buffer)))
+        (display-buffer-in-side-window
+         buf '((window-height . 0.25)
+               (side . bottom)
+               (slot . -1)
+               (window-parameters . (no-delete-other-windows . t))))
+        (delete-window)))
+
+
+
     :config
     (progn
       ;; Startup ;;
@@ -244,6 +251,8 @@ You can also use =M-x auto-package-update-now= to update right now!
       (setq recentf-max-menu-items 40)
       (setq recentf-max-saved-items 250)
       (setq save-interprogram-paste-before-kill t)
+      (setq initial-buffer-choice (lambda () (get-buffer "*scratch*")))
+      (require 'desktop)
       (customize-set-variable 'desktop-save 't)
       (desktop-save-mode 1)
       (recentf-mode 1)
@@ -681,6 +690,21 @@ You can also use =M-x auto-package-update-now= to update right now!
     (key-chord-define meow-insert-state-keymap "jk" 'meow-insert-exit)
     (key-chord-mode 1))
 #+end_src
+** which-key
+#+begin_src emacs-lisp
+
+  (use-package which-key
+    :init (which-key-mode)
+    :diminish which-key-mode
+    :config
+    (progn
+      (setq which-key-allow-evil-operators t)
+      (setq which-key-sort-order 'which-key-key-order-alpha)
+      (setq which-key-use-C-h-commands nil)
+      (setq which-key-idle-delay 0.5)
+      (which-key-add-key-based-replacements
+        "SPC b" "buffers")))
+#+end_src
 ** general
 #+begin_src emacs-lisp
   (use-package general
@@ -690,37 +714,83 @@ You can also use =M-x auto-package-update-now= to update right now!
       (general-evil-setup t)
 
       ;; Leader Def ;;
-      (general-define-key
-       :states '(emacs insert normal visual motion)
-       :prefix-map 'me/leader-prefix-map
+      ;; (general-define-key
+      ;;  ;;:states '(emacs insert normal visual motion)
+      ;;  :keymaps 'override
+      ;;  :states '(insert emacs normal hybrid motion visual operator)
+      ;;  :prefix-map 'me/leader-prefix-map
+      ;;  :global-prefix "C-c"
+      ;;  :non-normal-prefix "M-SPC"
+      ;;  :prefix "SPC")
+
+      (general-create-definer leader-map
+       ;;:states '(emacs insert normal visual motion)
+       :keymaps 'override
+       :states '(insert emacs normal hybrid motion visual operator)
+       ;; :prefix-map 'me/leader-prefix-map
        :global-prefix "C-c"
        :non-normal-prefix "M-SPC"
        :prefix "SPC")
 
-
-      (general-create-definer leader-map
-        :keymaps 'me/leader-prefix-map)
+      ;; (general-create-definer leader-map
+      ;;   :keymaps 'me/leader-prefix-map)
 
       (general-create-definer local-leader-map
-       :states '(emacs insert normal visual motion)
-       :global-prefix "C-c ,"
-       :non-normal-prefix "M-SPC ,"
-       :prefix "SPC ,")
+        :keymaps 'override
+        :states '(insert emacs normal hybrid motion visual operator)
+        ;;:states '(emacs insert normal visual motion)
+        :global-prefix "C-c m"
+        :non-normal-prefix "M-SPC m"
+        :prefix "SPC m")
 
+      ;; Prefixes
       (leader-map
-        "SPC" 'consult-buffer
-        ";" 'execute-extended-command
-        "m" (general-simulate-key "C-c")
-        "M" (general-simulate-key "C-c C-x")
-        "x" (general-simulate-key "C-x")
-        "bd" 'kill-this-buffer
-        "bb" 'consult-buffer
-        "bB" 'ibuffer-list-buffers)))
+        ""	'(nil :which-key "my lieutenant general prefix")
+        "b"	'(:ignore t :wk "buffers")
+        "d"	'(:ignore t :wk "debug")
+        "e"	'(:ignore t :wk "edit")
+        "f"	'(:ignore t :wk "files")
+        "fe"	'(:ignore t :wk "emacs")
+        "p"	'(:ignore t :wk "projects")
+        "r"	'(:ignore t :wk "refactor")
+        "s"	'(:ignore t :wk "search")
+        "x"	'(:ignore t :wk "execute"))
+
+      ;; Sim Keys
+      (leader-map
+        "," (general-simulate-key "C-c")
+        "C" (general-simulate-key "C-x")
+        "M" (general-simulate-key "C-c C-x"))
+
+      ;; Maps
+      (leader-map "h" help-map)
+
+      ;; Base
+      (leader-map
+        ";"	'execute-extended-command
+        "O"	'other-window-prefix
+        "X"	'(lambda () (interactive) (switch-to-buffer "*scratch*"))
+        "bd"	'kill-this-buffer
+        "bD"	'kill-some-buffers
+        "bB"	'ibuffer-list-buffers
+        "ea"	'align-regexp
+        "eA"	'align
+        "er"	'query-relace
+        "ff"	'find-file
+        "fs"	'save-buffer
+        "fS"	'save-some-buffers
+        "fee"	'me/open-config
+        "feq"	'save-buffers-kill-emacs
+        "feQ"	'kill-emacs
+        "xp"	'check-parens)
+
+      (general-def
+        "C-v" 'me/scroll-half-page-down
+        "M-v" 'me/scroll-half-page-up)))
 #+end_src
 ** evil
 #+begin_src emacs-lisp
   (use-package evil
-    :demand t
     :preface
     (defun me/evil-record-macro ()
       (interactive)
@@ -740,33 +810,34 @@ You can also use =M-x auto-package-update-now= to update right now!
             evil-want-C-i-jump t
             evil-respect-visual-line-mode t
             evil-undo-system 'undo-tree))
-
-    :bind
-    (:map evil-insert-state-map
-          ("C-g" . evil-normal-state)
-          ("C-u" . universal-argument)
-          :map evil-normal-state-map
-          ("q" . me/evil-record-macro)
-          ("g ?" . nil)
-          ("gu" . universal-argument)
-          :map evil-visual-state-map
-          ("gu" . universal-argument)
-          :map evil-motion-state-map
-          ("j" . evil-next-visual-line)
-          ("k" . evil-previous-visual-line)
-          ("L" . evil-end-of-line-or-visual-line)
-          ("H" . evil-first-non-blank-of-visual-line)
-          ("gu" . universal-argument))
-
     :config
     (progn
       (evil-mode 1)
+
       (evil-set-initial-state 'messages-buffer-mode 'normal)
       (evil-set-initial-state 'dashboard-mode 'normal)
-      (evil-ex-define-cmd "q" #'kill-this-buffer)
-      (evil-ex-define-cmd "wq" #'me/save-and-kill-this-buffer)
+
+      (nmap "R" 'evil-replace-state
+        "q" 'me/evil-record-macro
+        "g ?" 'nil
+        "gu" 'universal-argument)
+
+      (imap "C-g" 'evil-normal-state
+        "C-u" 'universal-argument)
+
+      (vmap "gu" 'universal-argument)
+
+      (mmap "j" 'evil-next-visual-line
+        "k" 'evil-previous-visual-line
+        "L" 'evil-end-of-line-or-visual-line
+        "H" 'evil-first-non-blank-of-visual-line
+        "gu" 'universal-argument)
+
       (setq me/window-map (cons 'keymap evil-window-map))
-      (leader-map "w" me/window-map)))
+      (leader-map "w" me/window-map)
+
+      (evil-ex-define-cmd "q" #'kill-this-buffer)
+      (evil-ex-define-cmd "wq" #'me/save-and-kill-this-buffer)))
 #+end_src
 ** evil-collection
 #+begin_src emacs-lisp
@@ -775,8 +846,13 @@ You can also use =M-x auto-package-update-now= to update right now!
     :after evil
     :diminish evil-collection-unimpaired-mode
     :config
-    (evil-collection-init))
+    (evil-collection-init)
 
+    (nmap
+      "go" 'evil-collection-unimpaired-insert-newline-below
+      "gO" 'evil-collection-unimpaired-insert-newline-above
+      "gp" 'evil-collection-unimpaired-paste-below
+      "gP" 'evil-collection-unimpaired-paste-above))
 #+end_src
 ** evil-escape
 #+begin_src emacs-lisp
@@ -856,6 +932,48 @@ You can also use =M-x auto-package-update-now= to update right now!
           evil-owl-max-string-length 50)
     (evil-owl-mode))
 #+end_src
+** evil-mc
+#+begin_src emacs-lisp
+  (use-package evil-mc
+    :after evil
+    :config
+    (progn
+      (evil-define-local-var evil-mc-custom-paused nil
+        "Paused functionality when there are multiple cursors active.")
+
+      (defun evil-mc-pause-smartchr-for-mode (mode)
+        "Temporarily disables the smartchr keys for MODE."
+        (let ((m-mode (if (atom mode) mode (car mode)))
+              (s-mode (if (atom mode) mode (cdr mode))))
+          (let ((init (intern (concat "smartchr/init-" (symbol-name s-mode))))
+                (undo (intern (concat "smartchr/undo-" (symbol-name s-mode)))))
+            (when (eq major-mode m-mode)
+              (funcall undo)
+              (push `(lambda () (,init)) evil-mc-custom-paused)))))
+
+      (defun evil-mc-before-cursors-setup-hook ()
+        "Hook to run before any cursor is created.
+  Can be used to temporarily disable any functionality that doesn't
+  play well with `evil-mc'."
+        (mapc 'evil-mc-pause-smartchr-for-mode
+              '(web-mode js2-mode java-mode (enh-ruby-mode . ruby-mode) css-mode))
+        (when (boundp 'whitespace-cleanup-disabled)
+          (setq whitespace-cleanup-disabled t)
+          (push (lambda () (setq whitespace-cleanup-disabled nil)) evil-mc-custom-paused)))
+
+      (defun evil-mc-after-cursors-teardown-hook ()
+        "Hook to run after all cursors are deleted."
+        (dolist (fn evil-mc-custom-paused) (funcall fn))
+        (setq evil-mc-custom-paused nil))
+
+      (add-hook 'evil-mc-before-cursors-created 'evil-mc-before-cursors-setup-hook)
+      (add-hook 'evil-mc-after-cursors-deleted 'evil-mc-after-cursors-teardown-hook)
+
+      (defvar evil-mc-mode-line-prefix "ⓜ"
+        "Override of the default mode line string for `evil-mc-mode'.")
+
+      (global-evil-mc-mode 1)))
+#+end_src
 ** *DISABLED* god-mode
 #+begin_src emacs-lisp
   (use-package god-mode
@@ -873,17 +991,17 @@ You can also use =M-x auto-package-update-now= to update right now!
 #+begin_src emacs-lisp
   (use-package avy
     :after evil
-    :demand t
-    :bind (("C-S-f" . avy-resume)
-           ("C-f" . avy-goto-char-timer)
-           :map evil-motion-state-map
-           ("C-S-f" . avy-resume)
-           ("C-f" . avy-goto-char-timer))
     :config
     (progn
-      (setq avy-timeout-seconds 0.5)
-      (evil-define-key '(normal visual motion) 'global (kbd "s") 'avy-goto-char-timer)
-      (evil-define-key '(normal visual motion) 'global (kbd "S") 'avy-resume)))
+      (setq avy-timeout-seconds 0.6)
+
+      (general-def :states '(normal visual motion)
+        "gs"	'avy-goto-char-timer
+        "gS"	'avy-resume)
+
+      (general-def :states '(normal visual motion insert emacs)
+        "C-S-f"	'avy-resume
+        "C-f"	'avy-goto-char-timer)))
 #+end_src
 ** doom-themes
 #+begin_src emacs-lisp
@@ -939,19 +1057,6 @@ You can also use =M-x auto-package-update-now= to update right now!
   (use-package all-the-icons-dired
     :after all-the-icons)
 #+end_src
-** which-key
-#+begin_src emacs-lisp
-
-  (use-package which-key
-    :init (which-key-mode)
-    :diminish which-key-mode
-    :config
-    (progn
-      (setq which-key-allow-evil-operators t)
-      (setq which-key-sort-order 'which-key-key-order-alpha)
-      (setq which-key-use-C-h-commands nil)
-      (setq which-key-idle-delay 0.5)))
-#+end_src
 ** vertico
 #+begin_src emacs-lisp
   (use-package vertico
@@ -998,55 +1103,79 @@ You can also use =M-x auto-package-update-now= to update right now!
 #+begin_src emacs-lisp
 
   (use-package consult
-    :bind
-    (("C-c s a" . consult-org-agenda)
-     ("C-c s o" . consult-outline)
-     ("C-c s s" . consult-org-heading)
-     ("C-c r" . consult-recent-file)
-     ("C-c h" . consult-history)
-     ("C-c m" . consult-mode-command)
-     ("C-c k" . consult-kmacro)
-     ("C-x M-:" . consult-complex-command)     ;; orig. repeat-complex-command
-     ("C-x b" . consult-buffer)                ;; orig. switch-to-buffer
-     ("C-x 4 b" . consult-buffer-other-window) ;; orig. switch-to-buffer-other-window
-     ("C-x 5 b" . consult-buffer-other-frame)  ;; orig. switch-to-buffer-other-frame
-     ("C-x r b" . consult-bookmark)            ;; orig. bookmark-jump
-     ("C-x p b" . consult-project-buffer)      ;; orig. project-switch-to-buffer
-     ("M-#" . consult-register-load)
-     ("M-'" . consult-register-store)          ;; orig. abbrev-prefix-mark (unrelated)
-     ("C-M-#" . consult-register)
-     ("M-y" . consult-yank-pop)                ;; orig. yank-pop
-     ("<help> a" . consult-apropos)            ;; orig. apropos-command
-     ("M-g e" . consult-compile-error)
-     ("M-g f" . consult-flymake)               ;; Alternative: consult-flycheck
-     ("M-g g" . consult-goto-line)             ;; orig. goto-line
-     ("M-g M-g" . consult-goto-line)           ;; orig. goto-line
-     ("M-g o" . consult-outline)               ;; Alternative: consult-org-heading
-     ("M-g m" . consult-mark)
-     ("M-g k" . consult-global-mark)
-     ("M-g i" . consult-imenu)
-     ("M-g I" . consult-imenu-multi)
-     ("M-s d" . consult-find)
-     ("M-s D" . consult-locate)
-     ("M-s g" . consult-grep)
-     ("M-s G" . consult-git-grep)
-     ("M-s r" . consult-ripgrep)
-     ("C-s" . consult-line)
-     ("M-s L" . consult-line-multi)
-     ("M-s m" . consult-multi-occur)
-     ("M-s k" . consult-keep-lines)
-     ("M-s u" . consult-focus-lines)
-     ("M-s e" . consult-isearch-history)
-     :map isearch-mode-map
-     ("M-e" . consult-isearch-history)         ;; orig. isearch-edit-string
-     ("M-s e" . consult-isearch-history)       ;; orig. isearch-edit-string
-     ("M-s l" . consult-line)                  ;; needed by consult-line to detect isearch
-     ("M-s L" . consult-line-multi)            ;; needed by consult-line to detect isearch
-     :map minibuffer-local-map
-     ("M-s" . consult-history)                 ;; orig. next-matching-history-element
-     ("M-r" . consult-history)
-     :map evil-motion-state-map
-     ("gb" . consult-buffer))
+    :general
+    (leader-map
+      "SPC"	'consult-buffer
+      "sa"	'consult-org-agenda
+      "so"	'consult-outline
+      "sm"	'consult-mark
+      "ss"	'consult-line
+      "sS"	'consult-line-multi
+      "sM"	'consult-global-map
+      "sr"	'consult-ripgrep
+      "fF"	'consult-recent-file
+      "fb"	'consult-bookmark
+      "bb"	'consult-buffer
+      "bo"	'consult-buffer-other-window
+      "bf"	'consult-buffer-other-frame
+      "bm"	'consult-mode-command
+      "bh"	'consult-history
+      "dc"	'consult-complex-command
+      "xk"	'consult-kmacro
+      "xr"	'consult-register
+      "xl"	'consult-register-load
+      "xs"	'consult-register-store
+      "xi"	'consult-imenu
+      "pb"	'consult-project-buffer)
+
+    (local-leader-map :keymaps 'org-mode-map
+      "s"	'consult-org-heading)
+
+    (general-def
+      "C-x b"	'consult-buffer
+      "C-x 4 b"	'consult-buffer-other-window
+      "C-x 5 b"	'consult-buffer-other-frame
+      "C-x M-:"	'consult-complex-command
+      "C-x r b"	'consult-bookmark
+      "C-x p b"	'consult-project-buffer
+      "M-#"	'consult-register-load
+      "M-'"	'consult-register-store
+      "C-M-#"	'consult-register
+      "M-y"	'consult-yank-pop
+      "<help> a"	'consult-apropos
+      "M-g e"	'consult-compile-error
+      "M-g f"	'consult-flymake
+      "M-g g"	'consult-goto-line
+      "M-g M-g"	'consult-goto-line
+      "M-g o"	'consult-outline
+      "M-g m"	'consult-mark
+      "M-g k"	'consult-global-mark
+      "M-g i"	'consult-imenu
+      "M-g I"	'consult-imenu-multi
+      "M-s d"	'consult-find
+      "M-s D"	'consult-locate
+      "M-s g"	'consult-grep
+      "M-s G"	'consult-git-grep
+      "M-s r"	'consult-ripgrep
+      "C-s"	'consult-line
+      "M-s L"	'consult-line-multi
+      "M-s m"	'consult-multi-occur
+      "M-s k"	'consult-keep-lines
+      "M-s u"	'consult-focus-lines
+      "M-s e"	'consult-isearch-history)
+
+    (general-def :keymaps 'isearch-mode-map
+      "M-e"	'consult-isearch-history
+      "M-s e"	'consult-isearch-history
+      "M-s l"	'consult-line
+      "M-s L"	'consult-line-multi)
+
+    (general-def :keymaps 'minibuffer-local-map
+      "M-s"	'consult-history
+      "M-r"	'consult-history)
+
+    (mmap "gb" 'consult-buffer)
+
     :init
     ;; Optionally configure the register formatting. This improves the register
     ;; preview for `consult-register', `consult-register-load',
@@ -1235,27 +1364,13 @@ You can also use =M-x auto-package-update-now= to update right now!
 ** corfu
 #+begin_src emacs-lisp
   (use-package corfu
-    ;; Optional customizations
     :custom
     (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
     (corfu-auto t)                 ;; Enable auto completion
     (corfu-separator ?\s)          ;; Orderless field separator
     (corfu-quit-at-boundary nil)   ;; Never quit at completion boundary
     (corfu-quit-no-match t)      ;; Never quit, even if there is no match
-    ;; (corfu-preview-current nil)    ;; Disable current candidate preview
-    ;; (corfu-preselect-first nil)    ;; Disable candidate preselection
-    ;; (corfu-on-exact-match nil)     ;; Configure handling of exact matches
-    ;; (corfu-echo-documentation nil) ;; Disable documentation in the echo area
-    ;; (corfu-scroll-margin 5)        ;; Use scroll margin
-
-    ;; Enable Corfu only for certain modes.
-    ;; :hook ((prog-mode . corfu-mode)
-    ;;        (shell-mode . corfu-mode)
-    ;;        (eshell-mode . corfu-mode))
-
-    ;; Recommended: Enable Corfu globally.
-    ;; This is recommended since Dabbrev can be used globally (M-/).
-    ;; See also `corfu-excluded-modes'.
+    (corfu-auto-delay 0.5)
     :init
     (global-corfu-mode))
 #+end_src
@@ -1270,11 +1385,51 @@ You can also use =M-x auto-package-update-now= to update right now!
                   ("M-n" . corfu-doc-scroll-up)
                   ("M-p" . corfu-doc-scroll-down))
       :custom
-      (corfu-doc-delay 0.75)
+      (corfu-doc-delay 1.00)
       (corfu-doc-max-width 70)
       (corfu-doc-max-height 20)
       (corfu-doc-display-within-parent-frame t)
       (corfu-echo-documentation nil))
+#+end_src
+** cape
+#+begin_src emacs-lisp
+  (use-package cape
+    ;; Bind dedicated completion commands
+    ;; Alternative prefix keys: C-c p, M-p, M-+, ...
+    :general
+    (imap :keymaps 'org-mode-map
+      "TAB" 'completion-at-point)
+
+    (leader-map
+      ("p p" 'completion-at-point) ;; capf
+      ("p t" 'complete-tag)        ;; etags
+      ("p d" 'cape-dabbrev)        ;; or dabbrev-completion
+      ("p h" 'cape-history)
+      ("p f" 'cape-file)
+      ("p k" 'cape-keyword)
+      ("p s" 'cape-symbol)
+      ("p a" 'cape-abbrev)
+      ("p i" 'cape-ispell)
+      ("p l" 'cape-line)
+      ("p w" 'cape-dict)
+      ("p \\" 'cape-tex)
+      ("p _" 'cape-tex)
+      ("p ^" 'cape-tex)
+      ("p &" 'cape-sgml)
+      ("p r" 'cape-rfc1345))
+    :init
+    ;;(add-to-list 'completion-at-point-functions #'cape-history)
+    ;;(add-to-list 'completion-at-point-functions #'cape-keyword)
+    ;;(add-to-list 'completion-at-point-functions #'cape-tex)
+    ;;(add-to-list 'completion-at-point-functions #'cape-sgml)
+    ;;(add-to-list 'completion-at-point-functions #'cape-rfc1345)
+    ;;(add-to-list 'completion-at-point-functions #'cape-abbrev)
+    ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
+    ;;(add-to-list 'completion-at-point-functions #'cape-dict)
+    ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
+    ;;(add-to-list 'completion-at-point-functions #'cape-line)
+    (add-to-list 'completion-at-point-functions #'cape-file)
+    (add-to-list 'completion-at-point-functions #'cape-dabbrev))
 #+end_src
 ** kind-icon
 #+begin_src emacs-lisp
@@ -1345,7 +1500,7 @@ You can also use =M-x auto-package-update-now= to update right now!
         ("H" evil-window-decrease-width)
         ("u" winner-undo)
         ("r" (progn (winner-undo) (setq this-command 'winner-undo)))
-        ("d" ranger  :color blue)
+        ("d" dired  :color blue)
         ("f" find-file)
         ("b" consult-buffer  :color blue)
         ("B" me/alternate-buffer)
@@ -1385,9 +1540,20 @@ You can also use =M-x auto-package-update-now= to update right now!
       (global-origami-mode)
       (add-hook 'org-agenda-mode-hook 'origami-mode)))
 #+end_src
-** ranger
+** *DISABLED* ranger
 #+begin_src emacs-lisp
-  (use-package ranger)
+  (use-package ranger
+    :disabled t
+    :config
+    (setq ranger-show-hidden 'format
+          ranger-parent-depth 2
+          ranger-preview-file nil
+          ranger-dont-show-binary t
+          ranger-cleanup-on-disable t
+          ranger-cleanup-eagerly t)
+
+    (general-def ranger-mode-map
+      "C-h" help-map))
 #+end_src
 ** org
 #+begin_src emacs-lisp
@@ -1455,17 +1621,21 @@ You can also use =M-x auto-package-update-now= to update right now!
     (progn
 
       ;; Hooks ;;
+      (org-clock-persistence-insinuate)
       (add-hook 'org-mode-hook 'me/org-mode-initial-setup)
       (add-hook 'org-src-mode-hook 'evil-normalize-keymaps)
 
 
-
       ;; General ;;
       (local-leader-map :keymaps 'org-mode-map
-        "t" 'org-set-tags-command)
+        "t" 'org-set-tags-command
+        "s" 'org-insert-structure-template)
 
       (local-leader-map :keymaps 'org-src-mode-map
-        "t" 'org-edit-src-exit)
+        "s" 'org-edit-src-exit)
+
+      (imap :keymaps 'org-mode-map
+        "TAB" 'completion-at-point)
 
       ;; Directories ;;
       (setq org-directory me/org-dir)
@@ -1495,7 +1665,6 @@ You can also use =M-x auto-package-update-now= to update right now!
       (push '("conf-unix" . conf-unix) org-src-lang-modes)
 
       ;; Time and Clock settings ;;
-      (org-clock-persistence-insinuate)
       (setq org-clock-out-when-done t)
       (setq org-clock-out-remove-zero-time-clocks t)
 
@@ -1505,6 +1674,8 @@ You can also use =M-x auto-package-update-now= to update right now!
       ;; Save the running clock and all clock history when exiting Emacs, load it on startup
       (setq org-clock-persist t)
       (setq org-clock-report-include-clocking-task t)
+      (setq org-clock-persist-query-resume nil)
+      (setq org-clock-auto-clock-resolution (quote when-no-clock-is-running))
 
       ;; Use a function to decide what to change the state to.
       (defun me/switch-task-on-clock-start (task-state)
@@ -1626,6 +1797,8 @@ You can also use =M-x auto-package-update-now= to update right now!
       (setq org-agenda-window-setup 'current-window)
       (setq org-agenda-restore-windows-after-quit t)
       (setq org-agenda-use-time-grid nil)
+      (setq org-deadline-warning-days 1)
+      ;; (setq org-agenda-skip-timestamp-if-done t)
       (setq org-agenda-current-time-string "⏰ ┈┈┈┈┈┈┈┈┈┈┈ now"
             org-agenda-time-grid '((daily today require-timed)
                                    (800 1000 1200 1400 1600 1800 2000)
@@ -1676,7 +1849,7 @@ You can also use =M-x auto-package-update-now= to update right now!
                "* TODO %?\n%U\n" :prepend t)
               ("T" "Task (Scheduled)" entry
                (file me/org-inbox-file)
-               "* TODO %?\nSCHEDULED: %^T\n" :prepend t)
+               "* TODO %?\nSCHEDULED: %^t\n" :prepend t)
               ;; Work ;;
               ("w" "Work Captures")
               ("wt" "Work Task" entry
@@ -1926,13 +2099,12 @@ You can also use =M-x auto-package-update-now= to update right now!
                    (side . right)
                    (slot . 0)
                    (window-width . 0.33)
-                   (window-parameters . ((no-other-window . t)
+                   (window-parameters . ((no-other-window . nil)
                                          (no-delete-other-windows . t)))))
     :config
     (progn
       (setq org-roam-dailies-directory (concat me/org-dir "journals"))
       (require 'org-roam-dailies)
-      (setq org-id-link-to-org-use-id 'create-if-interactive)
       (setq org-roam-completion-everywhere t)
       (setq org-roam-node-display-template
             (concat "${title:*} "
@@ -1958,6 +2130,8 @@ You can also use =M-x auto-package-update-now= to update right now!
                :if-new (file+head "topics/${slug}.org"
                                   "#+TITLE: ${title}\n#+FILETAGS:\n")
                :unnarrowed t)))
+
+
 
       (org-roam-db-autosync-mode)))
 #+end_src
@@ -2015,8 +2189,10 @@ You can also use =M-x auto-package-update-now= to update right now!
 ** magit
 #+begin_src emacs-lisp
   (use-package magit
-    :bind (("C-c g s" . magit))
-    :commands magit-status
+    :general
+    (leader-map
+      "gs" 'magit-status
+      "gS" 'magit-status-here)
     :custom
     (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
     :config
@@ -2050,9 +2226,10 @@ You can also use =M-x auto-package-update-now= to update right now!
     :commands vterm
     :general (leader-map "T" 'vterm)
     :config
-    (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *")  ;; Set this to match your custom shell prompt
-    (setq vterm-shell "fish")                       ;; Set this to customize the shell to launch
-    (setq vterm-max-scrollback 10000))
+    (progn
+      (setq vterm-buffer-name-string "vterm %s")
+      (setq vterm-shell "fish")
+      (setq vterm-max-scrollback 10000)))
 #+end_src
 ** fish-mode
 #+begin_src emacs-lisp
@@ -2061,7 +2238,7 @@ You can also use =M-x auto-package-update-now= to update right now!
 ** dashboard
 #+begin_src emacs-lisp
   (use-package dashboard
-    :init (setq initial-buffer-choice (lambda () (get-buffer "*dashboard*")))
+    :init (add-hook 'desktop-no-desktop-file-hook (lambda () (setq initial-buffer-choice (get-buffer "*dashboard*"))))
     :custom ((dashboard-agenda-sort-strategy '(todo-state-down)))
     :config
     (setq dashboard-week-agenda nil)
@@ -2089,9 +2266,10 @@ You can also use =M-x auto-package-update-now= to update right now!
     (setq dashboard-projects-backend 'project-el)
     (dashboard-setup-startup-hook))
 #+end_src
-** page-break-lines
+** *DISABLED* page-break-lines
 #+begin_src emacs-lisp
   (use-package page-break-lines
+    :disabled t
     :config
     (global-page-break-lines-mode))
 #+end_src
