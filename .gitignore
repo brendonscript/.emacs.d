@@ -9,3 +9,5 @@ var/
 /recentf
 /custom.el
 /.last-package-update-day
+
+*.*#
