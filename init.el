@@ -129,6 +129,10 @@
     (interactive)
     (find-file (expand-file-name (concat user-emacs-directory "README.org"))))
 
+  (defun me/reload-emacs-config ()
+    (interactive)
+    (load-file (expand-file-name (concat user-emacs-directory "init.el"))))
+
   ;; Scrolling
   (defun me/scroll-half-page (direction)
     "Scrolls half page up if `direction' is non-nil, otherwise will scroll half page down."
@@ -586,17 +590,19 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (use-package which-key
   :init (which-key-mode)
   :diminish which-key-mode
+  :after evil
   :config
   (progn
+    (leader-map "C-h" '(which-key-C-h-dispatch :wk t))
+    (local-leader-map "C-h" '(which-key-C-h-dispatch :wk t))
     (setq which-key-allow-evil-operators t)
     (setq which-key-sort-order 'which-key-key-order-alpha)
     (setq which-key-use-C-h-commands nil)
-    (setq which-key-idle-delay 0.5)
-    (which-key-add-key-based-replacements
-      "SPC b" "buffers")))
+    (setq which-key-idle-delay 0.5)))
 
 (use-package general
   :demand t
+  :after (evil which-key)
   :config
   (progn
     (general-evil-setup t)
@@ -612,13 +618,13 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
     ;;  :prefix "SPC")
 
     (general-create-definer leader-map
-     ;;:states '(emacs insert normal visual motion)
-     :keymaps 'override
-     :states '(insert emacs normal hybrid motion visual operator)
-     ;; :prefix-map 'me/leader-prefix-map
-     :global-prefix "C-c"
-     :non-normal-prefix "M-SPC"
-     :prefix "SPC")
+      ;;:states '(emacs insert normal visual motion)
+      :keymaps 'override
+      :states '(insert emacs normal hybrid motion visual operator)
+      ;; :prefix-map 'me/leader-prefix-map
+      :global-prefix "C-c"
+      :non-normal-prefix "M-SPC"
+      :prefix "SPC")
 
     ;; (general-create-definer leader-map
     ;;   :keymaps 'me/leader-prefix-map)
@@ -638,11 +644,16 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
       "d"	'(:ignore t :wk "debug")
       "e"	'(:ignore t :wk "edit")
       "f"	'(:ignore t :wk "files")
-      "fe"	'(:ignore t :wk "emacs")
+      "fe" '(:ignore t :wk "emacs")
+      "g"	'(:ignore t :wk "git")
       "p"	'(:ignore t :wk "projects")
       "r"	'(:ignore t :wk "refactor")
       "s"	'(:ignore t :wk "search")
-      "x"	'(:ignore t :wk "execute"))
+      "x"	'(:ignore t :wk "execute")
+      "T"	'(:ignore t :wk "toggles"))
+
+    (local-leader-map
+      ""	'(nil :which-key "major mode"))
 
     ;; Sim Keys
     (leader-map
@@ -651,13 +662,15 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
       "M" (general-simulate-key "C-c C-x"))
 
     ;; Maps
-    (leader-map "h" help-map)
+    (leader-map
+      "h" '(:keymap help-map :wk "help")
+      "t" '(:keymap tab-prefix-map :wk "tabs"))
 
     ;; Base
     (leader-map
       ";"	'execute-extended-command
       "O"	'other-window-prefix
-      "X"	'(lambda () (interactive) (switch-to-buffer "*scratch*"))
+      "X"	'((lambda () (interactive) (switch-to-buffer "*scratch*")) :wk "scratch")
       "bd"	'kill-this-buffer
       "bD"	'kill-some-buffers
       "bB"	'ibuffer-list-buffers
@@ -668,6 +681,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
       "fs"	'save-buffer
       "fS"	'save-some-buffers
       "fee"	'me/open-config
+      "fer"	'me/reload-emacs-config
       "feq"	'save-buffers-kill-emacs
       "feQ"	'kill-emacs
       "xp"	'check-parens)
@@ -720,7 +734,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
       "gu" 'universal-argument)
 
     (setq me/window-map (cons 'keymap evil-window-map))
-    (leader-map "w" me/window-map)
+    (leader-map "w" '(:keymap me/window-map :wk "windows"))
 
     (evil-ex-define-cmd "q" #'kill-this-buffer)
     (evil-ex-define-cmd "wq" #'me/save-and-kill-this-buffer)))
@@ -854,12 +868,12 @@ play well with `evil-mc'."
     (setq avy-timeout-seconds 0.6)
 
     (general-def :states '(normal visual motion)
-      "gs"	'avy-goto-char-timer
-      "gS"	'avy-resume)
+      "gf"	'avy-goto-char-timer
+      "gF"	'avy-resume)
 
     (general-def :states '(normal visual motion insert emacs)
-      "C-S-f"	'avy-resume
-      "C-f"	'avy-goto-char-timer)))
+      "M-S-f"	'avy-resume
+      "M-f"	'avy-goto-char-timer)))
 
 (use-package doom-themes
   :demand t
@@ -1008,7 +1022,7 @@ play well with `evil-mc'."
     "M-s"	'consult-history
     "M-r"	'consult-history)
 
-  (mmap "gb" 'consult-buffer)
+  (mmap "gB" 'consult-buffer)
 
   :init
   ;; Optionally configure the register formatting. This improves the register
@@ -1357,10 +1371,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
         ranger-preview-file nil
         ranger-dont-show-binary t
         ranger-cleanup-on-disable t
-        ranger-cleanup-eagerly t)
-
-  (general-def ranger-mode-map
-    "C-h" help-map))
+        ranger-cleanup-eagerly t))
 
 (use-package org
   :demand t
@@ -1434,13 +1445,15 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
     ;; General ;;
     (local-leader-map :keymaps 'org-mode-map
       "t" 'org-set-tags-command
-      "s" 'org-insert-structure-template)
+      "xs" 'org-insert-structure-template)
 
     (local-leader-map :keymaps 'org-src-mode-map
       "s" 'org-edit-src-exit)
 
     (imap :keymaps 'org-mode-map
       "TAB" 'completion-at-point)
+    (mmap :keymaps 'org-mode-map
+      "C-S-s" 'consult-org-heading)
 
     ;; Directories ;;
     (setq org-directory me/org-dir)
@@ -1591,7 +1604,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
     ;; Open links in current window
     (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file)
-    (setq org-agenda-files '("~/Org/inbox.org" "~/Org/todo.org"))
+    (setq org-agenda-files '("~/Org/inbox.org" "~/Org/todo.org" "~/Org/projects/"))
     ;;(directory-files-recursively "~/Org/" "^[a-z0-9]*.org$")
     (setq org-agenda-start-on-weekday nil)
     (setq org-agenda-start-with-log-mode t)
@@ -1912,8 +1925,8 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
              :target (file+head "fleeting/%<%Y%m%d-%H%M%S>--${slug}.org"
                                 "#+TITLE: %<%Y%m%d-%H%M%S>--${title}\n")
              :unnarrowed t)
-            ("p" "project" plain "* Goals\n\n%?\n\n* Tasks\n\n** TODO Add initial tasks\n\n* Dates\n\n"
-             :if-new (file+head "projects/%<%Y%m%d%H%M%S>--${slug}.org" "#+TITLE: ${title}\n#+FILETAGS: :project:")
+            ("p" "project" plain "* Tasks\n\n** TODO Add initial tasks\n\n* Dates\n\n"
+             :if-new (file+head "projects/${slug}.org" "#+TITLE: ${title}\n#+FILETAGS: :project:\n#+CATEGORY: inbox\n#+PROPERTY: agenda-group inbox\n")
              :unnarrowed t)
             ("t" "topic" plain "\n%?"
              :if-new (file+head "topics/${slug}.org"
@@ -1995,9 +2008,21 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
   :hook (prog-mode . format-all-mode)
   :general (leader-map "=" 'format-all-buffer))
 
+(use-package tree-sitter
+  :config
+  (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode)
+  (global-tree-sitter-mode))
+
+(use-package tree-sitter-langs)
+(use-package tree-sitter-indent)
+
+(use-package csharp-mode
+  :config
+  (add-to-list 'auto-mode-alist '("\\.cs\\'" . csharp-tree-sitter-mode)))
+
 (use-package vterm
   :commands vterm
-  :general (leader-map "T" 'vterm)
+  :general (leader-map "`" 'vterm)
   :config
   (progn
     (setq vterm-buffer-name-string "vterm %s")
