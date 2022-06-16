@@ -1233,22 +1233,22 @@ play well with `evil-mc'."
     "TAB" 'completion-at-point)
 
   (leader-map
-    ("p p" 'completion-at-point) ;; capf
-    ("p t" 'complete-tag)        ;; etags
-    ("p d" 'cape-dabbrev)        ;; or dabbrev-completion
-    ("p h" 'cape-history)
-    ("p f" 'cape-file)
-    ("p k" 'cape-keyword)
-    ("p s" 'cape-symbol)
-    ("p a" 'cape-abbrev)
-    ("p i" 'cape-ispell)
-    ("p l" 'cape-line)
-    ("p w" 'cape-dict)
-    ("p \\" 'cape-tex)
-    ("p _" 'cape-tex)
-    ("p ^" 'cape-tex)
-    ("p &" 'cape-sgml)
-    ("p r" 'cape-rfc1345))
+    ("pp" 'completion-at-point) ;; capf
+    ("pt" 'complete-tag)        ;; etags
+    ("pd" 'cape-dabbrev)        ;; or dabbrev-completion
+    ("ph" 'cape-history)
+    ("pf" 'cape-file)
+    ("pk" 'cape-keyword)
+    ("ps" 'cape-symbol)
+    ("pa" 'cape-abbrev)
+    ("pi" 'cape-ispell)
+    ("pl" 'cape-line)
+    ("pw" 'cape-dict)
+    ("p\\" 'cape-tex)
+    ("p_" 'cape-tex)
+    ("p^" 'cape-tex)
+    ("p&" 'cape-sgml)
+    ("pr" 'cape-rfc1345))
   :init
   ;;(add-to-list 'completion-at-point-functions #'cape-history)
   ;;(add-to-list 'completion-at-point-functions #'cape-keyword)
@@ -1260,8 +1260,8 @@ play well with `evil-mc'."
   ;;(add-to-list 'completion-at-point-functions #'cape-dict)
   ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
   ;;(add-to-list 'completion-at-point-functions #'cape-line)
-  (add-to-list 'completion-at-point-functions #'cape-file)
-  (add-to-list 'completion-at-point-functions #'cape-dabbrev))
+  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
+  (add-to-list 'completion-at-point-functions #'cape-file))
 
 (use-package kind-icon
   :after corfu
@@ -2008,6 +2008,26 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
   :hook (prog-mode . format-all-mode)
   :general (leader-map "=" 'format-all-buffer))
 
+(use-package yasnippet)
+
+(use-package winum
+  :init
+  (leader-map
+    "w0" 'winum-select-window-0-or-10
+    "w1" 'winum-select-window-1
+    "w2" 'winum-select-window-2
+    "w3" 'winum-select-window-3
+    "w4" 'winum-select-window-4
+    "w5" 'winum-select-window-5
+    "w6" 'winum-select-window-6
+    "w7" 'winum-select-window-7
+    "w8" 'winum-select-window-8
+    "w9" 'winum-select-window-9
+    "w`" 'winum-select-window-by-number
+    "w²" 'winum-select-window-by-number)
+  :config
+  (winum-mode))
+
 (use-package tree-sitter
   :config
   (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode)
@@ -2015,6 +2035,49 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
 (use-package tree-sitter-langs)
 (use-package tree-sitter-indent)
+
+(use-package treemacs)
+
+(use-package lsp-mode
+  :custom (lsp-completion-provider :none) ;; we use Corfu!
+  :init
+  (setq lsp-keymap-prefix "C-c L")
+  (defun me/orderless-dispatch-flex-first (_pattern index _total)
+    (and (eq index 0) 'orderless-flex))
+
+  (defun me/lsp-mode-setup-completion ()
+    (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
+          '(orderless)))
+
+  ;; Optionally configure the first word as flex filtered.
+  (add-hook 'orderless-style-dispatchers #'me/orderless-dispatch-flex-first nil 'local)
+
+  ;; Optionally configure the cape-capf-buster.
+  (setq-local completion-at-point-functions (list (cape-capf-buster #'lsp-completion-at-point)))
+
+  :hook
+  (lsp-completion-mode . me/lsp-mode-setup-completion)
+  (lsp-mode . lsp-enable-which-key-integration)
+  (csharp-mode . lsp)
+  (csharp-tree-sitter-mode . lsp)
+  (typescript-mode . lsp)
+  :commands lsp
+  :config
+  (leader-map "L" lsp-command-map))
+
+(use-package lsp-ui :commands lsp-ui-mode)
+
+(use-package lsp-treemacs :commands lsp-treemacs-errors-list)
+
+(use-package dap-mode
+  :config
+  (progn
+    (dap-auto-configure-mode)
+    (require 'dap-node)
+    (dap-node-setup)
+    (require 'dap-netcore)))
+
+(use-package typescript-mode)
 
 (use-package csharp-mode
   :config
