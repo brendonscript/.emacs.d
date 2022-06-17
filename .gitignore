@@ -2,6 +2,7 @@ eln-cache/
 elpa/
 etc/
 var/
+quelpa/
 
 *.txt
 /.org-id-locations

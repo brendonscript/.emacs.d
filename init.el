@@ -63,6 +63,18 @@
 (require 'use-package)
 (setq use-package-always-ensure t)
 
+(unless (package-installed-p 'quelpa)
+  (with-temp-buffer
+    (url-insert-file-contents "https://raw.githubusercontent.com/quelpa/quelpa/master/quelpa.el")
+    (eval-buffer)
+    (quelpa-self-upgrade)))
+
+(quelpa
+ '(quelpa-use-package
+   :fetcher git
+   :url "https://github.com/quelpa/quelpa-use-package.git"))
+(require 'quelpa-use-package)
+
 (use-package auto-package-update
   :custom
   (auto-package-update-interval 7)
@@ -593,8 +605,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   :after evil
   :config
   (progn
-    (leader-map "C-h" '(which-key-C-h-dispatch :wk t))
-    (local-leader-map "C-h" '(which-key-C-h-dispatch :wk t))
     (setq which-key-allow-evil-operators t)
     (setq which-key-sort-order 'which-key-key-order-alpha)
     (setq which-key-use-C-h-commands nil)
@@ -676,15 +686,20 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
       "bB"	'ibuffer-list-buffers
       "ea"	'align-regexp
       "eA"	'align
-      "er"	'query-relace
+      "er"	'query-replace
       "ff"	'find-file
       "fs"	'save-buffer
-      "fS"	'save-some-buffers
+      "fS"	'me/save-all-unsaved
       "fee"	'me/open-config
       "fer"	'me/reload-emacs-config
       "feq"	'save-buffers-kill-emacs
       "feQ"	'kill-emacs
-      "xp"	'check-parens)
+      "xp"	'check-parens
+      "xe"    'eval-last-sexp
+      "xb"    'eval-buffer)
+
+    (leader-map "C-h" '(which-key-C-h-dispatch :wk t))
+    (local-leader-map "C-h" '(which-key-C-h-dispatch :wk t))
 
     (general-def
       "C-v" 'me/scroll-half-page-down
@@ -917,16 +932,20 @@ play well with `evil-mc'."
 
 (use-package vertico
   :init (vertico-mode)
-  :bind
-  (:map vertico-map
-        ("C-j" . vertico-next)
-        ("C-J" . vertico-next-group)
-        ("C-k" . vertico-previous)
-        ("C-K" . vertico-previous-group)
-        ("M-RET" . minibuffer-force-complete-and-exit)
-        ("M-TAB" . minibuffer-complete))
   :config
   (progn
+    (general-def vertico-map
+      "C-d"	'vertico-scroll-up
+      "C-u"	'vertico-scroll-down
+      "C-v"	'vertico-scroll-up
+      "M-v"	'vertico-scroll-down
+      "C-j"	'vertico-next
+      "C-J"	'vertico-next-group
+      "C-k"	'vertico-previous
+      "C-K"	'vertico-previous-group
+      "M-RET"	'minibuffer-force-complete-and-exit
+      "M-TAB"	'minibuffer-complete)
+
     (advice-add #'vertico--format-candidate :around
                 (lambda (orig cand prefix suffix index _start)
                   (setq cand (funcall orig cand prefix suffix index _start))
@@ -1206,9 +1225,11 @@ play well with `evil-mc'."
   (corfu-separator ?\s)          ;; Orderless field separator
   (corfu-quit-at-boundary nil)   ;; Never quit at completion boundary
   (corfu-quit-no-match t)      ;; Never quit, even if there is no match
-  (corfu-auto-delay 0.5)
+  (corfu-auto-delay 0.1)
   :init
-  (global-corfu-mode))
+  (global-corfu-mode)
+  :config
+  (setq completion-category-overrides '((eglot (styles orderless)))))
 
 (use-package corfu-doc
     ;; NOTE 2022-02-05: At the time of writing, `corfu-doc' is not yet on melpa
@@ -1219,7 +1240,7 @@ play well with `evil-mc'."
                 ("M-n" . corfu-doc-scroll-up)
                 ("M-p" . corfu-doc-scroll-down))
     :custom
-    (corfu-doc-delay 1.00)
+    (corfu-doc-delay 0.1)
     (corfu-doc-max-width 70)
     (corfu-doc-max-height 20)
     (corfu-doc-display-within-parent-frame t)
@@ -1251,14 +1272,14 @@ play well with `evil-mc'."
     ("pr" 'cape-rfc1345))
   :init
   ;;(add-to-list 'completion-at-point-functions #'cape-history)
-  ;;(add-to-list 'completion-at-point-functions #'cape-keyword)
+  (add-to-list 'completion-at-point-functions #'cape-keyword)
   ;;(add-to-list 'completion-at-point-functions #'cape-tex)
   ;;(add-to-list 'completion-at-point-functions #'cape-sgml)
   ;;(add-to-list 'completion-at-point-functions #'cape-rfc1345)
   ;;(add-to-list 'completion-at-point-functions #'cape-abbrev)
   ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
   ;;(add-to-list 'completion-at-point-functions #'cape-dict)
-  ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
+  (add-to-list 'completion-at-point-functions #'cape-symbol)
   ;;(add-to-list 'completion-at-point-functions #'cape-line)
   (add-to-list 'completion-at-point-functions #'cape-dabbrev)
   (add-to-list 'completion-at-point-functions #'cape-file))
@@ -1441,6 +1462,8 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
     (add-hook 'org-mode-hook 'me/org-mode-initial-setup)
     (add-hook 'org-src-mode-hook 'evil-normalize-keymaps)
 
+    (general-def org-src-mode-map
+      [remap save-buffer] 'org-edit-src-exit)
 
     ;; General ;;
     (local-leader-map :keymaps 'org-mode-map
@@ -2028,6 +2051,49 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
   :config
   (winum-mode))
 
+(use-package treemacs)
+
+(use-package xref
+  :ensure nil
+  :config
+  (with-eval-after-load 'evil
+    (mmap xref--xref-buffer-mode-map
+      "<backtab" #'xref-prev-group
+      "<return" #'xref-goto-xref
+      "<tab>" #'xref-next-group)))
+
+(use-package eglot
+  :preface
+  (defun me/eglot-shutdown-project ()
+    "Kill the LSP server for the current project if it exists."
+    (when-let ((server (eglot-current-server)))
+      (eglot-shutdown server)))
+  :custom (eglot-autoshutdown t)
+  :hook (typescript-mode . eglot-ensure)
+  :init (put 'eglot-server-programs 'safe-local-variable 'listp)
+  :config
+  (progn
+    (setq completion-category-defaults nil)
+    (add-to-list 'eglot-stay-out-of 'eldoc-documentation-strategy)
+    (put 'eglot-error 'flymake-overlay-control nil)
+    (put 'eglot-warning 'flymake-overlay-control nil)
+    (advice-add 'project-kill-buffers :before #'me/eglot-shutdown-project)))
+
+(use-package consult-eglot
+  :init
+  (with-eval-after-load 'evil
+    (mmap elgot-mode-map
+      "gs" #'consult-elgot-symbols)))
+
+(use-package flymake
+  :ensure nil
+  :custom
+  (flymake-fringe-indicator-position nil))
+
+(use-package prettier
+  :config
+  (add-to-list 'prettier-enabled-parsers 'json-stringify))
+
 (use-package tree-sitter
   :config
   (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode)
@@ -2035,39 +2101,6 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
 (use-package tree-sitter-langs)
 (use-package tree-sitter-indent)
-
-(use-package treemacs)
-
-(use-package lsp-mode
-  :custom (lsp-completion-provider :none) ;; we use Corfu!
-  :init
-  (setq lsp-keymap-prefix "C-c L")
-  (defun me/orderless-dispatch-flex-first (_pattern index _total)
-    (and (eq index 0) 'orderless-flex))
-
-  (defun me/lsp-mode-setup-completion ()
-    (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
-          '(orderless)))
-
-  ;; Optionally configure the first word as flex filtered.
-  (add-hook 'orderless-style-dispatchers #'me/orderless-dispatch-flex-first nil 'local)
-
-  ;; Optionally configure the cape-capf-buster.
-  (setq-local completion-at-point-functions (list (cape-capf-buster #'lsp-completion-at-point)))
-
-  :hook
-  (lsp-completion-mode . me/lsp-mode-setup-completion)
-  (lsp-mode . lsp-enable-which-key-integration)
-  (csharp-mode . lsp)
-  (csharp-tree-sitter-mode . lsp)
-  (typescript-mode . lsp)
-  :commands lsp
-  :config
-  (leader-map "L" lsp-command-map))
-
-(use-package lsp-ui :commands lsp-ui-mode)
-
-(use-package lsp-treemacs :commands lsp-treemacs-errors-list)
 
 (use-package dap-mode
   :config
@@ -2077,7 +2110,38 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
     (dap-node-setup)
     (require 'dap-netcore)))
 
-(use-package typescript-mode)
+(use-package typescript-mode
+  :after tree-sitter
+  :custom (typescript-indent-level 2)
+  :config
+  ;; we choose this instead of tsx-mode so that eglot can automatically figure out language for server
+  ;; see https://github.com/joaotavora/eglot/issues/624 and https://github.com/joaotavora/eglot#handling-quirky-servers
+  (define-derived-mode typescriptreact-mode typescript-mode
+    "TypeScript TSX")
+
+  ;; use our derived mode for tsx files
+  (add-to-list 'auto-mode-alist '("\\.tsx?\\'" . typescriptreact-mode))
+  ;; by default, typescript-mode is mapped to the treesitter typescript parser
+  ;; use our derived mode to map both .tsx AND .ts -> typescriptreact-mode -> treesitter tsx
+  (add-to-list 'tree-sitter-major-mode-language-alist '(typescriptreact-mode . tsx)))
+
+(use-package tsi
+  :after tree-sitter
+  :quelpa (tsi :fetcher github :repo "orzechowskid/tsi.el")
+  ;; define autoload definitions which when actually invoked will cause package to be loaded
+  :commands (tsi-typescript-mode tsi-json-mode tsi-css-mode)
+  :init
+  (add-hook 'typescript-mode-hook (lambda () (tsi-typescript-mode 1)))
+  (add-hook 'json-mode-hook (lambda () (tsi-json-mode 1)))
+  (add-hook 'css-mode-hook (lambda () (tsi-css-mode 1)))
+  (add-hook 'scss-mode-hook (lambda () (tsi-scss-mode 1))))
+
+;; auto-format different source code files extremely intelligently
+;; https://github.com/radian-software/apheleia
+(use-package apheleia
+  :ensure t
+  :config
+  (apheleia-global-mode +1))
 
 (use-package csharp-mode
   :config
