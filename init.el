@@ -4,7 +4,7 @@
 
 (setq gc-cons-threshold 200000000)
 
-(setq native-comp-async-report-warnings-errors 'silent)
+(setq native-comp-async-report-warnings-errors nil)
 (setq warning-minimum-level :error)
 
 (defun me/display-startup-time ()
@@ -29,10 +29,6 @@
 (when (fboundp 'set-fringe-mode)
   (set-fringe-mode 10))
 
-(setq custom-file (concat user-emacs-directory "custom.el"))
-(when (file-exists-p custom-file)
-  (load custom-file))
-
 (set-frame-parameter (selected-frame) 'fullscreen 'maximized)
 (add-to-list 'default-frame-alist '(fullscreen . maximized))
 
@@ -45,35 +41,20 @@
 (defconst IS-BSD     (or IS-MAC (eq system-type 'berkeley-unix))
   "If the host is running BSD return true")
 
-;; Initialize package sources
-(require 'package)
-
-(setq package-archives '(("nongnu" . "https://elpa.nongnu.org/nongnu/")
-                         ("melpa" . "https://melpa.org/packages/")
-                         ("gnu" . "https://elpa.gnu.org/packages/")))
-
-(package-initialize)
-(unless package-archive-contents
-  (package-refresh-contents))
-
-;; Initialize use-package on non-Linux platforms
-(unless (package-installed-p 'use-package)
-  (package-install 'use-package))
-
-(require 'use-package)
-(setq use-package-always-ensure t)
-
-(unless (package-installed-p 'quelpa)
-  (with-temp-buffer
-    (url-insert-file-contents "https://raw.githubusercontent.com/quelpa/quelpa/master/quelpa.el")
-    (eval-buffer)
-    (quelpa-self-upgrade)))
-
-(quelpa
- '(quelpa-use-package
-   :fetcher git
-   :url "https://github.com/quelpa/quelpa-use-package.git"))
-(require 'quelpa-use-package)
+(setq straight-use-package-by-default t)
+(defvar bootstrap-version)
+(let ((bootstrap-file
+       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
+      (bootstrap-version 5))
+  (unless (file-exists-p bootstrap-file)
+    (with-current-buffer
+        (url-retrieve-synchronously
+         "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
+         'silent 'inhibit-cookies)
+      (goto-char (point-max))
+      (eval-print-last-sexp)))
+  (load bootstrap-file nil 'nomessage))
+(straight-use-package 'use-package)
 
 (use-package auto-package-update
   :custom
@@ -84,22 +65,114 @@
   (auto-package-update-maybe)
   (auto-package-update-at-time "09:00"))
 
-;; NOTE: If you want to move everything out of the ~/.emacs.d folder
-;; reliably, set `user-emacs-directory` before loading no-littering!
-					;(setq user-emacs-directory "~/.cache/emacs")
-
 (use-package no-littering
   :demand t
   :config
-  (setq message-auto-save-directory
-	;; no-littering doesn't set this by default so we must place
-	;; auto save files in the same path as it uses for sessions
-	(setq auto-save-file-name-transforms
-	      `((".*" ,(no-littering-expand-var-file-name "auto-save/") t)
-		("*.txt" ,(no-littering-expand-var-file-name "auto-save/") t)))))
+  (setq auto-save-file-name-transforms
+        `((".*" ,(no-littering-expand-var-file-name "auto-save/") t)))
+  (setq custom-file (no-littering-expand-etc-file-name "custom.el")))
+
+(use-package general
+  :demand t
+  :config
+  (progn
+    (general-evil-setup t)
+
+    ;; Leader Def ;;
+    ;; (general-define-key
+    ;;  ;;:states '(emacs insert normal visual motion)
+    ;;  :keymaps 'override
+    ;;  :states '(insert emacs normal hybrid motion visual operator)
+    ;;  :prefix-map 'me/leader-prefix-map
+    ;;  :global-prefix "C-c"
+    ;;  :non-normal-prefix "M-SPC"
+    ;;  :prefix "SPC")
+    (general-auto-unbind-keys)
+
+    (general-create-definer leader-map
+      ;;:states '(emacs insert normal visual motion)
+      :keymaps 'override
+      :states '(insert emacs normal hybrid motion visual operator)
+      ;; :prefix-map 'me/leader-prefix-map
+      :global-prefix "C-c"
+      :non-normal-prefix "M-SPC"
+      :prefix "SPC")
+
+    ;; (general-create-definer leader-map
+    ;;   :keymaps 'me/leader-prefix-map)
+
+    (general-create-definer local-leader-map
+      :keymaps 'override
+      :states '(insert emacs normal hybrid motion visual operator)
+      ;;:states '(emacs insert normal visual motion)
+      :global-prefix "C-c m"
+      :non-normal-prefix "M-SPC m"
+      :prefix "SPC m")
+
+    ;; Prefixes
+    (leader-map
+      ""	'(nil :which-key "my lieutenant general prefix")
+      "b"	'(:ignore t :wk "buffers")
+      "d"	'(:ignore t :wk "debug")
+      "e"	'(:ignore t :wk "edit")
+      "o" '(:ignore t :wk "org")
+      "f"	'(:ignore t :wk "files")
+      "fe" '(:ignore t :wk "emacs")
+      "g"	'(:ignore t :wk "git")
+      "p"	'(:ignore t :wk "projects")
+      "r"	'(:ignore t :wk "refactor")
+      "s"	'(:ignore t :wk "search")
+      "x"	'(:ignore t :wk "execute")
+      "T"	'(:ignore t :wk "toggles"))
+
+    (local-leader-map
+      ""	'(nil :which-key "major mode"))
+
+    ;; Sim Keys
+    (leader-map
+      "," (general-simulate-key "C-c")
+      "C" (general-simulate-key "C-x")
+      "M" (general-simulate-key "C-c C-x"))
+
+    ;; Maps
+    (leader-map
+      "h" '(:keymap help-map :wk "help")
+      "t" '(:keymap tab-prefix-map :wk "tabs"))
+
+    ;; Base
+    (leader-map
+      ";"	'execute-extended-command
+      "O"	'other-window-prefix
+      "X"	'((lambda () (interactive) (switch-to-buffer "*scratch*")) :wk "scratch")
+      "bd" 'bury-buffer
+      "bp" 'me/alternate-buffer
+      "bk"	'kill-this-buffer
+      "bK"	'kill-some-buffers
+      "bB"	'ibuffer-list-buffers
+      "ea"	'align-regexp
+      "eA"	'align
+      "er"	'query-replace
+      "ff"	'find-file
+      "fs"	'save-buffer
+      "fS"	'me/save-all-unsaved
+      "fee"	'me/open-config
+      "fer"	'me/reload-emacs-config
+      "feq"	'save-buffers-kill-emacs
+      "feQ"	'kill-emacs
+      "xp"	'check-parens
+      "xe"    'eval-last-sexp
+      "xb"    'eval-buffer)
+
+    (leader-map "C-h" '(which-key-C-h-dispatch :wk t))
+    (local-leader-map "C-h" '(which-key-C-h-dispatch :wk t))
+
+    (general-def
+      "C-v" 'me/scroll-half-page-down
+      "M-v" 'me/scroll-half-page-up)))
 
 (use-package emacs
-  :ensure nil
+  :demand t
+  :straight nil
   :preface
   ;; Fonts and Text ;;
   (defvar me/default-font-size 160)
@@ -187,13 +260,16 @@
 
     ;; Bells and Ringers ;;
     (setq visible-bell nil)
-    (setq ring-bell-function #'ignore)
+    (setq ring-bell-function 'ignore)
 
     ;; History and persistence ;;
+    (require 'recentf)
+    (add-to-list 'recentf-exclude no-littering-var-directory)
+    (add-to-list 'recentf-exclude no-littering-etc-directory)
     (setq recentf-max-menu-items 40)
     (setq recentf-max-saved-items 250)
     (setq save-interprogram-paste-before-kill t)
-    (setq initial-buffer-choice (lambda () (get-buffer "*scratch*")))
+    (setq initial-buffer-choice t)
     (require 'desktop)
     (customize-set-variable 'desktop-save 't)
     (desktop-save-mode 1)
@@ -347,7 +423,7 @@
             ns-function-modifier 'hyper))))
 
 (use-package ediff
-  :ensure nil
+  :straight nil
   :config
   (progn
     (setq ediff-diff-options "")
@@ -356,13 +432,14 @@
     (setq ediff-split-window-function 'split-window-vertically)))
 
 (use-package smerge-mode
-  :ensure nil
+  :straight nil
   :init (setq smerge-command-prefix "")
   :config
   (progn
-    (defhydra hydra/smerge
-      (:color pink :hint nil :post (smerge-auto-leave))
-      "
+    (with-eval-after-load 'hydra
+      (defhydra hydra/smerge
+        (:color pink :hint nil :post (smerge-auto-leave))
+        "
 ^Move^       ^Keep^               ^Diff^                 ^Other^
 ^^-----------^^-------------------^^---------------------^^-------
 _n_ext       _b_ase               _<_: upper/base        _C_ombine
@@ -371,28 +448,29 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 ^^           _a_ll                _R_efine
 ^^           _RET_: current       _E_diff
 "
-      ("n" smerge-next)
-      ("p" smerge-prev)
-      ("b" smerge-keep-base)
-      ("u" smerge-keep-upper)
-      ("l" smerge-keep-lower)
-      ("a" smerge-keep-all)
-      ("RET" smerge-keep-current)
-      ("\C-m" smerge-keep-current)
-      ("<" smerge-diff-base-upper)
-      ("=" smerge-diff-upper-lower)
-      (">" smerge-diff-base-lower)
-      ("R" smerge-refine)
-      ("E" smerge-ediff)
-      ("C" smerge-combine-with-next)
-      ("r" smerge-resolve)
-      ("k" smerge-kill-current)
-      ("q" nil "cancel" :color blue))
-
-    (bind-key "C-c g d" 'hydra/smerge/body)))
+        ("n" smerge-next)
+        ("p" smerge-prev)
+        ("b" smerge-keep-base)
+        ("u" smerge-keep-upper)
+        ("l" smerge-keep-lower)
+        ("a" smerge-keep-all)
+        ("RET" smerge-keep-current)
+        ("\C-m" smerge-keep-current)
+        ("<" smerge-diff-base-upper)
+        ("=" smerge-diff-upper-lower)
+        (">" smerge-diff-base-lower)
+        ("R" smerge-refine)
+        ("E" smerge-ediff)
+        ("C" smerge-combine-with-next)
+        ("r" smerge-resolve)
+        ("k" smerge-kill-current)
+        ("q" nil "cancel" :color blue))
+      (with-eval-after-load 'general
+        (leader-map smerge-mode-map
+           "gm" 'hydra/smerge/body)))))
 
 (use-package dired
-  :ensure nil
+  :straight nil
   :commands (dired dired-jump)
   :bind (("C-x C-j" . dired-jump))
   :custom ((dired-listing-switches "-agho --group-directories-first"))
@@ -429,7 +507,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
       "H" 'dired-hide-dotfiles-mode)))
 
 (use-package erc
-  :ensure nil
+  :straight nil
   :config
   (setq erc-server "irc.libera.chat"
         erc-nick "geoffery"
@@ -442,6 +520,34 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
         ;; Stop displaying channels in the mode line for no good reason.
         erc-track-exclude-type '("JOIN" "KICK" "NICK" "PART" "QUIT" "MODE" "333" "353")
         erc-hide-list '("JOIN" "PART" "QUIT" "KICK" "NICK" "MODE" "333" "353")))
+
+(use-package doom-themes
+  :init
+  (load-theme 'doom-gruvbox t)
+  :config
+  (progn
+    (setq doom-themes-enable-bold t
+          doom-themes-enable-italic t)
+    (setq doom-themes-treemacs-theme "doom-atom")
+    (with-eval-after-load 'treemacs
+      (doom-themes-treemacs-config))
+    (with-eval-after-load 'org
+      (doom-themes-org-config))))
+
+(use-package doom-modeline
+  :init (doom-modeline-mode 1)
+  :custom ((doom-modeline-bar-width 3)
+           (doom-modeline-minor-modes nil)
+           (doom-modeline-buffer-file-name-style 'truncate-with-project)
+           (doom-modeline-minor-modes nil)
+           (doom-modeline-modal-icon t))
+  ;; This configuration to is fix a bug where certain windows would not display
+  ;; their full content due to the overlapping modeline
+  :config (advice-add #'fit-window-to-buffer :before (lambda (&rest _) (redisplay t))))
+
+(use-package solaire-mode
+  :config
+  (solaire-global-mode))
 
 (use-package exec-path-from-shell
   :if IS-MAC
@@ -458,151 +564,11 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (use-package posframe
   :demand t)
 
-(use-package persistent-scratch
-  :disabled t
-  :after (no-littering org)
-  :custom ((persistent-scratch-autosave-interval 180))
-  :config
-  (add-hook 'after-init-hook 'persistent-scratch-setup-default))
-
-(use-package meow
-  :disabled t
-  :after helpful
-  :init (progn
-          (setq meow-cheatsheet-layout meow-cheatsheet-layout-qwerty)
-          (meow-motion-overwrite-define-key
-           '("j" . meow-next)
-           '("k" . meow-prev)
-           '("<escape>" . ignore))
-
-          (meow-leader-define-key
-           ;; SPC j/k will run the original command in MOTION state.
-           '("j" . "H-j")
-           '("k" . "H-k")
-           ;; Use SPC (0-9) for digit arguments.
-           '("1" . meow-digit-argument)
-           '("2" . meow-digit-argument)
-           '("3" . meow-digit-argument)
-           '("4" . meow-digit-argument)
-           '("5" . meow-digit-argument)
-           '("6" . meow-digit-argument)
-           '("7" . meow-digit-argument)
-           '("8" . meow-digit-argument)
-           '("9" . meow-digit-argument)
-           '("0" . meow-digit-argument)
-           '("b" . consult-buffer)
-           '("/" . meow-keypad-describe-key)
-           '("?" . meow-cheatsheet))
-          (meow-normal-define-key
-           '("0" . meow-expand-0)
-           '("9" . meow-expand-9)
-           '("8" . meow-expand-8)
-           '("7" . meow-expand-7)
-           '("6" . meow-expand-6)
-           '("5" . meow-expand-5)
-           '("4" . meow-expand-4)
-           '("3" . meow-expand-3)
-           '("2" . meow-expand-2)
-           '("1" . meow-expand-1)
-           '("-" . negative-argument)
-           '(";" . meow-reverse)
-           '("," . meow-inner-of-thing)
-           '("." . meow-bounds-of-thing)
-           '("[" . meow-beginning-of-thing)
-           '("]" . meow-end-of-thing)
-           '("a" . meow-append)
-           '("A" . meow-open-below)
-           '("b" . meow-back-word)
-           '("B" . meow-back-symbol)
-           '("c" . meow-change)
-           '("d" . meow-delete)
-           '("D" . meow-backward-delete)
-           '("e" . meow-next-word)
-           '("E" . meow-next-symbol)
-           '("f" . meow-find)
-           '("g" . meow-cancel-selection)
-           '("G" . meow-grab)
-           '("h" . meow-left)
-           '("H" . meow-left-expand)
-           '("i" . meow-insert)
-           '("I" . meow-open-above)
-           '("j" . meow-next)
-           '("J" . meow-next-expand)
-           '("k" . meow-prev)
-           '("K" . meow-prev-expand)
-           '("l" . meow-right)
-           '("L" . meow-right-expand)
-           '("m" . meow-join)
-           '("n" . meow-search)
-           '("o" . meow-block)
-           '("O" . meow-to-block)
-           '("p" . meow-yank)
-           '("q" . meow-quit)
-           '("Q" . meow-goto-line)
-           '("r" . meow-replace)
-           '("R" . meow-swap-grab)
-           '("s" . meow-kill)
-           '("t" . meow-till)
-           '("u" . meow-undo)
-           '("U" . undo-tree-redo)
-           '("v" . meow-visit)
-           '("w" . meow-mark-word)
-           '("W" . meow-mark-symbol)
-           '("x" . meow-line)
-           '("X" . meow-goto-line)
-           '("y" . meow-save)
-           '("Y" . meow-sync-grab)
-           '("z" . meow-pop-selection)
-           '("'" . repeat)
-           '("<escape>" . ignore)
-           '("C-d" . me/scroll-half-page-down)
-           '("C-b" . me/scroll-half-page-up))
-
-          (setq meow-mode-state-list '((authinfo-mode . normal)
-                                       (beancount-mode . normal)
-                                       (bibtex-mode . normal)
-                                       (cider-repl-mode . normal)
-                                       (cider-test-report-mode . normal)
-                                       (cider-browse-spec-view-mode . motion)
-                                       (cargo-process-mode . normal)
-                                       (conf-mode . normal)
-                                       (deadgrep-edit-mode . normal)
-                                       (deft-mode . normal)
-                                       (diff-mode . normal)
-                                       (ediff-mode . motion)
-                                       (gud-mode . normal)
-                                       (haskell-interactive-mode . normal)
-                                       (help-mode . normal)
-                                       (helpful-mode . normal)
-                                       (json-mode . normal)
-                                       (jupyter-repl-mode . normal)
-                                       (mix-mode . normal)
-                                       (occur-edit-mode . normal)
-                                       (pass-view-mode . normal)
-                                       (prog-mode . normal)
-                                       (py-shell-mode . normal)
-                                       (restclient-mode . normal)
-                                       (telega-chat-mode . normal)
-                                       (term-mode . normal)
-                                       (text-mode . normal)
-                                       (vterm-mode . normal)
-                                       (Custom-mode . normal))))
-
-  :config (progn
-            (me/meow-keybinds)
-            (meow-global-mode 1)
-            (global-set-key (kbd "C-h k") 'helpful-key)))
-
-(use-package key-chord
-  :disabled t
-  :config
-  (key-chord-define meow-insert-state-keymap "jk" 'meow-insert-exit)
-  (key-chord-mode 1))
-
 (use-package which-key
   :init (which-key-mode)
   :diminish which-key-mode
   :after evil
+  :demand t
   :config
   (progn
     (setq which-key-allow-evil-operators t)
@@ -610,161 +576,67 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
     (setq which-key-use-C-h-commands nil)
     (setq which-key-idle-delay 0.5)))
 
-(use-package general
-  :demand t
-  :after (evil which-key)
-  :config
-  (progn
-    (general-evil-setup t)
-
-    ;; Leader Def ;;
-    ;; (general-define-key
-    ;;  ;;:states '(emacs insert normal visual motion)
-    ;;  :keymaps 'override
-    ;;  :states '(insert emacs normal hybrid motion visual operator)
-    ;;  :prefix-map 'me/leader-prefix-map
-    ;;  :global-prefix "C-c"
-    ;;  :non-normal-prefix "M-SPC"
-    ;;  :prefix "SPC")
-
-    (general-create-definer leader-map
-      ;;:states '(emacs insert normal visual motion)
-      :keymaps 'override
-      :states '(insert emacs normal hybrid motion visual operator)
-      ;; :prefix-map 'me/leader-prefix-map
-      :global-prefix "C-c"
-      :non-normal-prefix "M-SPC"
-      :prefix "SPC")
-
-    ;; (general-create-definer leader-map
-    ;;   :keymaps 'me/leader-prefix-map)
-
-    (general-create-definer local-leader-map
-      :keymaps 'override
-      :states '(insert emacs normal hybrid motion visual operator)
-      ;;:states '(emacs insert normal visual motion)
-      :global-prefix "C-c m"
-      :non-normal-prefix "M-SPC m"
-      :prefix "SPC m")
-
-    ;; Prefixes
-    (leader-map
-      ""	'(nil :which-key "my lieutenant general prefix")
-      "b"	'(:ignore t :wk "buffers")
-      "d"	'(:ignore t :wk "debug")
-      "e"	'(:ignore t :wk "edit")
-      "f"	'(:ignore t :wk "files")
-      "fe" '(:ignore t :wk "emacs")
-      "g"	'(:ignore t :wk "git")
-      "p"	'(:ignore t :wk "projects")
-      "r"	'(:ignore t :wk "refactor")
-      "s"	'(:ignore t :wk "search")
-      "x"	'(:ignore t :wk "execute")
-      "T"	'(:ignore t :wk "toggles"))
-
-    (local-leader-map
-      ""	'(nil :which-key "major mode"))
-
-    ;; Sim Keys
-    (leader-map
-      "," (general-simulate-key "C-c")
-      "C" (general-simulate-key "C-x")
-      "M" (general-simulate-key "C-c C-x"))
-
-    ;; Maps
-    (leader-map
-      "h" '(:keymap help-map :wk "help")
-      "t" '(:keymap tab-prefix-map :wk "tabs"))
-
-    ;; Base
-    (leader-map
-      ";"	'execute-extended-command
-      "O"	'other-window-prefix
-      "X"	'((lambda () (interactive) (switch-to-buffer "*scratch*")) :wk "scratch")
-      "bd"	'kill-this-buffer
-      "bD"	'kill-some-buffers
-      "bB"	'ibuffer-list-buffers
-      "ea"	'align-regexp
-      "eA"	'align
-      "er"	'query-replace
-      "ff"	'find-file
-      "fs"	'save-buffer
-      "fS"	'me/save-all-unsaved
-      "fee"	'me/open-config
-      "fer"	'me/reload-emacs-config
-      "feq"	'save-buffers-kill-emacs
-      "feQ"	'kill-emacs
-      "xp"	'check-parens
-      "xe"    'eval-last-sexp
-      "xb"    'eval-buffer)
-
-    (leader-map "C-h" '(which-key-C-h-dispatch :wk t))
-    (local-leader-map "C-h" '(which-key-C-h-dispatch :wk t))
-
-    (general-def
-      "C-v" 'me/scroll-half-page-down
-      "M-v" 'me/scroll-half-page-up)))
-
 (use-package evil
-  :preface
-  (defun me/evil-record-macro ()
-    (interactive)
-    (if buffer-read-only
-        (quit-window)
-      (call-interactively 'evil-record-macro)))
+    :demand t
+    :preface
+    (defun me/evil-record-macro ()
+      (interactive)
+      (if buffer-read-only
+          (quit-window)
+        (call-interactively 'evil-record-macro)))
 
-  (defun me/save-and-kill-this-buffer ()
-    (interactive)
-    (save-buffer)
-    (kill-this-buffer))
-  :init
-  (progn
-    (setq evil-want-integration t
-          evil-want-keybinding nil
-          evil-want-C-u-scroll t
-          evil-want-C-i-jump t
-          evil-respect-visual-line-mode t
-          evil-undo-system 'undo-tree))
-  :config
-  (progn
-    (evil-mode 1)
+    (defun me/save-and-kill-this-buffer ()
+      (interactive)
+      (save-buffer)
+      (kill-this-buffer))
+    :init
+    (progn
+      (setq evil-want-integration t
+            evil-want-keybinding nil
+            evil-want-C-u-scroll t
+            evil-want-C-i-jump t
+            evil-respect-visual-line-mode t
+            evil-undo-system 'undo-tree))
+    :config
+    (progn
+      (evil-mode 1)
 
-    (evil-set-initial-state 'messages-buffer-mode 'normal)
-    (evil-set-initial-state 'dashboard-mode 'normal)
+      (evil-set-initial-state 'messages-buffer-mode 'normal)
+      (evil-set-initial-state 'dashboard-mode 'normal)
+(with-eval-after-load 'general
+      (nmap "R" 'evil-replace-state
+        "q" 'me/evil-record-macro
+        "g ?" 'nil
+        "gu" 'universal-argument)
 
-    (nmap "R" 'evil-replace-state
-      "q" 'me/evil-record-macro
-      "g ?" 'nil
-      "gu" 'universal-argument)
+      (imap "C-g" 'evil-normal-state
+        "C-u" 'universal-argument)
 
-    (imap "C-g" 'evil-normal-state
-      "C-u" 'universal-argument)
+      (vmap "gu" 'universal-argument)
 
-    (vmap "gu" 'universal-argument)
+      (mmap "j" 'evil-next-visual-line
+        "k" 'evil-previous-visual-line
+        "L" 'evil-end-of-line-or-visual-line
+        "H" 'evil-first-non-blank-of-visual-line
+        "gu" 'universal-argument)
 
-    (mmap "j" 'evil-next-visual-line
-      "k" 'evil-previous-visual-line
-      "L" 'evil-end-of-line-or-visual-line
-      "H" 'evil-first-non-blank-of-visual-line
-      "gu" 'universal-argument)
+      (setq me/window-map (cons 'keymap evil-window-map))
+      (leader-map "w" '(:keymap me/window-map :wk "windows"))
 
-    (setq me/window-map (cons 'keymap evil-window-map))
-    (leader-map "w" '(:keymap me/window-map :wk "windows"))
-
-    (evil-ex-define-cmd "q" #'kill-this-buffer)
-    (evil-ex-define-cmd "wq" #'me/save-and-kill-this-buffer)))
+      (evil-ex-define-cmd "q" #'kill-this-buffer)
+      (evil-ex-define-cmd "wq" #'me/save-and-kill-this-buffer))))
 
 (use-package evil-collection
-  :after evil
-  :diminish evil-collection-unimpaired-mode
-  :config
-  (evil-collection-init)
-
-  (nmap
-    "go" 'evil-collection-unimpaired-insert-newline-below
-    "gO" 'evil-collection-unimpaired-insert-newline-above
-    "gp" 'evil-collection-unimpaired-paste-below
-    "gP" 'evil-collection-unimpaired-paste-above))
+    :after evil
+    :diminish evil-collection-unimpaired-mode
+    :config
+    (evil-collection-init)
+(with-eval-after-load 'general
+    (nmap
+      "go" 'evil-collection-unimpaired-insert-newline-below
+      "gO" 'evil-collection-unimpaired-insert-newline-above
+      "gp" 'evil-collection-unimpaired-paste-below
+      "gP" 'evil-collection-unimpaired-paste-above)))
 
 (use-package evil-escape
   :after evil
@@ -867,10 +739,6 @@ play well with `evil-mc'."
 
     (global-evil-mc-mode 1)))
 
-(use-package god-mode
-  :disabled t
-  :defer t)
-
 (use-package undo-tree
   :diminish undo-tree-mode
   :init
@@ -889,35 +757,6 @@ play well with `evil-mc'."
     (general-def :states '(normal visual motion insert emacs)
       "M-S-f"	'avy-resume
       "M-f"	'avy-goto-char-timer)))
-
-(use-package doom-themes
-  :demand t
-  :init
-  (load-theme 'doom-vibrant t)
-  :config
-  (progn
-    (setq doom-themes-enable-bold t
-          doom-themes-enable-italic t)
-    (setq doom-themes-treemacs-theme "doom-atom")
-    (doom-themes-treemacs-config)
-    (doom-themes-org-config)))
-
-(use-package doom-modeline
-  :init (doom-modeline-mode 1)
-  :custom ((doom-modeline-height 10)
-           (doom-modeline-bar-width 4)
-           (doom-modeline-bar-width 4)
-           (doom-modeline-minor-modes t)
-           (doom-modeline-buffer-file-name-style 'truncate-except-project)
-           (doom-modeline-minor-modes nil)
-           (doom-modeline-modal-icon t))
-  ;; This configuration to is fix a bug where certain windows would not display
-  ;; their full content due to the overlapping modeline
-  :config (advice-add #'fit-window-to-buffer :before (lambda (&rest _) (redisplay t))))
-
-(use-package solaire-mode
-  :config
-  (solaire-global-mode +1))
 
 (use-package all-the-icons)
 
@@ -957,7 +796,8 @@ play well with `evil-mc'."
 
 (use-package vertico-directory
   :after vertico
-  :ensure nil
+  :straight nil
+  :load-path "straight/repos/vertico/extensions/"
   :bind
   (:map vertico-map
         ("RET" . vertico-directory-enter)
@@ -976,8 +816,8 @@ play well with `evil-mc'."
     "sa"	'consult-org-agenda
     "so"	'consult-outline
     "sm"	'consult-mark
-    "ss"	'consult-line
-    "sS"	'consult-line-multi
+    "sl"	'consult-line
+    "sL"	'consult-line-multi
     "sM"	'consult-global-map
     "sr"	'consult-ripgrep
     "fF"	'consult-recent-file
@@ -987,12 +827,8 @@ play well with `evil-mc'."
     "bf"	'consult-buffer-other-frame
     "bm"	'consult-mode-command
     "bh"	'consult-history
-    "dc"	'consult-complex-command
+    "xc"	'consult-complex-command
     "xk"	'consult-kmacro
-    "xr"	'consult-register
-    "xl"	'consult-register-load
-    "xs"	'consult-register-store
-    "xi"	'consult-imenu
     "pb"	'consult-project-buffer)
 
   (local-leader-map :keymaps 'org-mode-map
@@ -1024,12 +860,15 @@ play well with `evil-mc'."
     "M-s g"	'consult-grep
     "M-s G"	'consult-git-grep
     "M-s r"	'consult-ripgrep
-    "C-s"	'consult-line
     "M-s L"	'consult-line-multi
     "M-s m"	'consult-multi-occur
     "M-s k"	'consult-keep-lines
     "M-s u"	'consult-focus-lines
     "M-s e"	'consult-isearch-history)
+
+  (general-def '(motion emacs visual insert normal)
+    "C-f" 'consult-line
+    "C-S-f" 'consult-line-multi)
 
   (general-def :keymaps 'isearch-mode-map
     "M-e"	'consult-isearch-history
@@ -1040,8 +879,6 @@ play well with `evil-mc'."
   (general-def :keymaps 'minibuffer-local-map
     "M-s"	'consult-history
     "M-r"	'consult-history)
-
-  (mmap "gB" 'consult-buffer)
 
   :init
   ;; Optionally configure the register formatting. This improves the register
@@ -1087,7 +924,6 @@ play well with `evil-mc'."
   ("C-c p o" . consult-project-extra-find-other-window))
 
 (use-package orderless
-  :demand t
   :config
   (defvar +orderless-dispatch-alist
     '((?% . char-fold-to-regexp)
@@ -1183,7 +1019,6 @@ play well with `evil-mc'."
   (add-hook 'marginalia-mode-hook #'all-the-icons-completion-marginalia-setup))
 
 (use-package embark
-  :ensure t
   :bind
   (("C-." . embark-act)         ;; pick some comfortable binding
    ("C-;" . embark-dwim)        ;; good alternative: M-.
@@ -1210,7 +1045,6 @@ play well with `evil-mc'."
   (add-hook 'embark-collect-mode-hook #'+embark-live-vertico))
 
 (use-package embark-consult
-  :ensure t
   :after (embark consult)
   :demand t ; only necessary if you have the hook below
   ;; if you want to have consult previews as you move around an
@@ -1227,9 +1061,7 @@ play well with `evil-mc'."
   (corfu-quit-no-match t)      ;; Never quit, even if there is no match
   (corfu-auto-delay 0.1)
   :init
-  (global-corfu-mode)
-  :config
-  (setq completion-category-overrides '((eglot (styles orderless)))))
+  (global-corfu-mode))
 
 (use-package corfu-doc
     ;; NOTE 2022-02-05: At the time of writing, `corfu-doc' is not yet on melpa
@@ -1242,7 +1074,7 @@ play well with `evil-mc'."
     :custom
     (corfu-doc-delay 0.1)
     (corfu-doc-max-width 70)
-    (corfu-doc-max-height 20)
+    (corfu-doc-max-height 30)
     (corfu-doc-display-within-parent-frame t)
     (corfu-echo-documentation nil))
 
@@ -1441,42 +1273,53 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
   (defvar me/org-all-files (me/refresh-all-org-files))
 
 
-  :bind
-  (("C-c c" . org-capture)
-   ("C-c a a" . org-agenda)
-   ("C-c l" . org-store-link)
-   ("C-c o s" . org-save-all-org-buffers)
-   ("C-c o c" . org-clock-goto)
-   ("C-c o t" . me/insert-timestamp)
-   :map org-mode-map
-   ("C-c ?" . nil)
-   ("C-c T ?" . org-table-field-info)
-   :map org-agenda-mode-map
-   ("C-c o l" . org-agenda-log-mode))
-
   :config
   (progn
+
+    ;; Keybinds ;;
+
+    (leader-map
+      "c"  'org-capture
+      "A" 'org-agenda
+      "l"  'org-store-link
+      "os" 'org-save-all-org-buffers
+      "oc" 'org-clock-goto)
+
+    ;; Org Mode Keybinds
+    (general-unbind org-mode-map
+      "C-c ?" nil)
+
+    (local-leader-map org-mode-map
+      "t" '(:ignore t "toggles")
+      "T" '(:ignore t "tables")
+      "TI" 'org-table-field-info
+      "tt" 'org-set-tags-command
+      "ts" 'me/insert-timestamp
+      "1" 'org-insert-structure-template)
+
+    (imap org-mode-map
+      "TAB" 'completion-at-point)
+
+    (general-def org-mode-map
+      "C-s" 'consult-org-heading
+      "C-S-s" 'consult-org-agenda)
+
+    ;; Org Agenda Keybinds
+    (local-leader-map org-agenda-mode-map
+      "l" 'org-agenda-log-mode)
+
+    ;; Org Src Keybinds
+    (general-def org-src-mode-map
+      [remap save-buffer] 'org-edit-src-exit)
+
+    (local-leader-map org-src-mode-map
+      "s" 'org-edit-src-exit)
 
     ;; Hooks ;;
     (org-clock-persistence-insinuate)
     (add-hook 'org-mode-hook 'me/org-mode-initial-setup)
     (add-hook 'org-src-mode-hook 'evil-normalize-keymaps)
 
-    (general-def org-src-mode-map
-      [remap save-buffer] 'org-edit-src-exit)
-
-    ;; General ;;
-    (local-leader-map :keymaps 'org-mode-map
-      "t" 'org-set-tags-command
-      "xs" 'org-insert-structure-template)
-
-    (local-leader-map :keymaps 'org-src-mode-map
-      "s" 'org-edit-src-exit)
-
-    (imap :keymaps 'org-mode-map
-      "TAB" 'completion-at-point)
-    (mmap :keymaps 'org-mode-map
-      "C-S-s" 'consult-org-heading)
 
     ;; Directories ;;
     (setq org-directory me/org-dir)
@@ -1713,36 +1556,18 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 (use-package org-contrib
   :after org)
 
-(use-package org-pretty-tags
-  :disabled t
-  :commands (org-pretty-tags-global-mode)
-  :init (org-pretty-tags-global-mode t)
-  :config
-  (progn
-    (setq org-pretty-tags-surrogate-strings '(("@errand" "🛒")
-                                              ("@home" "🏡")
-                                              ("@work" "💼")
-                                              ("@emacs" "⌨️")
-                                              ("routine" "🔁")
-                                              ("inbox" "📥")
-                                              ("bookmark" "🔖")
-                                              ("idea" "💡")
-                                              ("distraction" "❓")
-                                              ("ARCHIVE" "🗄️")
-                                              ))))
-
 (use-package org-super-agenda
   :after (evil evil-collection evil-org org)
-  :demand t
-  :bind
-  (:map org-super-agenda-header-map
-        ("z" . nil)
-        ("j" . nil)
-        ("k" . nil)
-        ("g" . nil))
   :config
   (progn
     (org-super-agenda-mode 1)
+    (general-unbind org-super-agenda-header-map
+      "z"
+      "j"
+      "k"
+      "g"
+      "SPC")
+
     (setq org-super-agenda-groups '((:habit t :order 98)
                                     (:name "In Progress"
                                            :todo "PROG")
@@ -1801,7 +1626,6 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
 (use-package org-ql
   :after org
-  :demand t
   :bind
   (("C-c a s" . org-ql-search)
    ("C-c a v" . org-ql-view)
@@ -1874,7 +1698,6 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
   :bind (("C-c a T" . org-sidebar-tree-toggle)))
 
 (use-package org-modern
-  :demand t
   :after org
   :init
   (setq org-auto-align-tags nil
@@ -1902,7 +1725,6 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
 (use-package org-roam
   :after org
-  :demand t
   :custom
   (org-roam-directory (file-truename me/org-dir))
   :bind
@@ -1970,32 +1792,6 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
     (setq org-pomodoro-short-break-length 10)
     (setq org-pomodoro-long-break-length 45)))
 
-(use-package org-superstar
-  :disabled t
-  :after org
-  :hook (org-mode . org-superstar-mode)
-  :config
-  (progn
-    (cond (IS-MAC (set-face-attribute 'org-superstar-header-bullet nil :inherit 'fixed-pitched :height 200))
-          (IS-WINDOWS (set-face-attribute 'org-superstar-header-bullet nil :inherit 'fixed-pitched :height 90)))
-
-    (setq org-superstar-todo-bullet-alist
-          '(("TODO" . ?λ)
-            ("NEXT" . ?✰)
-            ("PROG" . ?∞)
-            ("DONE" . ?✔)
-            ("CANCELLED" . ?✘)))
-
-    (setq org-superstar-item-bullet-alist
-          '((?* . ?•)
-            (?+ . ?➤)
-            (?- . ?•)))
-
-    (setq org-superstar-headline-bullets-list '("◉" "○" "●" "○" "●" "○" "●"))
-    (setq org-superstar-special-todo-items t)
-    (setq org-superstar-leading-bullet " ")
-    (org-superstar-restart)))
-
 (use-package visual-fill-column
   :preface
   (defun me/org-mode-visual-fill ()
@@ -2033,28 +1829,10 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
 (use-package yasnippet)
 
-(use-package winum
-  :init
-  (leader-map
-    "w0" 'winum-select-window-0-or-10
-    "w1" 'winum-select-window-1
-    "w2" 'winum-select-window-2
-    "w3" 'winum-select-window-3
-    "w4" 'winum-select-window-4
-    "w5" 'winum-select-window-5
-    "w6" 'winum-select-window-6
-    "w7" 'winum-select-window-7
-    "w8" 'winum-select-window-8
-    "w9" 'winum-select-window-9
-    "w`" 'winum-select-window-by-number
-    "w²" 'winum-select-window-by-number)
-  :config
-  (winum-mode))
-
 (use-package treemacs)
 
 (use-package xref
-  :ensure nil
+  :straight nil
   :config
   (with-eval-after-load 'evil
     (mmap xref--xref-buffer-mode-map
@@ -2062,57 +1840,90 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
       "<return" #'xref-goto-xref
       "<tab>" #'xref-next-group)))
 
-(use-package eglot
-  :preface
-  (defun me/eglot-shutdown-project ()
-    "Kill the LSP server for the current project if it exists."
-    (when-let ((server (eglot-current-server)))
-      (eglot-shutdown server)))
-  :custom (eglot-autoshutdown t)
-  :hook (typescript-mode . eglot-ensure)
-  :init (put 'eglot-server-programs 'safe-local-variable 'listp)
-  :config
-  (progn
-    (setq completion-category-defaults nil)
-    (add-to-list 'eglot-stay-out-of 'eldoc-documentation-strategy)
-    (put 'eglot-error 'flymake-overlay-control nil)
-    (put 'eglot-warning 'flymake-overlay-control nil)
-    (advice-add 'project-kill-buffers :before #'me/eglot-shutdown-project)))
-
-(use-package consult-eglot
+(use-package lsp-mode
+  :hook
+  ((c-mode          ; clangd
+    c++-mode        ; clangd
+    c-or-c++-mode   ; clangd
+    java-mode       ; eclipse-jdtls
+    js-mode         ; ts-ls (tsserver wrapper)
+    js-jsx-mode     ; ts-ls (tsserver wrapper)
+    typescript-mode ; ts-ls (tsserver wrapper)
+    python-mode     ; pyright
+    web-mode        ; ts-ls/HTML/CSS
+    haskell-mode    ; haskell-language-server
+    csharp-mode
+    csharp-tree-sitter-mode
+    ) . lsp-deferred)
+  (lsp-completion-mode . me/lsp-mode-setup-completion)
+  :commands lsp
+  :custom (lsp-completion-provider :none)
   :init
-  (with-eval-after-load 'evil
-    (mmap elgot-mode-map
-      "gs" #'consult-elgot-symbols)))
+  (defun me/orderless-dispatch-flex-first (_pattern index _total)
+    (and (eq index 0) 'orderless-flex))
+
+  (defun me/lsp-mode-setup-completion ()
+    (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
+          '(orderless)))
+
+  ;; Optionally configure the first word as flex filtered.
+  (add-hook 'orderless-style-dispatchers #'me/orderless-dispatch-flex-first nil 'local)
+
+  ;; Optionally configure the cape-capf-buster.
+  (setq-local completion-at-point-functions (list (cape-capf-buster #'lsp-completion-at-point)))
+
+  :config
+  (setq lsp-auto-guess-root t)
+  ;;(setq lsp-log-io nil)
+  (setq lsp-restart 'auto-restart)
+  ;;(setq lsp-enable-symbol-highlighting nil)
+  ;;(setq lsp-enable-on-type-formatting nil)
+  ;;(setq lsp-signature-auto-activate nil)
+  ;;(setq lsp-signature-render-documentation nil)
+  (setq lsp-modeline-code-actions-enable t)
+  (setq lsp-modeline-diagnostics-enable nil)
+  (setq lsp-headerline-breadcrumb-enable nil)
+  (setq lsp-semantic-tokens-enable nil)
+  (setq lsp-enable-folding t)
+  (setq lsp-enable-imenu t)
+  (setq lsp-enable-snippet t)
+  (setq read-process-output-max (* 1024 1024)) ;; 1MB
+  (setq lsp-idle-delay 0.5))
+
+(use-package lsp-ui
+  :commands lsp-ui-mode
+  :config
+  (setq lsp-ui-doc-enable t)
+  (setq lsp-ui-doc-header t)
+  (setq lsp-ui-doc-include-signature t)
+  (setq lsp-ui-doc-border (face-foreground 'default))
+  (setq lsp-ui-sideline-show-code-actions t)
+  (setq lsp-ui-sideline-delay 0.05))
 
 (use-package flymake
-  :ensure nil
+  :straight nil
   :custom
   (flymake-fringe-indicator-position nil))
 
-(use-package prettier
-  :config
-  (add-to-list 'prettier-enabled-parsers 'json-stringify))
-
 (use-package tree-sitter
   :config
-  (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode)
-  (global-tree-sitter-mode))
+  (global-tree-sitter-mode)
+  (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode))
 
 (use-package tree-sitter-langs)
 (use-package tree-sitter-indent)
 
-(use-package dap-mode
-  :config
-  (progn
-    (dap-auto-configure-mode)
-    (require 'dap-node)
-    (dap-node-setup)
-    (require 'dap-netcore)))
+;; (use-package dap-mode
+;;   :disabled t
+;;   :config
+;;   (progn
+;;     (dap-auto-configure-mode)
+;;     (require 'dap-node)
+;;     (dap-node-setup)
+;;     (require 'dap-netcore)))
 
 (use-package typescript-mode
   :after tree-sitter
-  :custom (typescript-indent-level 2)
   :config
   ;; we choose this instead of tsx-mode so that eglot can automatically figure out language for server
   ;; see https://github.com/joaotavora/eglot/issues/624 and https://github.com/joaotavora/eglot#handling-quirky-servers
@@ -2124,24 +1935,6 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
   ;; by default, typescript-mode is mapped to the treesitter typescript parser
   ;; use our derived mode to map both .tsx AND .ts -> typescriptreact-mode -> treesitter tsx
   (add-to-list 'tree-sitter-major-mode-language-alist '(typescriptreact-mode . tsx)))
-
-(use-package tsi
-  :after tree-sitter
-  :quelpa (tsi :fetcher github :repo "orzechowskid/tsi.el")
-  ;; define autoload definitions which when actually invoked will cause package to be loaded
-  :commands (tsi-typescript-mode tsi-json-mode tsi-css-mode)
-  :init
-  (add-hook 'typescript-mode-hook (lambda () (tsi-typescript-mode 1)))
-  (add-hook 'json-mode-hook (lambda () (tsi-json-mode 1)))
-  (add-hook 'css-mode-hook (lambda () (tsi-css-mode 1)))
-  (add-hook 'scss-mode-hook (lambda () (tsi-scss-mode 1))))
-
-;; auto-format different source code files extremely intelligently
-;; https://github.com/radian-software/apheleia
-(use-package apheleia
-  :ensure t
-  :config
-  (apheleia-global-mode +1))
 
 (use-package csharp-mode
   :config
@@ -2173,21 +1966,16 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
   ;; Format: "(icon title help action face prefix suffix)"
   (setq dashboard-navigator-buttons
-        `(;; line1
-          ((,(all-the-icons-faicon "calendar" :height 1.1 :v-adjust 0.0)
-            "Agenda"
-            "Browse Agenda"
-            (lambda (&rest _) (org-agenda)))
-           (,(all-the-icons-faicon "list" :height 1.1 :v-adjust 0.0)
-            "Views"
-            "Browse Views"
-            (lambda (&rest _) (org-ql-view-sidebar)))
-           ("⚙" nil "Open Config" (lambda (&rest _) (me/open-config)) success))))
+	`(;; line1
+	  ((,(all-the-icons-faicon "calendar" :height 1.1 :v-adjust 0.0)
+	    "Agenda"
+	    "Browse Agenda"
+	    (lambda (&rest _) (org-agenda)))
+	   (,(all-the-icons-faicon "list" :height 1.1 :v-adjust 0.0)
+	    "Views"
+	    "Browse Views"
+	    (lambda (&rest _) (org-ql-view-sidebar)))
+	   ("⚙" nil "Open Config" (lambda (&rest _) (me/open-config)) success))))
 
   (setq dashboard-projects-backend 'project-el)
   (dashboard-setup-startup-hook))
-
-(use-package page-break-lines
-  :disabled t
-  :config
-  (global-page-break-lines-mode))
