@@ -41,6 +41,8 @@
 (defconst IS-BSD     (or IS-MAC (eq system-type 'berkeley-unix))
   "If the host is running BSD return true")
 
+
+
 (setq straight-use-package-by-default t)
 (defvar bootstrap-version)
 (let ((bootstrap-file
@@ -77,53 +79,37 @@
   :config
   (progn
     (general-evil-setup t)
-
-    ;; Leader Def ;;
-    ;; (general-define-key
-    ;;  ;;:states '(emacs insert normal visual motion)
-    ;;  :keymaps 'override
-    ;;  :states '(insert emacs normal hybrid motion visual operator)
-    ;;  :prefix-map 'me/leader-prefix-map
-    ;;  :global-prefix "C-c"
-    ;;  :non-normal-prefix "M-SPC"
-    ;;  :prefix "SPC")
     (general-auto-unbind-keys)
 
     (general-create-definer leader-map
-      ;;:states '(emacs insert normal visual motion)
       :keymaps 'override
       :states '(insert emacs normal hybrid motion visual operator)
-      ;; :prefix-map 'me/leader-prefix-map
       :global-prefix "C-c"
       :non-normal-prefix "M-SPC"
       :prefix "SPC")
 
-    ;; (general-create-definer leader-map
-    ;;   :keymaps 'me/leader-prefix-map)
-
     (general-create-definer local-leader-map
       :keymaps 'override
       :states '(insert emacs normal hybrid motion visual operator)
-      ;;:states '(emacs insert normal visual motion)
       :global-prefix "C-c m"
       :non-normal-prefix "M-SPC m"
       :prefix "SPC m")
 
     ;; Prefixes
     (leader-map
-      ""	'(nil :which-key "my lieutenant general prefix")
-      "b"	'(:ignore t :wk "buffers")
-      "d"	'(:ignore t :wk "debug")
-      "e"	'(:ignore t :wk "edit")
-      "o" '(:ignore t :wk "org")
-      "f"	'(:ignore t :wk "files")
+      ""   '(nil :which-key "my lieutenant general prefix")
+      "b"  '(:ignore t :wk "buffers")
+      "d"  '(:ignore t :wk "debug")
+      "e"  '(:ignore t :wk "edit")
+      "o"  '(:ignore t :wk "org")
+      "f"  '(:ignore t :wk "files")
       "fe" '(:ignore t :wk "emacs")
-      "g"	'(:ignore t :wk "git")
-      "p"	'(:ignore t :wk "projects")
-      "r"	'(:ignore t :wk "refactor")
-      "s"	'(:ignore t :wk "search")
-      "x"	'(:ignore t :wk "execute")
-      "T"	'(:ignore t :wk "toggles"))
+      "g"  '(:ignore t :wk "git")
+      "p"  '(:ignore t :wk "projects")
+      "r"  '(:ignore t :wk "refactor")
+      "s"  '(:ignore t :wk "search")
+      "x"  '(:ignore t :wk "execute")
+      "T"  '(:ignore t :wk "toggles"))
 
     (local-leader-map
       ""	'(nil :which-key "major mode"))
@@ -141,27 +127,29 @@
 
     ;; Base
     (leader-map
-      ";"	'execute-extended-command
-      "O"	'other-window-prefix
-      "X"	'((lambda () (interactive) (switch-to-buffer "*scratch*")) :wk "scratch")
-      "bd" 'bury-buffer
-      "bp" 'me/alternate-buffer
-      "bk"	'kill-this-buffer
-      "bK"	'kill-some-buffers
-      "bB"	'ibuffer-list-buffers
-      "ea"	'align-regexp
-      "eA"	'align
-      "er"	'query-replace
-      "ff"	'find-file
-      "fs"	'save-buffer
-      "fS"	'me/save-all-unsaved
-      "fee"	'me/open-config
-      "fer"	'me/reload-emacs-config
-      "feq"	'save-buffers-kill-emacs
-      "feQ"	'kill-emacs
-      "xp"	'check-parens
-      "xe"    'eval-last-sexp
-      "xb"    'eval-buffer)
+      ";"   'execute-extended-command
+      ":"   'eval-expression
+      "O"   'other-window-prefix
+      "X"   '((lambda () (interactive) (switch-to-buffer "*scratch*")) :wk "scratch")
+      "bd"  'bury-buffer
+      "bp"  'me/alternate-buffer
+      "bk"  'kill-this-buffer
+      "bK"  'kill-some-buffers
+      "bB"  'ibuffer-list-buffers
+      "ea"  'align-regexp
+      "eA"  'align
+      "er"  'query-replace
+      "ff"  'find-file
+      "fs"  'save-buffer
+      "fd"  'dired
+      "fS"  'me/save-all-unsaved
+      "fee" 'me/open-config
+      "fer" 'me/reload-emacs-config
+      "feq" 'save-buffers-kill-emacs
+      "feQ" 'kill-emacs
+      "xp"  'check-parens
+      "xe"  'eval-last-sexp
+      "xb"  'eval-buffer)
 
     (leader-map "C-h" '(which-key-C-h-dispatch :wk t))
     (local-leader-map "C-h" '(which-key-C-h-dispatch :wk t))
@@ -270,9 +258,9 @@
     (setq recentf-max-saved-items 250)
     (setq save-interprogram-paste-before-kill t)
     (setq initial-buffer-choice t)
-    (require 'desktop)
-    (customize-set-variable 'desktop-save 't)
-    (desktop-save-mode 1)
+    ;; (require 'desktop)
+    ;; (customize-set-variable 'desktop-save 't)
+    ;; (desktop-save-mode 1)
     (recentf-mode 1)
     (with-eval-after-load 'no-littering
       (add-to-list 'recentf-exclude no-littering-etc-directory)
@@ -476,10 +464,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   :custom ((dired-listing-switches "-agho --group-directories-first"))
   :config
   (setq dired-dwim-target t)
-  (with-eval-after-load 'evil-collection
-    (evil-collection-define-key 'normal 'dired-mode-map
-      "h" 'dired-single-up-directory
-      "l" 'dired-single-buffer))
+
   ;; MacOS ;;
   (when IS-MAC
     (setq dired-use-ls-dired t
@@ -577,33 +562,36 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
     (setq which-key-idle-delay 0.5)))
 
 (use-package evil
-    :demand t
-    :preface
-    (defun me/evil-record-macro ()
-      (interactive)
-      (if buffer-read-only
-          (quit-window)
-        (call-interactively 'evil-record-macro)))
+  :demand t
+  :preface
+  (defun me/evil-record-macro ()
+    (interactive)
+    (if buffer-read-only
+        (quit-window)
+      (call-interactively 'evil-record-macro)))
 
-    (defun me/save-and-kill-this-buffer ()
-      (interactive)
-      (save-buffer)
-      (kill-this-buffer))
-    :init
-    (progn
-      (setq evil-want-integration t
-            evil-want-keybinding nil
-            evil-want-C-u-scroll t
-            evil-want-C-i-jump t
-            evil-respect-visual-line-mode t
-            evil-undo-system 'undo-tree))
-    :config
-    (progn
-      (evil-mode 1)
+  (defun me/save-and-kill-this-buffer ()
+    (interactive)
+    (save-buffer)
+    (kill-this-buffer))
+  :init
+  (progn
+    (setq evil-want-integration t
+          evil-want-keybinding nil
+          evil-want-C-u-scroll t
+          evil-want-C-i-jump t
+          evil-respect-visual-line-mode t
+          evil-undo-system 'undo-tree))
+  :config
+  (progn
+    (evil-mode 1)
 
-      (evil-set-initial-state 'messages-buffer-mode 'normal)
-      (evil-set-initial-state 'dashboard-mode 'normal)
-(with-eval-after-load 'general
+    (evil-set-initial-state 'messages-buffer-mode 'normal)
+    (evil-set-initial-state 'dashboard-mode 'normal)
+    (with-eval-after-load 'general
+      (imap "C-n" nil
+        "C-p" nil)
+
       (nmap "R" 'evil-replace-state
         "q" 'me/evil-record-macro
         "g ?" 'nil
@@ -748,7 +736,7 @@ play well with `evil-mc'."
   :after evil
   :config
   (progn
-    (setq avy-timeout-seconds 0.6)
+    (setq avy-timeout-seconds 0.3)
 
     (general-def :states '(normal visual motion)
       "gf"	'avy-goto-char-timer
@@ -756,7 +744,9 @@ play well with `evil-mc'."
 
     (general-def :states '(normal visual motion insert emacs)
       "M-S-f"	'avy-resume
-      "M-f"	'avy-goto-char-timer)))
+      "M-f"	'avy-goto-char-timer
+      "C-q" 'avy-goto-char-timer
+      "C-S-q" 'avy-resume)))
 
 (use-package all-the-icons)
 
@@ -804,6 +794,12 @@ play well with `evil-mc'."
         ("DEL" . vertico-directory-delete-char)
         ("M-DEL" . vertico-directory-delete-word))
   :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
+
+(use-package vertico-posframe
+  :config
+  (setq vertico-posframe-min-width 80)
+  (setq vertico-posframe-poshandler 'posframe-poshandler-window-top-center)
+  (vertico-posframe-mode))
 
 (use-package savehist
   :init
@@ -1060,6 +1056,7 @@ play well with `evil-mc'."
   (corfu-quit-at-boundary nil)   ;; Never quit at completion boundary
   (corfu-quit-no-match t)      ;; Never quit, even if there is no match
   (corfu-auto-delay 0.1)
+  (corfu-auto-prefix 2)
   :init
   (global-corfu-mode))
 
@@ -1280,9 +1277,9 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
     (leader-map
       "c"  'org-capture
-      "A" 'org-agenda
+      "a" 'org-agenda
       "l"  'org-store-link
-      "os" 'org-save-all-org-buffers
+      "fo" 'org-save-all-org-buffers
       "oc" 'org-clock-goto)
 
     ;; Org Mode Keybinds
@@ -1626,17 +1623,18 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
 (use-package org-ql
   :after org
-  :bind
-  (("C-c a s" . org-ql-search)
-   ("C-c a v" . org-ql-view)
-   ("C-c a t" . org-ql-view-sidebar)
-   ("C-c a S" . org-ql-sparse-tree)
-   ("C-c a r" . org-ql-view-recent-items)
-   ("C-c a f" . org-ql-find)
-   ("C-c a p" . org-ql-find-path)
-   ("C-c a h" . org-ql-find-heading))
   :config
   (progn
+    (leader-map
+      "os" 'org-ql-search
+      "ov" 'org-ql-view
+      "To" 'org-ql-view-sidebar
+      "oS" 'org-ql-sparse-tree
+      "or" 'org-ql-view-recent-items
+      "of" 'org-ql-find
+      "op" 'org-ql-find-path
+      "oh" 'org-ql-find-heading)
+
     (setq org-ql-views nil)
     (evil-define-key 'motion org-ql-view-list-map (kbd "RET") 'org-ql-view-switch)
     ;; Add these to a hydra or something
@@ -1694,9 +1692,6 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
                                  :sort
                                  (todo priority date)))))
 
-(use-package org-sidebar
-  :bind (("C-c a T" . org-sidebar-tree-toggle)))
-
 (use-package org-modern
   :after org
   :init
@@ -1725,20 +1720,9 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
 (use-package org-roam
   :after org
+  :demand t
   :custom
   (org-roam-directory (file-truename me/org-dir))
-  :bind
-  (("C-c n l" . org-roam-buffer-toggle)
-   ("C-c n f" . org-roam-node-find)
-   ("C-c n g" . org-roam-graph)
-   ("C-c n i" . org-roam-node-insert)
-   ("C-c n c" . org-roam-capture)
-   ("C-c n j" . org-roam-dailies-capture-today)
-   :map org-roam-dailies-map
-   ("Y" . org-roam-dailies-capture-yesterday)
-   ("T" . org-roam-dailies-capture-tomorrow))
-  :bind-keymap
-  ("C-c n d" . org-roam-dailies-map)
   :init
   (add-to-list 'display-buffer-alist
                '("\\*org-roam\\*"
@@ -1750,8 +1734,24 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
                                        (no-delete-other-windows . t)))))
   :config
   (progn
-    (setq org-roam-dailies-directory (concat me/org-dir "journals"))
     (require 'org-roam-dailies)
+    (leader-map
+      "Tr" 'org-roam-buffer-toggle
+      "rf" 'org-roam-node-find
+      "rg" 'org-roam-graph
+      "ri" 'org-roam-node-insert
+      "rc" 'org-roam-capture
+      "C" 'org-roam-capture
+      "rj" 'org-roam-dailies-capture-today
+      "j" 'org-roam-dailies-capture-today
+      "rd" '(:keymap org-roam-dailies-map :wk "dailies"))
+
+    (general-def org-roam-dailies-map
+      "Y" 'org-roam-dailies-capture-yesterday
+      "T" 'org-roam-dailies-capture-tomorrow)
+
+
+    (setq org-roam-dailies-directory (concat me/org-dir "journals"))
     (setq org-roam-completion-everywhere t)
     (setq org-roam-node-display-template
           (concat "${title:*} "
@@ -1765,9 +1765,14 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
              :if-new (file+head "%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d>\n"))))
 
     (setq org-roam-capture-templates
-          '(("d" "Fleeting Note" plain
+          '(("d" "fleeting" plain
              "\n%?"
              :target (file+head "fleeting/%<%Y%m%d-%H%M%S>--${slug}.org"
+                                "#+TITLE: %<%Y%m%d-%H%M%S>--${title}\n")
+             :unnarrowed t)
+            ("r" "reference" plain
+             "\n%?"
+             :target (file+head "reference/%<%Y%m%d-%H%M%S>--${slug}.org"
                                 "#+TITLE: %<%Y%m%d-%H%M%S>--${title}\n")
              :unnarrowed t)
             ("p" "project" plain "* Tasks\n\n** TODO Add initial tasks\n\n* Dates\n\n"
@@ -1784,9 +1789,13 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
 (use-package org-pomodoro
   :after org
-  :bind (("C-c o c" . org-pomodoro))
   :config
   (progn
+    (leader-map
+      "oi" 'org-pomodoro
+      "oI" 'org-clock-in
+      "oo" 'org-clock-out)
+
     (setq org-pomodoro-manual-break t)
     (setq org-pomodoro-length 30)
     (setq org-pomodoro-short-break-length 10)
@@ -1922,6 +1931,12 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 ;;     (dap-node-setup)
 ;;     (require 'dap-netcore)))
 
+
+
+(use-package rjsx-mode
+  :config
+  (add-to-list 'auto-mode-alist '("\\.js\\'" . rjsx-mode)))
+
 (use-package typescript-mode
   :after tree-sitter
   :config
@@ -1939,6 +1954,10 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 (use-package csharp-mode
   :config
   (add-to-list 'auto-mode-alist '("\\.cs\\'" . csharp-tree-sitter-mode)))
+
+(use-package yaml-mode)
+
+(use-package json-mode)
 
 (use-package vterm
   :commands vterm

@@ -96,6 +96,12 @@
 
 #+end_src
 
+** Server
+
+#+begin_src emacs-lisp
+
+#+end_src
+
 * Package Management
 ** straight and use-package
 #+begin_src emacs-lisp
@@ -153,53 +159,37 @@ You can also use =M-x auto-package-update-now= to update right now!
     :config
     (progn
       (general-evil-setup t)
-
-      ;; Leader Def ;;
-      ;; (general-define-key
-      ;;  ;;:states '(emacs insert normal visual motion)
-      ;;  :keymaps 'override
-      ;;  :states '(insert emacs normal hybrid motion visual operator)
-      ;;  :prefix-map 'me/leader-prefix-map
-      ;;  :global-prefix "C-c"
-      ;;  :non-normal-prefix "M-SPC"
-      ;;  :prefix "SPC")
       (general-auto-unbind-keys)
 
       (general-create-definer leader-map
-        ;;:states '(emacs insert normal visual motion)
         :keymaps 'override
         :states '(insert emacs normal hybrid motion visual operator)
-        ;; :prefix-map 'me/leader-prefix-map
         :global-prefix "C-c"
         :non-normal-prefix "M-SPC"
         :prefix "SPC")
 
-      ;; (general-create-definer leader-map
-      ;;   :keymaps 'me/leader-prefix-map)
-
       (general-create-definer local-leader-map
         :keymaps 'override
         :states '(insert emacs normal hybrid motion visual operator)
-        ;;:states '(emacs insert normal visual motion)
         :global-prefix "C-c m"
         :non-normal-prefix "M-SPC m"
         :prefix "SPC m")
 
       ;; Prefixes
       (leader-map
-        ""	'(nil :which-key "my lieutenant general prefix")
-        "b"	'(:ignore t :wk "buffers")
-        "d"	'(:ignore t :wk "debug")
-        "e"	'(:ignore t :wk "edit")
-        "o" '(:ignore t :wk "org")
-        "f"	'(:ignore t :wk "files")
+        ""   '(nil :which-key "my lieutenant general prefix")
+        "b"  '(:ignore t :wk "buffers")
+        "d"  '(:ignore t :wk "debug")
+        "e"  '(:ignore t :wk "edit")
+        "o"  '(:ignore t :wk "org")
+        "f"  '(:ignore t :wk "files")
         "fe" '(:ignore t :wk "emacs")
-        "g"	'(:ignore t :wk "git")
-        "p"	'(:ignore t :wk "projects")
-        "r"	'(:ignore t :wk "refactor")
-        "s"	'(:ignore t :wk "search")
-        "x"	'(:ignore t :wk "execute")
-        "T"	'(:ignore t :wk "toggles"))
+        "g"  '(:ignore t :wk "git")
+        "p"  '(:ignore t :wk "projects")
+        "r"  '(:ignore t :wk "refactor")
+        "s"  '(:ignore t :wk "search")
+        "x"  '(:ignore t :wk "execute")
+        "T"  '(:ignore t :wk "toggles"))
 
       (local-leader-map
         ""	'(nil :which-key "major mode"))
@@ -217,27 +207,29 @@ You can also use =M-x auto-package-update-now= to update right now!
 
       ;; Base
       (leader-map
-        ";"	'execute-extended-command
-        "O"	'other-window-prefix
-        "X"	'((lambda () (interactive) (switch-to-buffer "*scratch*")) :wk "scratch")
-        "bd" 'bury-buffer
-        "bp" 'me/alternate-buffer
-        "bk"	'kill-this-buffer
-        "bK"	'kill-some-buffers
-        "bB"	'ibuffer-list-buffers
-        "ea"	'align-regexp
-        "eA"	'align
-        "er"	'query-replace
-        "ff"	'find-file
-        "fs"	'save-buffer
-        "fS"	'me/save-all-unsaved
-        "fee"	'me/open-config
-        "fer"	'me/reload-emacs-config
-        "feq"	'save-buffers-kill-emacs
-        "feQ"	'kill-emacs
-        "xp"	'check-parens
-        "xe"    'eval-last-sexp
-        "xb"    'eval-buffer)
+        ";"   'execute-extended-command
+        ":"   'eval-expression
+        "O"   'other-window-prefix
+        "X"   '((lambda () (interactive) (switch-to-buffer "*scratch*")) :wk "scratch")
+        "bd"  'bury-buffer
+        "bp"  'me/alternate-buffer
+        "bk"  'kill-this-buffer
+        "bK"  'kill-some-buffers
+        "bB"  'ibuffer-list-buffers
+        "ea"  'align-regexp
+        "eA"  'align
+        "er"  'query-replace
+        "ff"  'find-file
+        "fs"  'save-buffer
+        "fd"  'dired
+        "fS"  'me/save-all-unsaved
+        "fee" 'me/open-config
+        "fer" 'me/reload-emacs-config
+        "feq" 'save-buffers-kill-emacs
+        "feQ" 'kill-emacs
+        "xp"  'check-parens
+        "xe"  'eval-last-sexp
+        "xb"  'eval-buffer)
 
       (leader-map "C-h" '(which-key-C-h-dispatch :wk t))
       (local-leader-map "C-h" '(which-key-C-h-dispatch :wk t))
@@ -350,9 +342,9 @@ You can also use =M-x auto-package-update-now= to update right now!
       (setq recentf-max-saved-items 250)
       (setq save-interprogram-paste-before-kill t)
       (setq initial-buffer-choice t)
-      (require 'desktop)
-      (customize-set-variable 'desktop-save 't)
-      (desktop-save-mode 1)
+      ;; (require 'desktop)
+      ;; (customize-set-variable 'desktop-save 't)
+      ;; (desktop-save-mode 1)
       (recentf-mode 1)
       (with-eval-after-load 'no-littering
         (add-to-list 'recentf-exclude no-littering-etc-directory)
@@ -570,10 +562,7 @@ You can also use =M-x auto-package-update-now= to update right now!
     :custom ((dired-listing-switches "-agho --group-directories-first"))
     :config
     (setq dired-dwim-target t)
-    (with-eval-after-load 'evil-collection
-      (evil-collection-define-key 'normal 'dired-mode-map
-        "h" 'dired-single-up-directory
-        "l" 'dired-single-buffer))
+
     ;; MacOS ;;
     (when IS-MAC
       (setq dired-use-ls-dired t
@@ -714,34 +703,37 @@ You can also use =M-x auto-package-update-now= to update right now!
 ** evil
 
 #+begin_src emacs-lisp
-    (use-package evil
-      :demand t
-      :preface
-      (defun me/evil-record-macro ()
-        (interactive)
-        (if buffer-read-only
-            (quit-window)
-          (call-interactively 'evil-record-macro)))
+  (use-package evil
+    :demand t
+    :preface
+    (defun me/evil-record-macro ()
+      (interactive)
+      (if buffer-read-only
+          (quit-window)
+        (call-interactively 'evil-record-macro)))
 
-      (defun me/save-and-kill-this-buffer ()
-        (interactive)
-        (save-buffer)
-        (kill-this-buffer))
-      :init
-      (progn
-        (setq evil-want-integration t
-              evil-want-keybinding nil
-              evil-want-C-u-scroll t
-              evil-want-C-i-jump t
-              evil-respect-visual-line-mode t
-              evil-undo-system 'undo-tree))
-      :config
-      (progn
-        (evil-mode 1)
+    (defun me/save-and-kill-this-buffer ()
+      (interactive)
+      (save-buffer)
+      (kill-this-buffer))
+    :init
+    (progn
+      (setq evil-want-integration t
+            evil-want-keybinding nil
+            evil-want-C-u-scroll t
+            evil-want-C-i-jump t
+            evil-respect-visual-line-mode t
+            evil-undo-system 'undo-tree))
+    :config
+    (progn
+      (evil-mode 1)
 
-        (evil-set-initial-state 'messages-buffer-mode 'normal)
-        (evil-set-initial-state 'dashboard-mode 'normal)
-  (with-eval-after-load 'general
+      (evil-set-initial-state 'messages-buffer-mode 'normal)
+      (evil-set-initial-state 'dashboard-mode 'normal)
+      (with-eval-after-load 'general
+        (imap "C-n" nil
+          "C-p" nil)
+
         (nmap "R" 'evil-replace-state
           "q" 'me/evil-record-macro
           "g ?" 'nil
@@ -936,7 +928,7 @@ You can also use =M-x auto-package-update-now= to update right now!
     :after evil
     :config
     (progn
-      (setq avy-timeout-seconds 0.6)
+      (setq avy-timeout-seconds 0.3)
 
       (general-def :states '(normal visual motion)
         "gf"	'avy-goto-char-timer
@@ -944,7 +936,9 @@ You can also use =M-x auto-package-update-now= to update right now!
 
       (general-def :states '(normal visual motion insert emacs)
         "M-S-f"	'avy-resume
-        "M-f"	'avy-goto-char-timer)))
+        "M-f"	'avy-goto-char-timer
+        "C-q" 'avy-goto-char-timer
+        "C-S-q" 'avy-resume)))
 #+end_src
 
 ** all-the-icons
@@ -1015,6 +1009,16 @@ You can also use =M-x auto-package-update-now= to update right now!
           ("DEL" . vertico-directory-delete-char)
           ("M-DEL" . vertico-directory-delete-word))
     :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
+#+end_src
+
+** vertico-posframe
+
+#+begin_src emacs-lisp
+  (use-package vertico-posframe
+    :config
+    (setq vertico-posframe-min-width 80)
+    (setq vertico-posframe-poshandler 'posframe-poshandler-window-top-center)
+    (vertico-posframe-mode))
 #+end_src
 
 ** savehist
@@ -1304,6 +1308,7 @@ You can also use =M-x auto-package-update-now= to update right now!
     (corfu-quit-at-boundary nil)   ;; Never quit at completion boundary
     (corfu-quit-no-match t)      ;; Never quit, even if there is no match
     (corfu-auto-delay 0.1)
+    (corfu-auto-prefix 2)
     :init
     (global-corfu-mode))
 #+end_src
@@ -1558,9 +1563,9 @@ You can also use =M-x auto-package-update-now= to update right now!
 
       (leader-map
         "c"  'org-capture
-        "A" 'org-agenda
+        "a" 'org-agenda
         "l"  'org-store-link
-        "os" 'org-save-all-org-buffers
+        "fo" 'org-save-all-org-buffers
         "oc" 'org-clock-goto)
 
       ;; Org Mode Keybinds
@@ -1916,17 +1921,18 @@ You can also use =M-x auto-package-update-now= to update right now!
 #+begin_src emacs-lisp
   (use-package org-ql
     :after org
-    :bind
-    (("C-c a s" . org-ql-search)
-     ("C-c a v" . org-ql-view)
-     ("C-c a t" . org-ql-view-sidebar)
-     ("C-c a S" . org-ql-sparse-tree)
-     ("C-c a r" . org-ql-view-recent-items)
-     ("C-c a f" . org-ql-find)
-     ("C-c a p" . org-ql-find-path)
-     ("C-c a h" . org-ql-find-heading))
     :config
     (progn
+      (leader-map
+        "os" 'org-ql-search
+        "ov" 'org-ql-view
+        "To" 'org-ql-view-sidebar
+        "oS" 'org-ql-sparse-tree
+        "or" 'org-ql-view-recent-items
+        "of" 'org-ql-find
+        "op" 'org-ql-find-path
+        "oh" 'org-ql-find-heading)
+
       (setq org-ql-views nil)
       (evil-define-key 'motion org-ql-view-list-map (kbd "RET") 'org-ql-view-switch)
       ;; Add these to a hydra or something
@@ -1985,13 +1991,6 @@ You can also use =M-x auto-package-update-now= to update right now!
                                    (todo priority date)))))
 #+end_src
 
-** org-sidebar
-
-#+begin_src emacs-lisp
-  (use-package org-sidebar
-    :bind (("C-c a T" . org-sidebar-tree-toggle)))
-#+end_src
-
 ** org-modern
 
 #+begin_src emacs-lisp
@@ -2031,20 +2030,9 @@ You can also use =M-x auto-package-update-now= to update right now!
 #+begin_src emacs-lisp
   (use-package org-roam
     :after org
+    :demand t
     :custom
     (org-roam-directory (file-truename me/org-dir))
-    :bind
-    (("C-c n l" . org-roam-buffer-toggle)
-     ("C-c n f" . org-roam-node-find)
-     ("C-c n g" . org-roam-graph)
-     ("C-c n i" . org-roam-node-insert)
-     ("C-c n c" . org-roam-capture)
-     ("C-c n j" . org-roam-dailies-capture-today)
-     :map org-roam-dailies-map
-     ("Y" . org-roam-dailies-capture-yesterday)
-     ("T" . org-roam-dailies-capture-tomorrow))
-    :bind-keymap
-    ("C-c n d" . org-roam-dailies-map)
     :init
     (add-to-list 'display-buffer-alist
                  '("\\*org-roam\\*"
@@ -2056,8 +2044,24 @@ You can also use =M-x auto-package-update-now= to update right now!
                                          (no-delete-other-windows . t)))))
     :config
     (progn
-      (setq org-roam-dailies-directory (concat me/org-dir "journals"))
       (require 'org-roam-dailies)
+      (leader-map
+        "Tr" 'org-roam-buffer-toggle
+        "rf" 'org-roam-node-find
+        "rg" 'org-roam-graph
+        "ri" 'org-roam-node-insert
+        "rc" 'org-roam-capture
+        "C" 'org-roam-capture
+        "rj" 'org-roam-dailies-capture-today
+        "j" 'org-roam-dailies-capture-today
+        "rd" '(:keymap org-roam-dailies-map :wk "dailies"))
+
+      (general-def org-roam-dailies-map
+        "Y" 'org-roam-dailies-capture-yesterday
+        "T" 'org-roam-dailies-capture-tomorrow)
+
+
+      (setq org-roam-dailies-directory (concat me/org-dir "journals"))
       (setq org-roam-completion-everywhere t)
       (setq org-roam-node-display-template
             (concat "${title:*} "
@@ -2071,9 +2075,14 @@ You can also use =M-x auto-package-update-now= to update right now!
                :if-new (file+head "%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d>\n"))))
 
       (setq org-roam-capture-templates
-            '(("d" "Fleeting Note" plain
+            '(("d" "fleeting" plain
                "\n%?"
                :target (file+head "fleeting/%<%Y%m%d-%H%M%S>--${slug}.org"
+                                  "#+TITLE: %<%Y%m%d-%H%M%S>--${title}\n")
+               :unnarrowed t)
+              ("r" "reference" plain
+               "\n%?"
+               :target (file+head "reference/%<%Y%m%d-%H%M%S>--${slug}.org"
                                   "#+TITLE: %<%Y%m%d-%H%M%S>--${title}\n")
                :unnarrowed t)
               ("p" "project" plain "* Tasks\n\n** TODO Add initial tasks\n\n* Dates\n\n"
@@ -2094,9 +2103,13 @@ You can also use =M-x auto-package-update-now= to update right now!
 #+begin_src emacs-lisp
   (use-package org-pomodoro
     :after org
-    :bind (("C-c o c" . org-pomodoro))
     :config
     (progn
+      (leader-map
+        "oi" 'org-pomodoro
+        "oI" 'org-clock-in
+        "oo" 'org-clock-out)
+
       (setq org-pomodoro-manual-break t)
       (setq org-pomodoro-length 30)
       (setq org-pomodoro-short-break-length 10)
@@ -2184,6 +2197,7 @@ You can also use =M-x auto-package-update-now= to update right now!
 #+end_src
 
 ** lsp-mode
+
 #+begin_src emacs-lisp
   (use-package lsp-mode
     :hook
@@ -2235,7 +2249,9 @@ You can also use =M-x auto-package-update-now= to update right now!
     (setq read-process-output-max (* 1024 1024)) ;; 1MB
     (setq lsp-idle-delay 0.5))
 #+end_src
+
 ** lsp-ui
+
 #+begin_src emacs-lisp
   (use-package lsp-ui
     :commands lsp-ui-mode
@@ -2247,6 +2263,7 @@ You can also use =M-x auto-package-update-now= to update right now!
     (setq lsp-ui-sideline-show-code-actions t)
     (setq lsp-ui-sideline-delay 0.05))
 #+end_src
+
 ** flymake
 
 #+begin_src emacs-lisp
@@ -2285,6 +2302,19 @@ You can also use =M-x auto-package-update-now= to update right now!
 
 
 ** web-mode
+
+#+begin_src emacs-lisp
+
+#+end_src
+
+** rxjs-mode
+
+#+begin_src emacs-lisp
+  (use-package rjsx-mode
+    :config
+    (add-to-list 'auto-mode-alist '("\\.js\\'" . rjsx-mode)))
+#+end_src
+
 ** typescript-mode
 
 #+begin_src emacs-lisp
@@ -2310,6 +2340,17 @@ You can also use =M-x auto-package-update-now= to update right now!
   (use-package csharp-mode
     :config
     (add-to-list 'auto-mode-alist '("\\.cs\\'" . csharp-tree-sitter-mode)))
+#+end_src
+
+** yaml-mode
+#+begin_src emacs-lisp
+  (use-package yaml-mode)
+#+end_src
+
+** json-mode
+
+#+begin_src emacs-lisp
+  (use-package json-mode)
 #+end_src
 
 ** vterm

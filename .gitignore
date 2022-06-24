@@ -3,7 +3,10 @@ elpa/
 etc/
 var/
 quelpa/
+straight/
+url/
 
+.DS_Store
 *.txt
 /.org-id-locations
 /.emacs.desktop
