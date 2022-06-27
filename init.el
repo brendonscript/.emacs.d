@@ -827,7 +827,7 @@ play well with `evil-mc'."
     "xk"	'consult-kmacro
     "pb"	'consult-project-buffer)
 
-  (local-leader-map :keymaps 'org-mode-map
+  (local-leader-map org-mode-map
     "s"	'consult-org-heading)
 
   (general-def
@@ -862,17 +862,17 @@ play well with `evil-mc'."
     "M-s u"	'consult-focus-lines
     "M-s e"	'consult-isearch-history)
 
-  (general-def '(motion emacs visual insert normal)
-    "C-f" 'consult-line
-    "C-S-f" 'consult-line-multi)
+  (general-def
+    "C-s" 'consult-line
+    "C-S-s" 'consult-line-multi)
 
-  (general-def :keymaps 'isearch-mode-map
+  (general-def isearch-mode-map
     "M-e"	'consult-isearch-history
     "M-s e"	'consult-isearch-history
-    "M-s l"	'consult-line
-    "M-s L"	'consult-line-multi)
+    "C-s"	'consult-line
+    "C-S-s"	'consult-line-multi)
 
-  (general-def :keymaps 'minibuffer-local-map
+  (general-def minibuffer-local-map
     "M-s"	'consult-history
     "M-r"	'consult-history)
 
@@ -911,7 +911,8 @@ play well with `evil-mc'."
                 consult-toggle-preview-orig nil)
         (setq consult-toggle-preview-orig consult--preview-function
               consult--preview-function #'ignore)))
-    (bind-key "M-P" #'consult-toggle-preview 'vertico-map)
+    (general-def vertico-map
+      "M-p" 'consult-toggle-preview)
     (setq consult-narrow-key "<")))
 
 (use-package consult-project-extra
@@ -1296,10 +1297,6 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
     (imap org-mode-map
       "TAB" 'completion-at-point)
-
-    (general-def org-mode-map
-      "C-s" 'consult-org-heading
-      "C-S-s" 'consult-org-agenda)
 
     ;; Org Agenda Keybinds
     (local-leader-map org-agenda-mode-map
@@ -1940,15 +1937,11 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 (use-package typescript-mode
   :after tree-sitter
   :config
-  ;; we choose this instead of tsx-mode so that eglot can automatically figure out language for server
-  ;; see https://github.com/joaotavora/eglot/issues/624 and https://github.com/joaotavora/eglot#handling-quirky-servers
   (define-derived-mode typescriptreact-mode typescript-mode
     "TypeScript TSX")
 
   ;; use our derived mode for tsx files
   (add-to-list 'auto-mode-alist '("\\.tsx?\\'" . typescriptreact-mode))
-  ;; by default, typescript-mode is mapped to the treesitter typescript parser
-  ;; use our derived mode to map both .tsx AND .ts -> typescriptreact-mode -> treesitter tsx
   (add-to-list 'tree-sitter-major-mode-language-alist '(typescriptreact-mode . tsx)))
 
 (use-package csharp-mode

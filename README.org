@@ -1033,114 +1033,115 @@ You can also use =M-x auto-package-update-now= to update right now!
 
 #+begin_src emacs-lisp
 
-  (use-package consult
-    :general
-    (leader-map
-      "SPC"	'consult-buffer
-      "sa"	'consult-org-agenda
-      "so"	'consult-outline
-      "sm"	'consult-mark
-      "sl"	'consult-line
-      "sL"	'consult-line-multi
-      "sM"	'consult-global-map
-      "sr"	'consult-ripgrep
-      "fF"	'consult-recent-file
-      "fb"	'consult-bookmark
-      "bb"	'consult-buffer
-      "bo"	'consult-buffer-other-window
-      "bf"	'consult-buffer-other-frame
-      "bm"	'consult-mode-command
-      "bh"	'consult-history
-      "xc"	'consult-complex-command
-      "xk"	'consult-kmacro
-      "pb"	'consult-project-buffer)
+    (use-package consult
+      :general
+      (leader-map
+        "SPC"	'consult-buffer
+        "sa"	'consult-org-agenda
+        "so"	'consult-outline
+        "sm"	'consult-mark
+        "sl"	'consult-line
+        "sL"	'consult-line-multi
+        "sM"	'consult-global-map
+        "sr"	'consult-ripgrep
+        "fF"	'consult-recent-file
+        "fb"	'consult-bookmark
+        "bb"	'consult-buffer
+        "bo"	'consult-buffer-other-window
+        "bf"	'consult-buffer-other-frame
+        "bm"	'consult-mode-command
+        "bh"	'consult-history
+        "xc"	'consult-complex-command
+        "xk"	'consult-kmacro
+        "pb"	'consult-project-buffer)
 
-    (local-leader-map :keymaps 'org-mode-map
-      "s"	'consult-org-heading)
+      (local-leader-map org-mode-map
+        "s"	'consult-org-heading)
 
-    (general-def
-      "C-x b"	'consult-buffer
-      "C-x 4 b"	'consult-buffer-other-window
-      "C-x 5 b"	'consult-buffer-other-frame
-      "C-x M-:"	'consult-complex-command
-      "C-x r b"	'consult-bookmark
-      "C-x p b"	'consult-project-buffer
-      "M-#"	'consult-register-load
-      "M-'"	'consult-register-store
-      "C-M-#"	'consult-register
-      "M-y"	'consult-yank-pop
-      "<help> a"	'consult-apropos
-      "M-g e"	'consult-compile-error
-      "M-g f"	'consult-flymake
-      "M-g g"	'consult-goto-line
-      "M-g M-g"	'consult-goto-line
-      "M-g o"	'consult-outline
-      "M-g m"	'consult-mark
-      "M-g k"	'consult-global-mark
-      "M-g i"	'consult-imenu
-      "M-g I"	'consult-imenu-multi
-      "M-s d"	'consult-find
-      "M-s D"	'consult-locate
-      "M-s g"	'consult-grep
-      "M-s G"	'consult-git-grep
-      "M-s r"	'consult-ripgrep
-      "M-s L"	'consult-line-multi
-      "M-s m"	'consult-multi-occur
-      "M-s k"	'consult-keep-lines
-      "M-s u"	'consult-focus-lines
-      "M-s e"	'consult-isearch-history)
+      (general-def
+        "C-x b"	'consult-buffer
+        "C-x 4 b"	'consult-buffer-other-window
+        "C-x 5 b"	'consult-buffer-other-frame
+        "C-x M-:"	'consult-complex-command
+        "C-x r b"	'consult-bookmark
+        "C-x p b"	'consult-project-buffer
+        "M-#"	'consult-register-load
+        "M-'"	'consult-register-store
+        "C-M-#"	'consult-register
+        "M-y"	'consult-yank-pop
+        "<help> a"	'consult-apropos
+        "M-g e"	'consult-compile-error
+        "M-g f"	'consult-flymake
+        "M-g g"	'consult-goto-line
+        "M-g M-g"	'consult-goto-line
+        "M-g o"	'consult-outline
+        "M-g m"	'consult-mark
+        "M-g k"	'consult-global-mark
+        "M-g i"	'consult-imenu
+        "M-g I"	'consult-imenu-multi
+        "M-s d"	'consult-find
+        "M-s D"	'consult-locate
+        "M-s g"	'consult-grep
+        "M-s G"	'consult-git-grep
+        "M-s r"	'consult-ripgrep
+        "M-s L"	'consult-line-multi
+        "M-s m"	'consult-multi-occur
+        "M-s k"	'consult-keep-lines
+        "M-s u"	'consult-focus-lines
+        "M-s e"	'consult-isearch-history)
 
-    (general-def '(motion emacs visual insert normal)
-      "C-f" 'consult-line
-      "C-S-f" 'consult-line-multi)
+      (general-def
+        "C-s" 'consult-line
+        "C-S-s" 'consult-line-multi)
 
-    (general-def :keymaps 'isearch-mode-map
-      "M-e"	'consult-isearch-history
-      "M-s e"	'consult-isearch-history
-      "M-s l"	'consult-line
-      "M-s L"	'consult-line-multi)
+      (general-def isearch-mode-map
+        "M-e"	'consult-isearch-history
+        "M-s e"	'consult-isearch-history
+        "C-s"	'consult-line
+        "C-S-s"	'consult-line-multi)
 
-    (general-def :keymaps 'minibuffer-local-map
-      "M-s"	'consult-history
-      "M-r"	'consult-history)
+      (general-def minibuffer-local-map
+        "M-s"	'consult-history
+        "M-r"	'consult-history)
 
-    :init
-    ;; Optionally configure the register formatting. This improves the register
-    ;; preview for `consult-register', `consult-register-load',
-    ;; `consult-register-store' and the Emacs built-ins.
-    (setq register-preview-delay 0.5
-          register-preview-function #'consult-register-format)
+      :init
+      ;; Optionally configure the register formatting. This improves the register
+      ;; preview for `consult-register', `consult-register-load',
+      ;; `consult-register-store' and the Emacs built-ins.
+      (setq register-preview-delay 0.5
+            register-preview-function #'consult-register-format)
 
-    ;; Optionally tweak the register preview window.
-    ;; This adds thin lines, sorting and hides the mode line of the window.
-    (advice-add #'register-preview :override #'consult-register-window)
+      ;; Optionally tweak the register preview window.
+      ;; This adds thin lines, sorting and hides the mode line of the window.
+      (advice-add #'register-preview :override #'consult-register-window)
 
-    ;; Use Consult to select xref locations with preview
-    (setq xref-show-xrefs-function #'consult-xref
-          xref-show-definitions-function #'consult-xref)
-    :config
-    (progn
-      (consult-customize
-       consult-theme
-       :preview-key '(:debounce 0.2 any)
-       consult-ripgrep consult-git-grep consult-grep
-       consult-bookmark consult-recent-file consult-xref
-       consult--source-bookmark consult--source-recent-file
-       consult--source-project-recent-file
-       :preview-key (kbd "M-."))
+      ;; Use Consult to select xref locations with preview
+      (setq xref-show-xrefs-function #'consult-xref
+            xref-show-definitions-function #'consult-xref)
+      :config
+      (progn
+        (consult-customize
+         consult-theme
+         :preview-key '(:debounce 0.2 any)
+         consult-ripgrep consult-git-grep consult-grep
+         consult-bookmark consult-recent-file consult-xref
+         consult--source-bookmark consult--source-recent-file
+         consult--source-project-recent-file
+         :preview-key (kbd "M-."))
 
-      (defvar-local consult-toggle-preview-orig nil)
+        (defvar-local consult-toggle-preview-orig nil)
 
-      (defun consult-toggle-preview ()
-        "Command to enable/disable preview."
-        (interactive)
-        (if consult-toggle-preview-orig
-            (setq consult--preview-function consult-toggle-preview-orig
-                  consult-toggle-preview-orig nil)
-          (setq consult-toggle-preview-orig consult--preview-function
-                consult--preview-function #'ignore)))
-      (bind-key "M-P" #'consult-toggle-preview 'vertico-map)
-      (setq consult-narrow-key "<")))
+        (defun consult-toggle-preview ()
+          "Command to enable/disable preview."
+          (interactive)
+          (if consult-toggle-preview-orig
+              (setq consult--preview-function consult-toggle-preview-orig
+                    consult-toggle-preview-orig nil)
+            (setq consult-toggle-preview-orig consult--preview-function
+                  consult--preview-function #'ignore)))
+        (general-def vertico-map
+          "M-p" 'consult-toggle-preview)
+        (setq consult-narrow-key "<")))
 #+end_src
 
 ** consult-project-extra
@@ -1582,10 +1583,6 @@ You can also use =M-x auto-package-update-now= to update right now!
 
       (imap org-mode-map
         "TAB" 'completion-at-point)
-
-      (general-def org-mode-map
-        "C-s" 'consult-org-heading
-        "C-S-s" 'consult-org-agenda)
 
       ;; Org Agenda Keybinds
       (local-leader-map org-agenda-mode-map
@@ -2321,15 +2318,11 @@ You can also use =M-x auto-package-update-now= to update right now!
   (use-package typescript-mode
     :after tree-sitter
     :config
-    ;; we choose this instead of tsx-mode so that eglot can automatically figure out language for server
-    ;; see https://github.com/joaotavora/eglot/issues/624 and https://github.com/joaotavora/eglot#handling-quirky-servers
     (define-derived-mode typescriptreact-mode typescript-mode
       "TypeScript TSX")
 
     ;; use our derived mode for tsx files
     (add-to-list 'auto-mode-alist '("\\.tsx?\\'" . typescriptreact-mode))
-    ;; by default, typescript-mode is mapped to the treesitter typescript parser
-    ;; use our derived mode to map both .tsx AND .ts -> typescriptreact-mode -> treesitter tsx
     (add-to-list 'tree-sitter-major-mode-language-alist '(typescriptreact-mode . tsx)))
 #+end_src
 
