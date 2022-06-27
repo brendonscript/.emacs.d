@@ -105,7 +105,6 @@
       "f"  '(:ignore t :wk "files")
       "fe" '(:ignore t :wk "emacs")
       "g"  '(:ignore t :wk "git")
-      "p"  '(:ignore t :wk "projects")
       "r"  '(:ignore t :wk "refactor")
       "s"  '(:ignore t :wk "search")
       "x"  '(:ignore t :wk "execute")
@@ -139,6 +138,7 @@
       "ea"  'align-regexp
       "eA"  'align
       "er"  'query-replace
+      "fB"  'bookmark-set
       "ff"  'find-file
       "fs"  'save-buffer
       "fd"  'dired
@@ -258,9 +258,9 @@
     (setq recentf-max-saved-items 250)
     (setq save-interprogram-paste-before-kill t)
     (setq initial-buffer-choice t)
-    ;; (require 'desktop)
-    ;; (customize-set-variable 'desktop-save 't)
-    ;; (desktop-save-mode 1)
+    (require 'desktop)
+    (customize-set-variable 'desktop-save 't)
+    (desktop-save-mode 1)
     (recentf-mode 1)
     (with-eval-after-load 'no-littering
       (add-to-list 'recentf-exclude no-littering-etc-directory)
@@ -273,17 +273,18 @@
     (setq read-file-name-completion-ignore-case t
           read-buffer-completion-ignore-case t
           completion-ignore-case t
-          completion-cycle-threshold 3
+          completion-cycle-threshold 2
           tab-always-indent 'complete)
 
+    (electric-pair-mode t)
     ;; Use `consult-completion-in-region' if Vertico is enabled.
     ;; Otherwise use the default `completion--in-region' function.
-    (setq completion-in-region-function
-          (lambda (&rest args)
-            (apply (if vertico-mode
-                       #'consult-completion-in-region
-                     #'completion--in-region)
-                   args)))
+    ;; (setq completion-in-region-function
+    ;;       (lambda (&rest args)
+    ;;         (apply (if vertico-mode
+    ;;                    #'consult-completion-in-region
+    ;;                  #'completion--in-region)
+    ;;                args)))
 
     ;; Emacs 28: Hide commands in M-x which do not work in the current mode.
     ;; Vertico commands are hidden in normal buffers.
@@ -460,9 +461,16 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (use-package dired
   :straight nil
   :commands (dired dired-jump)
-  :bind (("C-x C-j" . dired-jump))
+  :general
+  (general-def
+    "C-x C-j" 'dired-jump)
   :custom ((dired-listing-switches "-agho --group-directories-first"))
   :config
+  (general-def '(emacs normal visual motion) dired-mode-map
+    "l" 'dired-open-file
+    "L" 'dired-view-file
+    "h" 'dired-up-directory)
+
   (setq dired-dwim-target t)
 
   ;; MacOS ;;
@@ -489,7 +497,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   :config
   (with-eval-after-load 'evil-collection
     (evil-collection-define-key 'normal 'dired-mode-map
-      "H" 'dired-hide-dotfiles-mode)))
+      "C-S-h" 'dired-hide-dotfiles-mode)))
 
 (use-package erc
   :straight nil
@@ -609,6 +617,11 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
         "gu" 'universal-argument)
 
       (setq me/window-map (cons 'keymap evil-window-map))
+
+      (general-def me/window-map
+        "u" 'winner-undo
+        "U" 'winner-redo)
+
       (leader-map "w" '(:keymap me/window-map :wk "windows"))
 
       (evil-ex-define-cmd "q" #'kill-this-buffer)
@@ -732,6 +745,19 @@ play well with `evil-mc'."
   :init
   (global-undo-tree-mode))
 
+(use-package projectile
+  :ensure t
+  :init
+  (setq projectile-project-search-path '("~/Code/" "~/Org/" "~/BrendOS/"))
+  (projectile-mode +1)
+  :config
+  (progn
+    (leader-map
+      "p" '(:keymap projectile-command-map :wk "projects"))
+    (with-eval-after-load 'consult
+      (general-def projectile-command-map
+        "b" 'consult-project-buffer))))
+
 (use-package avy
   :after evil
   :config
@@ -745,8 +771,8 @@ play well with `evil-mc'."
     (general-def :states '(normal visual motion insert emacs)
       "M-S-f"	'avy-resume
       "M-f"	'avy-goto-char-timer
-      "C-q" 'avy-goto-char-timer
-      "C-S-q" 'avy-resume)))
+      "C-f" 'avy-goto-char-timer
+      "C-S-f" 'avy-resume)))
 
 (use-package all-the-icons)
 
@@ -824,8 +850,8 @@ play well with `evil-mc'."
     "bm"	'consult-mode-command
     "bh"	'consult-history
     "xc"	'consult-complex-command
-    "xk"	'consult-kmacro
-    "pb"	'consult-project-buffer)
+    "xk"	'consult-kmacro)
+
 
   (local-leader-map org-mode-map
     "s"	'consult-org-heading)
@@ -914,11 +940,6 @@ play well with `evil-mc'."
     (general-def vertico-map
       "M-p" 'consult-toggle-preview)
     (setq consult-narrow-key "<")))
-
-(use-package consult-project-extra
-  :bind
-  ("C-c p f" . consult-project-extra-find)
-  ("C-c p o" . consult-project-extra-find-other-window))
 
 (use-package orderless
   :config
@@ -1077,39 +1098,38 @@ play well with `evil-mc'."
     (corfu-echo-documentation nil))
 
 (use-package cape
-  ;; Bind dedicated completion commands
-  ;; Alternative prefix keys: C-c p, M-p, M-+, ...
-  :general
+  :config
   (imap :keymaps 'org-mode-map
     "TAB" 'completion-at-point)
 
-  (leader-map
-    ("pp" 'completion-at-point) ;; capf
-    ("pt" 'complete-tag)        ;; etags
-    ("pd" 'cape-dabbrev)        ;; or dabbrev-completion
-    ("ph" 'cape-history)
-    ("pf" 'cape-file)
-    ("pk" 'cape-keyword)
-    ("ps" 'cape-symbol)
-    ("pa" 'cape-abbrev)
-    ("pi" 'cape-ispell)
-    ("pl" 'cape-line)
-    ("pw" 'cape-dict)
-    ("p\\" 'cape-tex)
-    ("p_" 'cape-tex)
-    ("p^" 'cape-tex)
-    ("p&" 'cape-sgml)
-    ("pr" 'cape-rfc1345))
-  :init
+  (imap
+    ("C-S-p p" 'completion-at-point) ;; capf
+    ("C-S-p t" 'complete-tag)        ;; etags
+    ("C-S-p d" 'cape-dabbrev)        ;; or dabbrev-completion
+    ("C-S-p h" 'cape-history)
+    ("C-S-p f" 'cape-file)
+    ("C-S-p k" 'cape-keyword)
+    ("C-S-p s" 'cape-symbol)
+    ("C-S-p a" 'cape-abbrev)
+    ("C-S-p i" 'cape-ispell)
+    ("C-S-p l" 'cape-line)
+    ("C-S-p w" 'cape-dict)
+    ("C-S-p \\" 'cape-tex)
+    ("C-S-p _" 'cape-tex)
+    ("C-S-p ^" 'cape-tex)
+    ("C-S-p &" 'cape-sgml)
+    ("C-S-p r" 'cape-rfc1345))
+  (add-hook 'prog-mode-hook '(lambda () (setq-local completion-at-point-functions
+                                                    (list #'cape-keyword #'cape-symbol #'cape-file #'cape-dabbrev))))
   ;;(add-to-list 'completion-at-point-functions #'cape-history)
-  (add-to-list 'completion-at-point-functions #'cape-keyword)
+  ;;(add-to-list 'completion-at-point-functions #'cape-keyword)
   ;;(add-to-list 'completion-at-point-functions #'cape-tex)
   ;;(add-to-list 'completion-at-point-functions #'cape-sgml)
   ;;(add-to-list 'completion-at-point-functions #'cape-rfc1345)
   ;;(add-to-list 'completion-at-point-functions #'cape-abbrev)
   ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
   ;;(add-to-list 'completion-at-point-functions #'cape-dict)
-  (add-to-list 'completion-at-point-functions #'cape-symbol)
+  ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
   ;;(add-to-list 'completion-at-point-functions #'cape-line)
   (add-to-list 'completion-at-point-functions #'cape-dabbrev)
   (add-to-list 'completion-at-point-functions #'cape-file))
@@ -1256,20 +1276,8 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
   ;; Files ;;
   (defconst me/org-todo-file (concat me/org-dir "todo.org"))
-  (defconst me/org-inbox-file (concat me/org-dir "inbox.org"))
-  (defconst me/org-archive-file (concat me/org-dir "archive.org"))
+  (defconst me/org-work-file (concat me/org-dir "work.org"))
   (defconst me/org-emacs-config-file (concat user-emacs-directory "README.org"))
-
-  ;; Archive ;;
-  (defconst me/org-archive-location (concat me/org-archive-file "::* From %s"))
-
-  ;; All Files ;;
-  (defun me/refresh-all-org-files ()
-    (load-library "find-lisp")
-    (find-lisp-find-files "~/Org" "\.org$"))
-
-  (defvar me/org-all-files (me/refresh-all-org-files))
-
 
   :config
   (progn
@@ -1317,8 +1325,6 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
     ;; Directories ;;
     (setq org-directory me/org-dir)
-    (setq org-archive-location me/org-archive-location)
-
 
     ;; Visuals ;;
     (setq org-ellipsis " ▼ ")
@@ -1366,7 +1372,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
     ;; Refile ;;
     (setq org-refile-use-outline-path nil)
     (setq org-refile-allow-creating-parent-nodes 'confirm)
-    (setq org-refile-targets `((,(directory-files-recursively "~/Org/" "^[a-z0-9]*.org$") :maxlevel . 3)))
+    (setq org-refile-targets `((,(directory-files-recursively "~/Org/" "^[a-z0-9]*.org$") :maxlevel . 5)))
 
 
     ;; Fonts ;;
@@ -1402,8 +1408,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
     ;; Org Habits ;;
     (require 'org-habit)
     (add-to-list 'org-modules 'org-habit)
-    (setq
-     org-habit-today-glyph ?◌
+    (setq org-habit-today-glyph ?◌
      org-habit-completed-glyph ?●
      org-habit-missed-glyph ?○
      org-habit-preceding-days 7
@@ -1413,13 +1418,15 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
     ;; Org Todos ;;
     (setq org-todo-keywords
-          '((sequence "TODO(t)" "NEXT(n)" "PROG(p)" "|" "DONE(d!)" "CANCELLED(c!)")))
+          '((sequence "TODO(t)" "NEXT(n)" "PROG(p)" "WAIT(w@)" "|" "DONE(d!)" "CANCELLED(c!)")))
 
     (setq org-todo-keyword-faces
           '(("TODO" . (:foreground "#00ff66" :weight bold))
             ("NEXT" . (:foreground "#66ffff"
                                    :weight bold))
             ("PROG"  . (:foreground "#ff0066"
+                                    :weight bold))
+            ("WAIT"  . (:foreground "#FF6600"
                                     :weight bold))
             ("DONE" . (:foreground "darkgrey"
                                    :weight bold))
@@ -1429,24 +1436,11 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
     ;; Org Tags ;;
     (setq org-tag-persistent-alist
-          '((:startgroup)
-            ("@errand" . ?e)
-            ("@home" . ?h)
-            ("@work" . ?w)
-            ("@computer" . ?c)
-            (:endgroup)
-            ("ARCHIVE" . ?A)
-            ("bookmark" . ?b)
-            ("emacs" . ?E)
+          '(("ARCHIVE" . ?A)
+            ("work" . ?b)
+            ("emacs" . ?e)
             ("idea" . ?i)
-            ("inbox" . ?I)
-            ("goal" . ?g)
             ("someday" . ?s)))
-
-    ;; (setq org-tag-faces
-    ;;       '(("@errand" . (:foreground "mediumPurple1" :weight bold))
-    ;;         ("@home" . (:foreground "royalblue1" :weight bold))
-    ;;         ("@work" . (:foreground "#1CC436" :weight bold))))
 
 
     ;; Org Agenda ;;
@@ -1464,7 +1458,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
     ;; Open links in current window
     (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file)
-    (setq org-agenda-files '("~/Org/inbox.org" "~/Org/todo.org" "~/Org/projects/"))
+    (setq org-agenda-files '("~/Org/todo.org" "~/Org/work.org"))
     ;;(directory-files-recursively "~/Org/" "^[a-z0-9]*.org$")
     (setq org-agenda-start-on-weekday nil)
     (setq org-agenda-start-with-log-mode t)
@@ -1496,12 +1490,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
     (setq org-cycle-separator-lines 0)
     (setq org-agenda-category-icon-alist
           `(("work" ,(list (all-the-icons-faicon "cogs")) nil nil :ascent center)
-            ("home" ,(list (all-the-icons-material "home")) nil nil :ascent center)
-            ("computer" ,(list (all-the-icons-material "computer")) nil nil :ascent center)
-            ("errand" ,(list (all-the-icons-material "location_city")) nil nil :ascent center)
-            ("groceries" ,(list (all-the-icons-material "shopping_basket")) nil nil :ascent center)
-            ("health" ,(list (all-the-icons-material "local_hospital")) nil nil :ascent center)
-            ("routine" ,(list (all-the-icons-material "repeat")) nil nil :ascent center)
+            ("emacs" ,(list (all-the-icons-material "computer")) nil nil :ascent center)
             ("inbox" ,(list (all-the-icons-material "inbox")) nil nil :ascent center)
             ("calendar" ,(list (all-the-icons-faicon "calendar")) nil nil :ascent center)))
     (add-hook 'org-agenda-finalize-hook #'me/org-agenda-place-point 90)
@@ -1517,24 +1506,24 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
     (setq org-capture-templates
           '(("c" "Current" entry
-             (file me/org-inbox-file)
+             (file+headline me/org-todo-file "Inbox")
              "* PROG %?\n%t\n" :prepend t :clock-in t :clock-keep t :clock-resume t)
             ("e" "Emacs Task" entry
              (file+headline me/org-todo-file "Emacs")
              "* TODO %?\n%U\n" :prepend t)
             ("t" "Task" entry
-             (file me/org-inbox-file)
+             (file+headline me/org-todo-file "Inbox")
              "* TODO %?\n%U\n" :prepend t)
             ("T" "Task (Scheduled)" entry
-             (file me/org-inbox-file)
+             (file+headline me/org-todo-file "Inbox")
              "* TODO %?\nSCHEDULED: %^t\n" :prepend t)
             ;; Work ;;
             ("w" "Work Captures")
             ("wt" "Work Task" entry
-             (file me/org-inbox-file)
+             (file+headline me/org-work-file "Inbox")
              "* TODO %? :work:\n%U\n" :prepend t)
             ("wT" "Work Task (Scheduled)" entry
-             (file me/org-inbox-file)
+             (file+headline me/org-work-file "Inbox")
              "* TODO %?\nSCHEDULED: %^T\n" :prepend t)))
 
 
@@ -1567,6 +1556,8 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
                                            :todo "PROG")
                                     (:name "Next to do"
                                            :todo "NEXT")
+                                    (:name "Waiting"
+                                           :todo "WAIT")
                                     (:name "Due Today"
                                            :deadline today)
                                     (:name "Due Soon"
@@ -1582,7 +1573,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
                                            :scheduled future)
                                     (:name "Inbox"
                                            :tag "inbox")
-                                    (:auto-group t :order 99)))
+                                    (:auto-category t :order 99)))
 
     (setq org-agenda-custom-commands '(("a" "POG AGENDA"
                                         ((agenda "" ((org-agenda-span 'day)
@@ -1591,9 +1582,10 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
                                                       '((:order-multi (99
                                                                        (:name "Clocked Today" :log clock)
                                                                        (:name "Done Today" :todo ("DONE" "CANCELLED") :and (:log t))))
-                                                        (:name "Habits" :habit t :order 98)
                                                         (:name "In Progress" :todo "PROG")
                                                         (:name "Next" :todo "NEXT")
+                                                        (:name "Waiting"
+                                                               :todo "WAIT")
                                                         (:name "Overdue" :deadline past)
                                                         (:name "Due Today" :deadline today)
                                                         (:name "Today"
@@ -1608,6 +1600,8 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
                                                                 :todo "PROG")
                                                          (:name "Next to do"
                                                                 :todo "NEXT")
+                                                         (:name "Waiting"
+                                                                :todo "WAIT")
                                                          (:name "Due Soon"
                                                                 :deadline future)
                                                          (:name "Future"
@@ -1616,7 +1610,9 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
                                                                 :tag "inbox")
                                                          (:name "Emacs"
                                                                 :tag "emacs")
-                                                         (:auto-group t :order 99)))))))))))
+                                                         (:name "Work"
+                                                                :tag "work")
+                                                         (:auto-category t :order 99)))))))))))
 
 (use-package org-ql
   :after org
@@ -1635,18 +1631,6 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
     (setq org-ql-views nil)
     (evil-define-key 'motion org-ql-view-list-map (kbd "RET") 'org-ql-view-switch)
     ;; Add these to a hydra or something
-    (defun me/org-ql-bookmarks ()
-      (interactive)
-      (org-ql-search me/org-all-files '(tags "bookmark")))
-
-    (defun me/org-ql-ideas ()
-      (interactive)
-      (org-ql-search me/org-all-files '(tags "idea")))
-
-    (defun me/org-ql-emacs ()
-      (interactive)
-      (org-ql-search me/org-all-files '(tags "emacs")))
-
     (add-to-list 'org-ql-views '("Inbox" :buffers-files org-agenda-files :query
                                  (and
                                   (not
@@ -1666,6 +1650,16 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
                                  (date priority)
                                  :super-groups org-super-agenda-groups :title "SUPER VIEW"))
 
+    (add-to-list 'org-ql-views '("Work Super View" :buffers-files org-agenda-files :query
+                                 (and
+                                  (tags "work")
+                                  (todo)
+                                  (not
+                                   (done)))
+                                 :sort
+                                 (date priority)
+                                 :super-groups org-super-agenda-groups :title "SUPER VIEW"))
+
     (add-to-list 'org-ql-views '("NEXT tasks" :buffers-files org-agenda-files :query
                                  (todo "NEXT")
                                  :sort
@@ -1675,19 +1669,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
     (add-to-list 'org-ql-views '("Archive" :buffers-files org-agenda-files :query
                                  (and (done))
                                  :sort
-                                 (date priority)))
-
-    (add-to-list 'org-ql-views '("Routines" :buffers-files org-agenda-files :query
-                                 (and
-                                  (not
-                                   (done))
-                                  (and
-                                   (habit)
-                                   (scheduled :to today)
-                                   (or
-                                    (ts-active :to today))))
-                                 :sort
-                                 (todo priority date)))))
+                                 (date priority)))))
 
 (use-package org-modern
   :after org
@@ -1719,7 +1701,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
   :after org
   :demand t
   :custom
-  (org-roam-directory (file-truename me/org-dir))
+  (org-roam-directory (file-truename (concat me/org-dir "notes")))
   :init
   (add-to-list 'display-buffer-alist
                '("\\*org-roam\\*"
@@ -1737,6 +1719,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
       "rf" 'org-roam-node-find
       "rg" 'org-roam-graph
       "ri" 'org-roam-node-insert
+      "rI" 'org-id-get-create
       "rc" 'org-roam-capture
       "C" 'org-roam-capture
       "rj" 'org-roam-dailies-capture-today
@@ -1747,14 +1730,12 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
       "Y" 'org-roam-dailies-capture-yesterday
       "T" 'org-roam-dailies-capture-tomorrow)
 
-
-    (setq org-roam-dailies-directory (concat me/org-dir "journals"))
-    (setq org-roam-completion-everywhere t)
+    (setq org-roam-dailies-directory (concat org-roam-directory "journals"))
+    (setq org-roam-completion-everywhere nil)
     (setq org-roam-node-display-template
           (concat "${title:*} "
                   (propertize "${tags:10}" 'face 'org-tag)))
     (setq org-roam-mode-sections '(org-roam-backlinks-section org-roam-reflinks-section org-roam-unlinked-references-section))
-
 
     ;; Capture ;;
     (setq org-roam-dailies-capture-templates
@@ -1773,14 +1754,12 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
                                 "#+TITLE: %<%Y%m%d-%H%M%S>--${title}\n")
              :unnarrowed t)
             ("p" "project" plain "* Tasks\n\n** TODO Add initial tasks\n\n* Dates\n\n"
-             :if-new (file+head "projects/${slug}.org" "#+TITLE: ${title}\n#+FILETAGS: :project:\n#+CATEGORY: inbox\n#+PROPERTY: agenda-group inbox\n")
+             :if-new (file+head "projects/${slug}.org" "#+TITLE: ${title}\n#+FILETAGS: :project:\n#+CATEGORY: \n")
              :unnarrowed t)
             ("t" "topic" plain "\n%?"
              :if-new (file+head "topics/${slug}.org"
                                 "#+TITLE: ${title}\n#+FILETAGS:\n")
              :unnarrowed t)))
-
-
 
     (org-roam-db-autosync-mode)))
 
@@ -1952,6 +1931,14 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
 (use-package json-mode)
 
+(use-package markdown-mode
+  :mode ("\\.md\\'" . markdown-mode)
+  :custom (markdown-wiki-link-search-type 'project)
+  :init
+  (setq markdown-enable-wiki-links t)
+  (setq markdown-wiki-link-fontify-missing t)
+  (setq markdown-command "multimarkdown"))
+
 (use-package vterm
   :commands vterm
   :general (leader-map "`" 'vterm)
@@ -1964,6 +1951,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 (use-package fish-mode)
 
 (use-package dashboard
+  :disabled t
   :init (add-hook 'desktop-no-desktop-file-hook (lambda () (setq initial-buffer-choice (get-buffer "*dashboard*"))))
   :custom ((dashboard-agenda-sort-strategy '(todo-state-down)))
   :config
@@ -1978,16 +1966,16 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
   ;; Format: "(icon title help action face prefix suffix)"
   (setq dashboard-navigator-buttons
-	`(;; line1
-	  ((,(all-the-icons-faicon "calendar" :height 1.1 :v-adjust 0.0)
-	    "Agenda"
-	    "Browse Agenda"
-	    (lambda (&rest _) (org-agenda)))
-	   (,(all-the-icons-faicon "list" :height 1.1 :v-adjust 0.0)
-	    "Views"
-	    "Browse Views"
-	    (lambda (&rest _) (org-ql-view-sidebar)))
-	   ("⚙" nil "Open Config" (lambda (&rest _) (me/open-config)) success))))
+        `(;; line1
+          ((,(all-the-icons-faicon "calendar" :height 1.1 :v-adjust 0.0)
+            "Agenda"
+            "Browse Agenda"
+            (lambda (&rest _) (org-agenda)))
+           (,(all-the-icons-faicon "list" :height 1.1 :v-adjust 0.0)
+            "Views"
+            "Browse Views"
+            (lambda (&rest _) (org-ql-view-sidebar)))
+           ("⚙" nil "Open Config" (lambda (&rest _) (me/open-config)) success))))
 
   (setq dashboard-projects-backend 'project-el)
   (dashboard-setup-startup-hook))

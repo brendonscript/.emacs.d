@@ -185,7 +185,6 @@ You can also use =M-x auto-package-update-now= to update right now!
         "f"  '(:ignore t :wk "files")
         "fe" '(:ignore t :wk "emacs")
         "g"  '(:ignore t :wk "git")
-        "p"  '(:ignore t :wk "projects")
         "r"  '(:ignore t :wk "refactor")
         "s"  '(:ignore t :wk "search")
         "x"  '(:ignore t :wk "execute")
@@ -219,6 +218,7 @@ You can also use =M-x auto-package-update-now= to update right now!
         "ea"  'align-regexp
         "eA"  'align
         "er"  'query-replace
+        "fB"  'bookmark-set
         "ff"  'find-file
         "fs"  'save-buffer
         "fd"  'dired
@@ -342,9 +342,9 @@ You can also use =M-x auto-package-update-now= to update right now!
       (setq recentf-max-saved-items 250)
       (setq save-interprogram-paste-before-kill t)
       (setq initial-buffer-choice t)
-      ;; (require 'desktop)
-      ;; (customize-set-variable 'desktop-save 't)
-      ;; (desktop-save-mode 1)
+      (require 'desktop)
+      (customize-set-variable 'desktop-save 't)
+      (desktop-save-mode 1)
       (recentf-mode 1)
       (with-eval-after-load 'no-littering
         (add-to-list 'recentf-exclude no-littering-etc-directory)
@@ -357,17 +357,18 @@ You can also use =M-x auto-package-update-now= to update right now!
       (setq read-file-name-completion-ignore-case t
             read-buffer-completion-ignore-case t
             completion-ignore-case t
-            completion-cycle-threshold 3
+            completion-cycle-threshold 2
             tab-always-indent 'complete)
 
+      (electric-pair-mode t)
       ;; Use `consult-completion-in-region' if Vertico is enabled.
       ;; Otherwise use the default `completion--in-region' function.
-      (setq completion-in-region-function
-            (lambda (&rest args)
-              (apply (if vertico-mode
-                         #'consult-completion-in-region
-                       #'completion--in-region)
-                     args)))
+      ;; (setq completion-in-region-function
+      ;;       (lambda (&rest args)
+      ;;         (apply (if vertico-mode
+      ;;                    #'consult-completion-in-region
+      ;;                  #'completion--in-region)
+      ;;                args)))
 
       ;; Emacs 28: Hide commands in M-x which do not work in the current mode.
       ;; Vertico commands are hidden in normal buffers.
@@ -558,9 +559,16 @@ You can also use =M-x auto-package-update-now= to update right now!
   (use-package dired
     :straight nil
     :commands (dired dired-jump)
-    :bind (("C-x C-j" . dired-jump))
+    :general
+    (general-def
+      "C-x C-j" 'dired-jump)
     :custom ((dired-listing-switches "-agho --group-directories-first"))
     :config
+    (general-def '(emacs normal visual motion) dired-mode-map
+      "l" 'dired-open-file
+      "L" 'dired-view-file
+      "h" 'dired-up-directory)
+
     (setq dired-dwim-target t)
 
     ;; MacOS ;;
@@ -587,7 +595,7 @@ You can also use =M-x auto-package-update-now= to update right now!
     :config
     (with-eval-after-load 'evil-collection
       (evil-collection-define-key 'normal 'dired-mode-map
-        "H" 'dired-hide-dotfiles-mode)))
+        "C-S-h" 'dired-hide-dotfiles-mode)))
 #+end_src
 
 ** IRC
@@ -751,6 +759,11 @@ You can also use =M-x auto-package-update-now= to update right now!
           "gu" 'universal-argument)
 
         (setq me/window-map (cons 'keymap evil-window-map))
+
+        (general-def me/window-map
+          "u" 'winner-undo
+          "U" 'winner-redo)
+
         (leader-map "w" '(:keymap me/window-map :wk "windows"))
 
         (evil-ex-define-cmd "q" #'kill-this-buffer)
@@ -921,6 +934,21 @@ You can also use =M-x auto-package-update-now= to update right now!
     (global-undo-tree-mode))
 #+end_src
 
+** projectile
+#+begin_src emacs-lisp
+  (use-package projectile
+    :ensure t
+    :init
+    (setq projectile-project-search-path '("~/Code/" "~/Org/" "~/BrendOS/"))
+    (projectile-mode +1)
+    :config
+    (progn
+      (leader-map
+        "p" '(:keymap projectile-command-map :wk "projects"))
+      (with-eval-after-load 'consult
+        (general-def projectile-command-map
+          "b" 'consult-project-buffer))))
+#+end_src
 ** avy
 
 #+begin_src emacs-lisp
@@ -937,8 +965,8 @@ You can also use =M-x auto-package-update-now= to update right now!
       (general-def :states '(normal visual motion insert emacs)
         "M-S-f"	'avy-resume
         "M-f"	'avy-goto-char-timer
-        "C-q" 'avy-goto-char-timer
-        "C-S-q" 'avy-resume)))
+        "C-f" 'avy-goto-char-timer
+        "C-S-f" 'avy-resume)))
 #+end_src
 
 ** all-the-icons
@@ -1033,124 +1061,115 @@ You can also use =M-x auto-package-update-now= to update right now!
 
 #+begin_src emacs-lisp
 
-    (use-package consult
-      :general
-      (leader-map
-        "SPC"	'consult-buffer
-        "sa"	'consult-org-agenda
-        "so"	'consult-outline
-        "sm"	'consult-mark
-        "sl"	'consult-line
-        "sL"	'consult-line-multi
-        "sM"	'consult-global-map
-        "sr"	'consult-ripgrep
-        "fF"	'consult-recent-file
-        "fb"	'consult-bookmark
-        "bb"	'consult-buffer
-        "bo"	'consult-buffer-other-window
-        "bf"	'consult-buffer-other-frame
-        "bm"	'consult-mode-command
-        "bh"	'consult-history
-        "xc"	'consult-complex-command
-        "xk"	'consult-kmacro
-        "pb"	'consult-project-buffer)
+  (use-package consult
+    :general
+    (leader-map
+      "SPC"	'consult-buffer
+      "sa"	'consult-org-agenda
+      "so"	'consult-outline
+      "sm"	'consult-mark
+      "sl"	'consult-line
+      "sL"	'consult-line-multi
+      "sM"	'consult-global-map
+      "sr"	'consult-ripgrep
+      "fF"	'consult-recent-file
+      "fb"	'consult-bookmark
+      "bb"	'consult-buffer
+      "bo"	'consult-buffer-other-window
+      "bf"	'consult-buffer-other-frame
+      "bm"	'consult-mode-command
+      "bh"	'consult-history
+      "xc"	'consult-complex-command
+      "xk"	'consult-kmacro)
 
-      (local-leader-map org-mode-map
-        "s"	'consult-org-heading)
 
-      (general-def
-        "C-x b"	'consult-buffer
-        "C-x 4 b"	'consult-buffer-other-window
-        "C-x 5 b"	'consult-buffer-other-frame
-        "C-x M-:"	'consult-complex-command
-        "C-x r b"	'consult-bookmark
-        "C-x p b"	'consult-project-buffer
-        "M-#"	'consult-register-load
-        "M-'"	'consult-register-store
-        "C-M-#"	'consult-register
-        "M-y"	'consult-yank-pop
-        "<help> a"	'consult-apropos
-        "M-g e"	'consult-compile-error
-        "M-g f"	'consult-flymake
-        "M-g g"	'consult-goto-line
-        "M-g M-g"	'consult-goto-line
-        "M-g o"	'consult-outline
-        "M-g m"	'consult-mark
-        "M-g k"	'consult-global-mark
-        "M-g i"	'consult-imenu
-        "M-g I"	'consult-imenu-multi
-        "M-s d"	'consult-find
-        "M-s D"	'consult-locate
-        "M-s g"	'consult-grep
-        "M-s G"	'consult-git-grep
-        "M-s r"	'consult-ripgrep
-        "M-s L"	'consult-line-multi
-        "M-s m"	'consult-multi-occur
-        "M-s k"	'consult-keep-lines
-        "M-s u"	'consult-focus-lines
-        "M-s e"	'consult-isearch-history)
+    (local-leader-map org-mode-map
+      "s"	'consult-org-heading)
 
-      (general-def
-        "C-s" 'consult-line
-        "C-S-s" 'consult-line-multi)
+    (general-def
+      "C-x b"	'consult-buffer
+      "C-x 4 b"	'consult-buffer-other-window
+      "C-x 5 b"	'consult-buffer-other-frame
+      "C-x M-:"	'consult-complex-command
+      "C-x r b"	'consult-bookmark
+      "C-x p b"	'consult-project-buffer
+      "M-#"	'consult-register-load
+      "M-'"	'consult-register-store
+      "C-M-#"	'consult-register
+      "M-y"	'consult-yank-pop
+      "<help> a"	'consult-apropos
+      "M-g e"	'consult-compile-error
+      "M-g f"	'consult-flymake
+      "M-g g"	'consult-goto-line
+      "M-g M-g"	'consult-goto-line
+      "M-g o"	'consult-outline
+      "M-g m"	'consult-mark
+      "M-g k"	'consult-global-mark
+      "M-g i"	'consult-imenu
+      "M-g I"	'consult-imenu-multi
+      "M-s d"	'consult-find
+      "M-s D"	'consult-locate
+      "M-s g"	'consult-grep
+      "M-s G"	'consult-git-grep
+      "M-s r"	'consult-ripgrep
+      "M-s L"	'consult-line-multi
+      "M-s m"	'consult-multi-occur
+      "M-s k"	'consult-keep-lines
+      "M-s u"	'consult-focus-lines
+      "M-s e"	'consult-isearch-history)
 
-      (general-def isearch-mode-map
-        "M-e"	'consult-isearch-history
-        "M-s e"	'consult-isearch-history
-        "C-s"	'consult-line
-        "C-S-s"	'consult-line-multi)
+    (general-def
+      "C-s" 'consult-line
+      "C-S-s" 'consult-line-multi)
 
-      (general-def minibuffer-local-map
-        "M-s"	'consult-history
-        "M-r"	'consult-history)
+    (general-def isearch-mode-map
+      "M-e"	'consult-isearch-history
+      "M-s e"	'consult-isearch-history
+      "C-s"	'consult-line
+      "C-S-s"	'consult-line-multi)
 
-      :init
-      ;; Optionally configure the register formatting. This improves the register
-      ;; preview for `consult-register', `consult-register-load',
-      ;; `consult-register-store' and the Emacs built-ins.
-      (setq register-preview-delay 0.5
-            register-preview-function #'consult-register-format)
+    (general-def minibuffer-local-map
+      "M-s"	'consult-history
+      "M-r"	'consult-history)
 
-      ;; Optionally tweak the register preview window.
-      ;; This adds thin lines, sorting and hides the mode line of the window.
-      (advice-add #'register-preview :override #'consult-register-window)
+    :init
+    ;; Optionally configure the register formatting. This improves the register
+    ;; preview for `consult-register', `consult-register-load',
+    ;; `consult-register-store' and the Emacs built-ins.
+    (setq register-preview-delay 0.5
+          register-preview-function #'consult-register-format)
 
-      ;; Use Consult to select xref locations with preview
-      (setq xref-show-xrefs-function #'consult-xref
-            xref-show-definitions-function #'consult-xref)
-      :config
-      (progn
-        (consult-customize
-         consult-theme
-         :preview-key '(:debounce 0.2 any)
-         consult-ripgrep consult-git-grep consult-grep
-         consult-bookmark consult-recent-file consult-xref
-         consult--source-bookmark consult--source-recent-file
-         consult--source-project-recent-file
-         :preview-key (kbd "M-."))
+    ;; Optionally tweak the register preview window.
+    ;; This adds thin lines, sorting and hides the mode line of the window.
+    (advice-add #'register-preview :override #'consult-register-window)
 
-        (defvar-local consult-toggle-preview-orig nil)
+    ;; Use Consult to select xref locations with preview
+    (setq xref-show-xrefs-function #'consult-xref
+          xref-show-definitions-function #'consult-xref)
+    :config
+    (progn
+      (consult-customize
+       consult-theme
+       :preview-key '(:debounce 0.2 any)
+       consult-ripgrep consult-git-grep consult-grep
+       consult-bookmark consult-recent-file consult-xref
+       consult--source-bookmark consult--source-recent-file
+       consult--source-project-recent-file
+       :preview-key (kbd "M-."))
 
-        (defun consult-toggle-preview ()
-          "Command to enable/disable preview."
-          (interactive)
-          (if consult-toggle-preview-orig
-              (setq consult--preview-function consult-toggle-preview-orig
-                    consult-toggle-preview-orig nil)
-            (setq consult-toggle-preview-orig consult--preview-function
-                  consult--preview-function #'ignore)))
-        (general-def vertico-map
-          "M-p" 'consult-toggle-preview)
-        (setq consult-narrow-key "<")))
-#+end_src
+      (defvar-local consult-toggle-preview-orig nil)
 
-** consult-project-extra
-
-#+begin_src emacs-lisp
-  (use-package consult-project-extra
-    :bind
-    ("C-c p f" . consult-project-extra-find)
-    ("C-c p o" . consult-project-extra-find-other-window))
+      (defun consult-toggle-preview ()
+        "Command to enable/disable preview."
+        (interactive)
+        (if consult-toggle-preview-orig
+            (setq consult--preview-function consult-toggle-preview-orig
+                  consult-toggle-preview-orig nil)
+          (setq consult-toggle-preview-orig consult--preview-function
+                consult--preview-function #'ignore)))
+      (general-def vertico-map
+        "M-p" 'consult-toggle-preview)
+      (setq consult-narrow-key "<")))
 #+end_src
 
 ** orderless
@@ -1337,43 +1356,41 @@ You can also use =M-x auto-package-update-now= to update right now!
 
 #+begin_src emacs-lisp
   (use-package cape
-    ;; Bind dedicated completion commands
-    ;; Alternative prefix keys: C-c p, M-p, M-+, ...
-    :general
+    :config
     (imap :keymaps 'org-mode-map
       "TAB" 'completion-at-point)
 
-    (leader-map
-      ("pp" 'completion-at-point) ;; capf
-      ("pt" 'complete-tag)        ;; etags
-      ("pd" 'cape-dabbrev)        ;; or dabbrev-completion
-      ("ph" 'cape-history)
-      ("pf" 'cape-file)
-      ("pk" 'cape-keyword)
-      ("ps" 'cape-symbol)
-      ("pa" 'cape-abbrev)
-      ("pi" 'cape-ispell)
-      ("pl" 'cape-line)
-      ("pw" 'cape-dict)
-      ("p\\" 'cape-tex)
-      ("p_" 'cape-tex)
-      ("p^" 'cape-tex)
-      ("p&" 'cape-sgml)
-      ("pr" 'cape-rfc1345))
-    :init
+    (imap
+      ("C-S-p p" 'completion-at-point) ;; capf
+      ("C-S-p t" 'complete-tag)        ;; etags
+      ("C-S-p d" 'cape-dabbrev)        ;; or dabbrev-completion
+      ("C-S-p h" 'cape-history)
+      ("C-S-p f" 'cape-file)
+      ("C-S-p k" 'cape-keyword)
+      ("C-S-p s" 'cape-symbol)
+      ("C-S-p a" 'cape-abbrev)
+      ("C-S-p i" 'cape-ispell)
+      ("C-S-p l" 'cape-line)
+      ("C-S-p w" 'cape-dict)
+      ("C-S-p \\" 'cape-tex)
+      ("C-S-p _" 'cape-tex)
+      ("C-S-p ^" 'cape-tex)
+      ("C-S-p &" 'cape-sgml)
+      ("C-S-p r" 'cape-rfc1345))
+    (add-hook 'prog-mode-hook '(lambda () (setq-local completion-at-point-functions
+                                                      (list #'cape-keyword #'cape-symbol #'cape-file #'cape-dabbrev))))
     ;;(add-to-list 'completion-at-point-functions #'cape-history)
-    (add-to-list 'completion-at-point-functions #'cape-keyword)
+    ;;(add-to-list 'completion-at-point-functions #'cape-keyword)
     ;;(add-to-list 'completion-at-point-functions #'cape-tex)
     ;;(add-to-list 'completion-at-point-functions #'cape-sgml)
     ;;(add-to-list 'completion-at-point-functions #'cape-rfc1345)
     ;;(add-to-list 'completion-at-point-functions #'cape-abbrev)
     ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
     ;;(add-to-list 'completion-at-point-functions #'cape-dict)
-    (add-to-list 'completion-at-point-functions #'cape-symbol)
+    ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
     ;;(add-to-list 'completion-at-point-functions #'cape-line)
     (add-to-list 'completion-at-point-functions #'cape-dabbrev)
     (add-to-list 'completion-at-point-functions #'cape-file))
-
 #+end_src
 
 ** kind-icon
@@ -1542,20 +1559,8 @@ You can also use =M-x auto-package-update-now= to update right now!
 
     ;; Files ;;
     (defconst me/org-todo-file (concat me/org-dir "todo.org"))
-    (defconst me/org-inbox-file (concat me/org-dir "inbox.org"))
-    (defconst me/org-archive-file (concat me/org-dir "archive.org"))
+    (defconst me/org-work-file (concat me/org-dir "work.org"))
     (defconst me/org-emacs-config-file (concat user-emacs-directory "README.org"))
-
-    ;; Archive ;;
-    (defconst me/org-archive-location (concat me/org-archive-file "::* From %s"))
-
-    ;; All Files ;;
-    (defun me/refresh-all-org-files ()
-      (load-library "find-lisp")
-      (find-lisp-find-files "~/Org" "\.org$"))
-
-    (defvar me/org-all-files (me/refresh-all-org-files))
-
 
     :config
     (progn
@@ -1603,8 +1608,6 @@ You can also use =M-x auto-package-update-now= to update right now!
 
       ;; Directories ;;
       (setq org-directory me/org-dir)
-      (setq org-archive-location me/org-archive-location)
-
 
       ;; Visuals ;;
       (setq org-ellipsis " ▼ ")
@@ -1652,7 +1655,7 @@ You can also use =M-x auto-package-update-now= to update right now!
       ;; Refile ;;
       (setq org-refile-use-outline-path nil)
       (setq org-refile-allow-creating-parent-nodes 'confirm)
-      (setq org-refile-targets `((,(directory-files-recursively "~/Org/" "^[a-z0-9]*.org$") :maxlevel . 3)))
+      (setq org-refile-targets `((,(directory-files-recursively "~/Org/" "^[a-z0-9]*.org$") :maxlevel . 5)))
 
 
       ;; Fonts ;;
@@ -1688,8 +1691,7 @@ You can also use =M-x auto-package-update-now= to update right now!
       ;; Org Habits ;;
       (require 'org-habit)
       (add-to-list 'org-modules 'org-habit)
-      (setq
-       org-habit-today-glyph ?◌
+      (setq org-habit-today-glyph ?◌
        org-habit-completed-glyph ?●
        org-habit-missed-glyph ?○
        org-habit-preceding-days 7
@@ -1699,13 +1701,15 @@ You can also use =M-x auto-package-update-now= to update right now!
 
       ;; Org Todos ;;
       (setq org-todo-keywords
-            '((sequence "TODO(t)" "NEXT(n)" "PROG(p)" "|" "DONE(d!)" "CANCELLED(c!)")))
+            '((sequence "TODO(t)" "NEXT(n)" "PROG(p)" "WAIT(w@)" "|" "DONE(d!)" "CANCELLED(c!)")))
 
       (setq org-todo-keyword-faces
             '(("TODO" . (:foreground "#00ff66" :weight bold))
               ("NEXT" . (:foreground "#66ffff"
                                      :weight bold))
               ("PROG"  . (:foreground "#ff0066"
+                                      :weight bold))
+              ("WAIT"  . (:foreground "#FF6600"
                                       :weight bold))
               ("DONE" . (:foreground "darkgrey"
                                      :weight bold))
@@ -1715,24 +1719,11 @@ You can also use =M-x auto-package-update-now= to update right now!
 
       ;; Org Tags ;;
       (setq org-tag-persistent-alist
-            '((:startgroup)
-              ("@errand" . ?e)
-              ("@home" . ?h)
-              ("@work" . ?w)
-              ("@computer" . ?c)
-              (:endgroup)
-              ("ARCHIVE" . ?A)
-              ("bookmark" . ?b)
-              ("emacs" . ?E)
+            '(("ARCHIVE" . ?A)
+              ("work" . ?b)
+              ("emacs" . ?e)
               ("idea" . ?i)
-              ("inbox" . ?I)
-              ("goal" . ?g)
               ("someday" . ?s)))
-
-      ;; (setq org-tag-faces
-      ;;       '(("@errand" . (:foreground "mediumPurple1" :weight bold))
-      ;;         ("@home" . (:foreground "royalblue1" :weight bold))
-      ;;         ("@work" . (:foreground "#1CC436" :weight bold))))
 
 
       ;; Org Agenda ;;
@@ -1750,7 +1741,7 @@ You can also use =M-x auto-package-update-now= to update right now!
 
       ;; Open links in current window
       (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file)
-      (setq org-agenda-files '("~/Org/inbox.org" "~/Org/todo.org" "~/Org/projects/"))
+      (setq org-agenda-files '("~/Org/todo.org" "~/Org/work.org"))
       ;;(directory-files-recursively "~/Org/" "^[a-z0-9]*.org$")
       (setq org-agenda-start-on-weekday nil)
       (setq org-agenda-start-with-log-mode t)
@@ -1782,12 +1773,7 @@ You can also use =M-x auto-package-update-now= to update right now!
       (setq org-cycle-separator-lines 0)
       (setq org-agenda-category-icon-alist
             `(("work" ,(list (all-the-icons-faicon "cogs")) nil nil :ascent center)
-              ("home" ,(list (all-the-icons-material "home")) nil nil :ascent center)
-              ("computer" ,(list (all-the-icons-material "computer")) nil nil :ascent center)
-              ("errand" ,(list (all-the-icons-material "location_city")) nil nil :ascent center)
-              ("groceries" ,(list (all-the-icons-material "shopping_basket")) nil nil :ascent center)
-              ("health" ,(list (all-the-icons-material "local_hospital")) nil nil :ascent center)
-              ("routine" ,(list (all-the-icons-material "repeat")) nil nil :ascent center)
+              ("emacs" ,(list (all-the-icons-material "computer")) nil nil :ascent center)
               ("inbox" ,(list (all-the-icons-material "inbox")) nil nil :ascent center)
               ("calendar" ,(list (all-the-icons-faicon "calendar")) nil nil :ascent center)))
       (add-hook 'org-agenda-finalize-hook #'me/org-agenda-place-point 90)
@@ -1803,24 +1789,24 @@ You can also use =M-x auto-package-update-now= to update right now!
 
       (setq org-capture-templates
             '(("c" "Current" entry
-               (file me/org-inbox-file)
+               (file+headline me/org-todo-file "Inbox")
                "* PROG %?\n%t\n" :prepend t :clock-in t :clock-keep t :clock-resume t)
               ("e" "Emacs Task" entry
                (file+headline me/org-todo-file "Emacs")
                "* TODO %?\n%U\n" :prepend t)
               ("t" "Task" entry
-               (file me/org-inbox-file)
+               (file+headline me/org-todo-file "Inbox")
                "* TODO %?\n%U\n" :prepend t)
               ("T" "Task (Scheduled)" entry
-               (file me/org-inbox-file)
+               (file+headline me/org-todo-file "Inbox")
                "* TODO %?\nSCHEDULED: %^t\n" :prepend t)
               ;; Work ;;
               ("w" "Work Captures")
               ("wt" "Work Task" entry
-               (file me/org-inbox-file)
+               (file+headline me/org-work-file "Inbox")
                "* TODO %? :work:\n%U\n" :prepend t)
               ("wT" "Work Task (Scheduled)" entry
-               (file me/org-inbox-file)
+               (file+headline me/org-work-file "Inbox")
                "* TODO %?\nSCHEDULED: %^T\n" :prepend t)))
 
 
@@ -1861,6 +1847,8 @@ You can also use =M-x auto-package-update-now= to update right now!
                                              :todo "PROG")
                                       (:name "Next to do"
                                              :todo "NEXT")
+                                      (:name "Waiting"
+                                             :todo "WAIT")
                                       (:name "Due Today"
                                              :deadline today)
                                       (:name "Due Soon"
@@ -1876,7 +1864,7 @@ You can also use =M-x auto-package-update-now= to update right now!
                                              :scheduled future)
                                       (:name "Inbox"
                                              :tag "inbox")
-                                      (:auto-group t :order 99)))
+                                      (:auto-category t :order 99)))
 
       (setq org-agenda-custom-commands '(("a" "POG AGENDA"
                                           ((agenda "" ((org-agenda-span 'day)
@@ -1885,9 +1873,10 @@ You can also use =M-x auto-package-update-now= to update right now!
                                                         '((:order-multi (99
                                                                          (:name "Clocked Today" :log clock)
                                                                          (:name "Done Today" :todo ("DONE" "CANCELLED") :and (:log t))))
-                                                          (:name "Habits" :habit t :order 98)
                                                           (:name "In Progress" :todo "PROG")
                                                           (:name "Next" :todo "NEXT")
+                                                          (:name "Waiting"
+                                                                 :todo "WAIT")
                                                           (:name "Overdue" :deadline past)
                                                           (:name "Due Today" :deadline today)
                                                           (:name "Today"
@@ -1902,6 +1891,8 @@ You can also use =M-x auto-package-update-now= to update right now!
                                                                   :todo "PROG")
                                                            (:name "Next to do"
                                                                   :todo "NEXT")
+                                                           (:name "Waiting"
+                                                                  :todo "WAIT")
                                                            (:name "Due Soon"
                                                                   :deadline future)
                                                            (:name "Future"
@@ -1910,7 +1901,9 @@ You can also use =M-x auto-package-update-now= to update right now!
                                                                   :tag "inbox")
                                                            (:name "Emacs"
                                                                   :tag "emacs")
-                                                           (:auto-group t :order 99)))))))))))
+                                                           (:name "Work"
+                                                                  :tag "work")
+                                                           (:auto-category t :order 99)))))))))))
 #+end_src
 
 ** org-ql
@@ -1933,18 +1926,6 @@ You can also use =M-x auto-package-update-now= to update right now!
       (setq org-ql-views nil)
       (evil-define-key 'motion org-ql-view-list-map (kbd "RET") 'org-ql-view-switch)
       ;; Add these to a hydra or something
-      (defun me/org-ql-bookmarks ()
-        (interactive)
-        (org-ql-search me/org-all-files '(tags "bookmark")))
-
-      (defun me/org-ql-ideas ()
-        (interactive)
-        (org-ql-search me/org-all-files '(tags "idea")))
-
-      (defun me/org-ql-emacs ()
-        (interactive)
-        (org-ql-search me/org-all-files '(tags "emacs")))
-
       (add-to-list 'org-ql-views '("Inbox" :buffers-files org-agenda-files :query
                                    (and
                                     (not
@@ -1964,6 +1945,16 @@ You can also use =M-x auto-package-update-now= to update right now!
                                    (date priority)
                                    :super-groups org-super-agenda-groups :title "SUPER VIEW"))
 
+      (add-to-list 'org-ql-views '("Work Super View" :buffers-files org-agenda-files :query
+                                   (and
+                                    (tags "work")
+                                    (todo)
+                                    (not
+                                     (done)))
+                                   :sort
+                                   (date priority)
+                                   :super-groups org-super-agenda-groups :title "SUPER VIEW"))
+
       (add-to-list 'org-ql-views '("NEXT tasks" :buffers-files org-agenda-files :query
                                    (todo "NEXT")
                                    :sort
@@ -1973,19 +1964,7 @@ You can also use =M-x auto-package-update-now= to update right now!
       (add-to-list 'org-ql-views '("Archive" :buffers-files org-agenda-files :query
                                    (and (done))
                                    :sort
-                                   (date priority)))
-
-      (add-to-list 'org-ql-views '("Routines" :buffers-files org-agenda-files :query
-                                   (and
-                                    (not
-                                     (done))
-                                    (and
-                                     (habit)
-                                     (scheduled :to today)
-                                     (or
-                                      (ts-active :to today))))
-                                   :sort
-                                   (todo priority date)))))
+                                   (date priority)))))
 #+end_src
 
 ** org-modern
@@ -2029,7 +2008,7 @@ You can also use =M-x auto-package-update-now= to update right now!
     :after org
     :demand t
     :custom
-    (org-roam-directory (file-truename me/org-dir))
+    (org-roam-directory (file-truename (concat me/org-dir "notes")))
     :init
     (add-to-list 'display-buffer-alist
                  '("\\*org-roam\\*"
@@ -2047,6 +2026,7 @@ You can also use =M-x auto-package-update-now= to update right now!
         "rf" 'org-roam-node-find
         "rg" 'org-roam-graph
         "ri" 'org-roam-node-insert
+        "rI" 'org-id-get-create
         "rc" 'org-roam-capture
         "C" 'org-roam-capture
         "rj" 'org-roam-dailies-capture-today
@@ -2057,14 +2037,12 @@ You can also use =M-x auto-package-update-now= to update right now!
         "Y" 'org-roam-dailies-capture-yesterday
         "T" 'org-roam-dailies-capture-tomorrow)
 
-
-      (setq org-roam-dailies-directory (concat me/org-dir "journals"))
-      (setq org-roam-completion-everywhere t)
+      (setq org-roam-dailies-directory (concat org-roam-directory "journals"))
+      (setq org-roam-completion-everywhere nil)
       (setq org-roam-node-display-template
             (concat "${title:*} "
                     (propertize "${tags:10}" 'face 'org-tag)))
       (setq org-roam-mode-sections '(org-roam-backlinks-section org-roam-reflinks-section org-roam-unlinked-references-section))
-
 
       ;; Capture ;;
       (setq org-roam-dailies-capture-templates
@@ -2083,14 +2061,12 @@ You can also use =M-x auto-package-update-now= to update right now!
                                   "#+TITLE: %<%Y%m%d-%H%M%S>--${title}\n")
                :unnarrowed t)
               ("p" "project" plain "* Tasks\n\n** TODO Add initial tasks\n\n* Dates\n\n"
-               :if-new (file+head "projects/${slug}.org" "#+TITLE: ${title}\n#+FILETAGS: :project:\n#+CATEGORY: inbox\n#+PROPERTY: agenda-group inbox\n")
+               :if-new (file+head "projects/${slug}.org" "#+TITLE: ${title}\n#+FILETAGS: :project:\n#+CATEGORY: \n")
                :unnarrowed t)
               ("t" "topic" plain "\n%?"
                :if-new (file+head "topics/${slug}.org"
                                   "#+TITLE: ${title}\n#+FILETAGS:\n")
                :unnarrowed t)))
-
-
 
       (org-roam-db-autosync-mode)))
 #+end_src
@@ -2346,6 +2322,16 @@ You can also use =M-x auto-package-update-now= to update right now!
   (use-package json-mode)
 #+end_src
 
+** markdown-mode
+#+begin_src emacs-lisp
+  (use-package markdown-mode
+    :mode ("\\.md\\'" . markdown-mode)
+    :custom (markdown-wiki-link-search-type 'project)
+    :init
+    (setq markdown-enable-wiki-links t)
+    (setq markdown-wiki-link-fontify-missing t)
+    (setq markdown-command "multimarkdown"))
+#+end_src
 ** vterm
 
 #+begin_src emacs-lisp
@@ -2367,10 +2353,11 @@ You can also use =M-x auto-package-update-now= to update right now!
 
 
 
-** dashboard
+** *DISABLED* dashboard
 
 #+begin_src emacs-lisp
   (use-package dashboard
+    :disabled t
     :init (add-hook 'desktop-no-desktop-file-hook (lambda () (setq initial-buffer-choice (get-buffer "*dashboard*"))))
     :custom ((dashboard-agenda-sort-strategy '(todo-state-down)))
     :config
@@ -2385,16 +2372,16 @@ You can also use =M-x auto-package-update-now= to update right now!
 
     ;; Format: "(icon title help action face prefix suffix)"
     (setq dashboard-navigator-buttons
-	  `(;; line1
-	    ((,(all-the-icons-faicon "calendar" :height 1.1 :v-adjust 0.0)
-	      "Agenda"
-	      "Browse Agenda"
-	      (lambda (&rest _) (org-agenda)))
-	     (,(all-the-icons-faicon "list" :height 1.1 :v-adjust 0.0)
-	      "Views"
-	      "Browse Views"
-	      (lambda (&rest _) (org-ql-view-sidebar)))
-	     ("⚙" nil "Open Config" (lambda (&rest _) (me/open-config)) success))))
+          `(;; line1
+            ((,(all-the-icons-faicon "calendar" :height 1.1 :v-adjust 0.0)
+              "Agenda"
+              "Browse Agenda"
+              (lambda (&rest _) (org-agenda)))
+             (,(all-the-icons-faicon "list" :height 1.1 :v-adjust 0.0)
+              "Views"
+              "Browse Views"
+              (lambda (&rest _) (org-ql-view-sidebar)))
+             ("⚙" nil "Open Config" (lambda (&rest _) (me/open-config)) success))))
 
     (setq dashboard-projects-backend 'project-el)
     (dashboard-setup-startup-hook))
