@@ -743,7 +743,9 @@ play well with `evil-mc'."
 (use-package undo-tree
   :diminish undo-tree-mode
   :init
-  (global-undo-tree-mode))
+  (global-undo-tree-mode)
+  :config
+  (mmap "U" 'undo-tree-visualize))
 
 (use-package projectile
   :ensure t
@@ -1037,10 +1039,11 @@ play well with `evil-mc'."
   (add-hook 'marginalia-mode-hook #'all-the-icons-completion-marginalia-setup))
 
 (use-package embark
-  :bind
-  (("C-." . embark-act)         ;; pick some comfortable binding
-   ("C-;" . embark-dwim)        ;; good alternative: M-.
-   ("C-h B" . embark-bindings)) ;; alternative for `describe-bindings'
+  :general
+  (general-def
+    "C-," 'embark-act
+    "C-;" 'embark-dwim
+    "C-h B" 'embark-bindings)
   :init
   ;; Optionally replace the key help with a completing-read interface
   (setq prefix-help-command #'embark-prefix-help-command)
@@ -1071,6 +1074,7 @@ play well with `evil-mc'."
   (embark-collect-mode . consult-preview-at-point-mode))
 
 (use-package corfu
+  :disabled t
   :custom
   (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
   (corfu-auto t)                 ;; Enable auto completion
@@ -1083,21 +1087,22 @@ play well with `evil-mc'."
   (global-corfu-mode))
 
 (use-package corfu-doc
-    ;; NOTE 2022-02-05: At the time of writing, `corfu-doc' is not yet on melpa
-    :after corfu
-    :hook (corfu-mode . corfu-doc-mode)
-    :bind (:map corfu-map
-                ([remap corfu-show-documentation] . corfu-doc-toggle)
-                ("M-n" . corfu-doc-scroll-up)
-                ("M-p" . corfu-doc-scroll-down))
-    :custom
-    (corfu-doc-delay 0.1)
-    (corfu-doc-max-width 70)
-    (corfu-doc-max-height 30)
-    (corfu-doc-display-within-parent-frame t)
-    (corfu-echo-documentation nil))
+  :disabled t
+  :after corfu
+  :hook (corfu-mode . corfu-doc-mode)
+  :bind (:map corfu-map
+              ([remap corfu-show-documentation] . corfu-doc-toggle)
+              ("M-n" . corfu-doc-scroll-up)
+              ("M-p" . corfu-doc-scroll-down))
+  :custom
+  (corfu-doc-delay 0.1)
+  (corfu-doc-max-width 70)
+  (corfu-doc-max-height 30)
+  (corfu-doc-display-within-parent-frame t)
+  (corfu-echo-documentation nil))
 
 (use-package cape
+  :disabled t
   :config
   (imap :keymaps 'org-mode-map
     "TAB" 'completion-at-point)
@@ -1135,6 +1140,7 @@ play well with `evil-mc'."
   (add-to-list 'completion-at-point-functions #'cape-file))
 
 (use-package kind-icon
+  :disabled t
   :after corfu
   :custom
   (kind-icon-use-icons t)
@@ -1158,6 +1164,62 @@ play well with `evil-mc'."
   ;; since I have a light theme and dark theme I switch between. This has no
   ;; function unless you use something similar
   (add-hook 'kb/themes-hooks #'(lambda () (interactive) (kind-icon-reset-cache))))
+
+(use-package company
+  :delight
+  :config
+  (imap company-active-map
+    "TAB" 'company-complete-common-or-cycle
+    "C-d" 'company-show-doc-buffer
+    "<backtab>" '(lambda () (interactive) (company-complete-common-or-cycle -1)))
+
+  (imap
+    "C-." 'company-complete
+    "TAB" 'company-indent-or-complete-common)
+
+  (setq completion-at-point-functions '(company-complete))
+
+  (with-eval-after-load 'orderless
+    (setq orderless-component-separator "[ !]")
+
+    (defun just-one-face (fn &rest args)
+      (let ((orderless-match-faces [completions-common-part]))
+        (apply fn args)))
+
+    (advice-add 'company-capf--candidates :around #'just-one-face))
+
+  (setq company-require-match nil)
+  (setq company-tooltip-limit 5)
+  (setq company-show-numbers t)
+  (setq company-selection-wrap-around t)
+  (setq company-dabbrev-downcase nil)
+  (setq company-idle-delay 0.2)
+  (setq company-echo-delay 0)
+  (setq company-backends '(company-capf
+                           company-keywords
+                           company-semantic
+                           company-elisp
+                           company-files
+                           company-dabbrev
+                           company-etags
+                           company-cmake
+                           company-ispell
+                           company-yasnippet))
+
+  (global-company-mode))
+
+(use-package company-posframe
+  :config
+  (push '(company-posframe-mode . nil)
+        desktop-minor-mode-table)
+  (setq company-tooltip-minimum-width 40)
+  (company-posframe-mode 1))
+
+(use-package prescient)
+(use-package company-prescient
+  :after (company prescient)
+  :config
+  (company-prescient-mode))
 
 (use-package helpful
   :after evil
@@ -1303,8 +1365,8 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
       "ts" 'me/insert-timestamp
       "1" 'org-insert-structure-template)
 
-    (imap org-mode-map
-      "TAB" 'completion-at-point)
+    ;; (imap org-mode-map
+    ;;   "TAB" 'completion-at-point)
 
     ;; Org Agenda Keybinds
     (local-leader-map org-agenda-mode-map
@@ -1409,16 +1471,16 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
     (require 'org-habit)
     (add-to-list 'org-modules 'org-habit)
     (setq org-habit-today-glyph ?◌
-     org-habit-completed-glyph ?●
-     org-habit-missed-glyph ?○
-     org-habit-preceding-days 7
-     org-habit-show-habits-only-for-today t
-     org-habit-graph-column 65)
+          org-habit-completed-glyph ?●
+          org-habit-missed-glyph ?○
+          org-habit-preceding-days 7
+          org-habit-show-habits-only-for-today t
+          org-habit-graph-column 65)
 
 
     ;; Org Todos ;;
     (setq org-todo-keywords
-          '((sequence "TODO(t)" "NEXT(n)" "PROG(p)" "WAIT(w@)" "|" "DONE(d!)" "CANCELLED(c!)")))
+          '((sequence "TODO(t)" "NEXT(n)" "PROG(p)" "WAIT(w@)" "SOMEDAY(s)" "|" "DONE(d!)" "CANCELLED(c!)")))
 
     (setq org-todo-keyword-faces
           '(("TODO" . (:foreground "#00ff66" :weight bold))
@@ -1440,7 +1502,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
             ("work" . ?b)
             ("emacs" . ?e)
             ("idea" . ?i)
-            ("someday" . ?s)))
+            ("snippet" . ?s)))
 
 
     ;; Org Agenda ;;
@@ -1730,11 +1792,11 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
       "Y" 'org-roam-dailies-capture-yesterday
       "T" 'org-roam-dailies-capture-tomorrow)
 
-    (setq org-roam-dailies-directory (concat org-roam-directory "journals"))
+    (setq org-roam-dailies-directory (concat org-roam-directory "/journals"))
     (setq org-roam-completion-everywhere nil)
     (setq org-roam-node-display-template
-          (concat "${title:*} "
-                  (propertize "${tags:10}" 'face 'org-tag)))
+          (concat "${title:30} "
+                  (propertize "${tags:30}" 'face 'org-tag)))
     (setq org-roam-mode-sections '(org-roam-backlinks-section org-roam-reflinks-section org-roam-unlinked-references-section))
 
     ;; Capture ;;
@@ -1840,35 +1902,40 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
     csharp-mode
     csharp-tree-sitter-mode
     ) . lsp-deferred)
-  (lsp-completion-mode . me/lsp-mode-setup-completion)
+  ;; (lsp-completion-mode . me/lsp-mode-setup-completion)
   :commands lsp
-  :custom (lsp-completion-provider :none)
+  ;; only corfu
+  ;; :custom (lsp-completion-provider :none)
   :init
-  (defun me/orderless-dispatch-flex-first (_pattern index _total)
-    (and (eq index 0) 'orderless-flex))
+  ;; (defun me/orderless-dispatch-flex-first (_pattern index _total)
+  ;;   (and (eq index 0) 'orderless-flex))
 
-  (defun me/lsp-mode-setup-completion ()
-    (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
-          '(orderless)))
+  ;; (defun me/lsp-mode-setup-completion ()
+  ;;   (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
+  ;;         '(orderless-regex orderless-flex)))
 
   ;; Optionally configure the first word as flex filtered.
-  (add-hook 'orderless-style-dispatchers #'me/orderless-dispatch-flex-first nil 'local)
+  ;;(add-hook 'orderless-style-dispatchers #'me/orderless-dispatch-flex-first nil 'local)
 
   ;; Optionally configure the cape-capf-buster.
-  (setq-local completion-at-point-functions (list (cape-capf-buster #'lsp-completion-at-point)))
+  (with-eval-after-load 'cape
+    (setq-local completion-at-point-functions (list (cape-capf-buster #'lsp-completion-at-point))))
 
   :config
-  (setq lsp-auto-guess-root t)
+  (setq lsp-auto-guess-root nil)
   ;;(setq lsp-log-io nil)
   (setq lsp-restart 'auto-restart)
   ;;(setq lsp-enable-symbol-highlighting nil)
   ;;(setq lsp-enable-on-type-formatting nil)
   ;;(setq lsp-signature-auto-activate nil)
-  ;;(setq lsp-signature-render-documentation nil)
-  (setq lsp-modeline-code-actions-enable t)
+  (setq lsp-csharp-omnisharp-roslyn-download-url "https://github.com/OmniSharp/omnisharp-roslyn/releases/download/v1.39.0/omnisharp-osx.zip")
+  (setq lsp-disabled-clients '(csharp-ls))
+  (setq lsp-eldoc-enable-hover nil)
+  (setq lsp-signature-render-documentation nil)
+  (setq lsp-modeline-code-actions-enable nil)
   (setq lsp-modeline-diagnostics-enable nil)
-  (setq lsp-headerline-breadcrumb-enable nil)
-  (setq lsp-semantic-tokens-enable nil)
+  (setq lsp-headerline-breadcrumb-enable t)
+  (setq lsp-semantic-tokens-enable t)
   (setq lsp-enable-folding t)
   (setq lsp-enable-imenu t)
   (setq lsp-enable-snippet t)
@@ -1878,9 +1945,13 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 (use-package lsp-ui
   :commands lsp-ui-mode
   :config
+  (setq lsp-ui-doc-position 'at-point)
+  (setq lsp-ui-doc-alignment 'window)
   (setq lsp-ui-doc-enable t)
   (setq lsp-ui-doc-header t)
   (setq lsp-ui-doc-include-signature t)
+  (setq lsp-ui-doc-show-with-cursor t)
+  (setq lsp-ui-doc-delay 0.05)
   (setq lsp-ui-doc-border (face-foreground 'default))
   (setq lsp-ui-sideline-show-code-actions t)
   (setq lsp-ui-sideline-delay 0.05))
