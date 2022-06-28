@@ -1440,7 +1440,10 @@ You can also use =M-x auto-package-update-now= to update right now!
       "C-d" 'company-show-doc-buffer
       "<backtab>" '(lambda () (interactive) (company-complete-common-or-cycle -1)))
 
-    (imap
+    (imap text-mode-map
+      "C-." 'company-complete
+      "TAB" 'company-indent-or-complete-common)
+    (imap prog-mode-map
       "C-." 'company-complete
       "TAB" 'company-indent-or-complete-common)
 
@@ -1643,7 +1646,7 @@ You can also use =M-x auto-package-update-now= to update right now!
       (leader-map
         "c"  'org-capture
         "a" 'org-agenda
-        "l"  'org-store-link
+        "L"  'org-store-link
         "fo" 'org-save-all-org-buffers
         "oc" 'org-clock-goto)
 
@@ -2226,7 +2229,10 @@ You can also use =M-x auto-package-update-now= to update right now!
 ** treemacs
 
 #+begin_src emacs-lisp
-  (use-package treemacs)
+  (use-package treemacs
+    :general
+    (leader-map
+      "Tt" 'treemacs))
 #+end_src
 
 ** xref
@@ -2265,6 +2271,7 @@ You can also use =M-x auto-package-update-now= to update right now!
     ;; only corfu
     ;; :custom (lsp-completion-provider :none)
     :init
+    (setq lsp-keymap-prefix "C-l")
     ;; (defun me/orderless-dispatch-flex-first (_pattern index _total)
     ;;   (and (eq index 0) 'orderless-flex))
 
@@ -2280,13 +2287,16 @@ You can also use =M-x auto-package-update-now= to update right now!
       (setq-local completion-at-point-functions (list (cape-capf-buster #'lsp-completion-at-point))))
 
     :config
+    (lsp-enable-which-key-integration t)
+    (local-leader-map
+      "l" '(:keymap lsp-command-map :wk "lsp"))
+    (setq lsp-csharp-omnisharp-roslyn-download-url "https://github.com/OmniSharp/omnisharp-roslyn/releases/download/v1.39.0/omnisharp-linux-x64.zip")
     (setq lsp-auto-guess-root nil)
     ;;(setq lsp-log-io nil)
     (setq lsp-restart 'auto-restart)
     ;;(setq lsp-enable-symbol-highlighting nil)
     ;;(setq lsp-enable-on-type-formatting nil)
     ;;(setq lsp-signature-auto-activate nil)
-    (setq lsp-csharp-omnisharp-roslyn-download-url "https://github.com/OmniSharp/omnisharp-roslyn/releases/download/v1.39.0/omnisharp-osx.zip")
     (setq lsp-disabled-clients '(csharp-ls))
     (setq lsp-eldoc-enable-hover nil)
     (setq lsp-signature-render-documentation nil)
@@ -2307,13 +2317,20 @@ You can also use =M-x auto-package-update-now= to update right now!
   (use-package lsp-ui
     :commands lsp-ui-mode
     :config
+    (general-def lsp-ui-doc-mode-map
+      "<f5>" 'lsp-ui-doc-focus-frame)
+    (general-def lsp-ui-doc-frame-mode-map
+      "<f6>" 'lsp-ui-doc-unfocus-frame)
     (setq lsp-ui-doc-position 'at-point)
+    (setq lsp-ui-doc-max-height 80)
     (setq lsp-ui-doc-alignment 'window)
     (setq lsp-ui-doc-enable t)
     (setq lsp-ui-doc-header t)
+    (set-face-attribute 'lsp-ui-doc-header nil :foreground (face-foreground 'default) :background (face-background 'default))
+    (setq lsp-ui-doc-max-width 50)
     (setq lsp-ui-doc-include-signature t)
     (setq lsp-ui-doc-show-with-cursor t)
-    (setq lsp-ui-doc-delay 0.05)
+    (setq lsp-ui-doc-delay 0.5)
     (setq lsp-ui-doc-border (face-foreground 'default))
     (setq lsp-ui-sideline-show-code-actions t)
     (setq lsp-ui-sideline-delay 0.05))
@@ -2391,6 +2408,22 @@ You can also use =M-x auto-package-update-now= to update right now!
   (use-package csharp-mode
     :config
     (add-to-list 'auto-mode-alist '("\\.cs\\'" . csharp-tree-sitter-mode)))
+#+end_src
+
+** docker
+*** manager
+
+#+begin_src emacs-lisp
+  (use-package docker
+    :general
+    (leader-map "d" 'docker))
+#+end_src
+
+*** docker-mode
+
+#+begin_src emacs-lisp
+  (use-package dockerfile-mode
+      :mode ("Dockerfile\\'" . dockerfile-mode))
 #+end_src
 
 ** yaml-mode

@@ -1173,7 +1173,10 @@ play well with `evil-mc'."
     "C-d" 'company-show-doc-buffer
     "<backtab>" '(lambda () (interactive) (company-complete-common-or-cycle -1)))
 
-  (imap
+  (imap text-mode-map
+    "C-." 'company-complete
+    "TAB" 'company-indent-or-complete-common)
+  (imap prog-mode-map
     "C-." 'company-complete
     "TAB" 'company-indent-or-complete-common)
 
@@ -1349,7 +1352,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
     (leader-map
       "c"  'org-capture
       "a" 'org-agenda
-      "l"  'org-store-link
+      "L"  'org-store-link
       "fo" 'org-save-all-org-buffers
       "oc" 'org-clock-goto)
 
@@ -1876,7 +1879,10 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
 (use-package yasnippet)
 
-(use-package treemacs)
+(use-package treemacs
+  :general
+  (leader-map
+    "Tt" 'treemacs))
 
 (use-package xref
   :straight nil
@@ -1907,6 +1913,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
   ;; only corfu
   ;; :custom (lsp-completion-provider :none)
   :init
+  (setq lsp-keymap-prefix "C-l")
   ;; (defun me/orderless-dispatch-flex-first (_pattern index _total)
   ;;   (and (eq index 0) 'orderless-flex))
 
@@ -1922,13 +1929,16 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
     (setq-local completion-at-point-functions (list (cape-capf-buster #'lsp-completion-at-point))))
 
   :config
+  (lsp-enable-which-key-integration t)
+  (local-leader-map
+    "l" '(:keymap lsp-command-map :wk "lsp"))
+  (setq lsp-csharp-omnisharp-roslyn-download-url "https://github.com/OmniSharp/omnisharp-roslyn/releases/download/v1.39.0/omnisharp-linux-x64.zip")
   (setq lsp-auto-guess-root nil)
   ;;(setq lsp-log-io nil)
   (setq lsp-restart 'auto-restart)
   ;;(setq lsp-enable-symbol-highlighting nil)
   ;;(setq lsp-enable-on-type-formatting nil)
   ;;(setq lsp-signature-auto-activate nil)
-  (setq lsp-csharp-omnisharp-roslyn-download-url "https://github.com/OmniSharp/omnisharp-roslyn/releases/download/v1.39.0/omnisharp-osx.zip")
   (setq lsp-disabled-clients '(csharp-ls))
   (setq lsp-eldoc-enable-hover nil)
   (setq lsp-signature-render-documentation nil)
@@ -1945,13 +1955,20 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 (use-package lsp-ui
   :commands lsp-ui-mode
   :config
+  (general-def lsp-ui-doc-mode-map
+    "<f5>" 'lsp-ui-doc-focus-frame)
+  (general-def lsp-ui-doc-frame-mode-map
+    "<f6>" 'lsp-ui-doc-unfocus-frame)
   (setq lsp-ui-doc-position 'at-point)
+  (setq lsp-ui-doc-max-height 80)
   (setq lsp-ui-doc-alignment 'window)
   (setq lsp-ui-doc-enable t)
   (setq lsp-ui-doc-header t)
+  (set-face-attribute 'lsp-ui-doc-header nil :foreground (face-foreground 'default) :background (face-background 'default))
+  (setq lsp-ui-doc-max-width 50)
   (setq lsp-ui-doc-include-signature t)
   (setq lsp-ui-doc-show-with-cursor t)
-  (setq lsp-ui-doc-delay 0.05)
+  (setq lsp-ui-doc-delay 0.5)
   (setq lsp-ui-doc-border (face-foreground 'default))
   (setq lsp-ui-sideline-show-code-actions t)
   (setq lsp-ui-sideline-delay 0.05))
@@ -1997,6 +2014,13 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 (use-package csharp-mode
   :config
   (add-to-list 'auto-mode-alist '("\\.cs\\'" . csharp-tree-sitter-mode)))
+
+(use-package docker
+  :general
+  (leader-map "d" 'docker))
+
+(use-package dockerfile-mode
+    :mode ("Dockerfile\\'" . dockerfile-mode))
 
 (use-package yaml-mode)
 
