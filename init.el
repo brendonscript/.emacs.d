@@ -121,8 +121,7 @@
 
     ;; Maps
     (leader-map
-      "h" '(:keymap help-map :wk "help")
-      "t" '(:keymap tab-prefix-map :wk "tabs"))
+      "h" '(:keymap help-map :wk "help"))
 
     ;; Base
     (leader-map
@@ -257,10 +256,10 @@
     (setq recentf-max-menu-items 40)
     (setq recentf-max-saved-items 250)
     (setq save-interprogram-paste-before-kill t)
-    (setq initial-buffer-choice t)
-    (require 'desktop)
-    (customize-set-variable 'desktop-save 't)
-    (desktop-save-mode 1)
+    (setq initial-buffer-choice nil)
+    ;; (require 'desktop)
+    ;; (customize-set-variable 'desktop-save 't)
+    ;; (desktop-save-mode 1)
     (recentf-mode 1)
     (with-eval-after-load 'no-littering
       (add-to-list 'recentf-exclude no-littering-etc-directory)
@@ -398,9 +397,9 @@
     (setq apropos-do-all t)
 
     ;; Tab bar ;;
-    (tab-bar-mode t)
-    (customize-set-variable 'tab-bar-new-tab-choice '"*scratch*")
-    (customize-set-variable 'tab-bar-show 't)
+    ;; (tab-bar-mode t)
+    ;; (customize-set-variable 'tab-bar-new-tab-choice '"*scratch*")
+    ;; (customize-set-variable 'tab-bar-show 't)
 
     ;; Mac OS ;;
     (when IS-MAC
@@ -529,11 +528,13 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 (use-package doom-modeline
   :init (doom-modeline-mode 1)
-  :custom ((doom-modeline-bar-width 3)
+  :custom ((doom-modeline-bar-width 4)
            (doom-modeline-minor-modes nil)
            (doom-modeline-buffer-file-name-style 'truncate-with-project)
            (doom-modeline-minor-modes nil)
-           (doom-modeline-modal-icon t))
+           (doom-modeline-modal-icon t)
+           (doom-modeline-persp-name nil)
+           (doom-modeline-persp-icon t))
   ;; This configuration to is fix a bug where certain windows would not display
   ;; their full content due to the overlapping modeline
   :config (advice-add #'fit-window-to-buffer :before (lambda (&rest _) (redisplay t))))
@@ -620,7 +621,8 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
       (general-def me/window-map
         "u" 'winner-undo
-        "U" 'winner-redo)
+        "U" 'winner-redo
+        "f" 'other-frame)
 
       (leader-map "w" '(:keymap me/window-map :wk "windows"))
 
@@ -1213,8 +1215,8 @@ play well with `evil-mc'."
 
 (use-package company-posframe
   :config
-  (push '(company-posframe-mode . nil)
-        desktop-minor-mode-table)
+  ;; (push '(company-posframe-mode . nil)
+  ;;       desktop-minor-mode-table)
   (setq company-tooltip-minimum-width 40)
   (company-posframe-mode 1))
 
@@ -1523,7 +1525,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
     ;; Open links in current window
     (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file)
-    (setq org-agenda-files '("~/Org/todo.org" "~/Org/work.org"))
+    (setq org-agenda-files '("~/Org/todo.org" "~/Org/work.org" "~/Org/notes/projects/"))
     ;;(directory-files-recursively "~/Org/" "^[a-z0-9]*.org$")
     (setq org-agenda-start-on-weekday nil)
     (setq org-agenda-start-with-log-mode t)
@@ -1800,7 +1802,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
     (setq org-roam-node-display-template
           (concat "${title:30} "
                   (propertize "${tags:30}" 'face 'org-tag)))
-    (setq org-roam-mode-sections '(org-roam-backlinks-section org-roam-reflinks-section org-roam-unlinked-references-section))
+    (setq org-roam-mode-sections '(org-roam-backlinks-section org-roam-reflinks-section))
 
     ;; Capture ;;
     (setq org-roam-dailies-capture-templates
@@ -1811,22 +1813,37 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
           '(("d" "fleeting" plain
              "\n%?"
              :target (file+head "fleeting/%<%Y%m%d-%H%M%S>--${slug}.org"
-                                "#+TITLE: %<%Y%m%d-%H%M%S>--${title}\n")
+                                "#+TITLE: %<%Y%m%d-%H%M%S>--${title}\n#+FILETAGS: \n#+CATEGORY: \n")
              :unnarrowed t)
             ("r" "reference" plain
              "\n%?"
              :target (file+head "reference/%<%Y%m%d-%H%M%S>--${slug}.org"
-                                "#+TITLE: %<%Y%m%d-%H%M%S>--${title}\n")
+                                "#+TITLE: %<%Y%m%d-%H%M%S>--${title}\n#+FILETAGS: \n#+CATEGORY: \n")
              :unnarrowed t)
             ("p" "project" plain "* Tasks\n\n** TODO Add initial tasks\n\n* Dates\n\n"
              :if-new (file+head "projects/${slug}.org" "#+TITLE: ${title}\n#+FILETAGS: :project:\n#+CATEGORY: \n")
              :unnarrowed t)
             ("t" "topic" plain "\n%?"
              :if-new (file+head "topics/${slug}.org"
-                                "#+TITLE: ${title}\n#+FILETAGS:\n")
+                                "#+TITLE: ${title}\n#+FILETAGS: \n")
              :unnarrowed t)))
 
     (org-roam-db-autosync-mode)))
+
+(use-package consult-org-roam
+  :after org-roam
+  :custom
+  (consult-org-roam-grep-func #'consult-ripgrep)
+  :config
+  (progn
+    (leader-map
+      "rF" 'consult-org-roam-file-find
+      "rb" 'consult-org-roam-backlinks
+      "rs" 'consult-org-roam-search)
+
+    (consult-customize
+     consult-org-roam-forward-links
+     :preview-key (kbd "M-."))))
 
 (use-package org-pomodoro
   :after org
@@ -1884,6 +1901,21 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
   (leader-map
     "Tt" 'treemacs))
 
+(use-package treemacs-evil
+  :after treemacs
+  :straight nil
+  :load-path "straight/repos/treemacs/src/extra")
+
+(use-package treemacs-perspective
+  :after treemacs
+  :straight nil
+  :load-path "straight/repos/treemacs/src/extra")
+
+(use-package treemacs-projectile
+  :after treemacs
+  :straight nil
+  :load-path "straight/repos/treemacs/src/extra")
+
 (use-package xref
   :straight nil
   :config
@@ -1930,8 +1962,12 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
   :config
   (lsp-enable-which-key-integration t)
+
+  (leader-map
+    "l" (general-simulate-key "C-l"))
+
   (local-leader-map
-    "l" '(:keymap lsp-command-map :wk "lsp"))
+    "l" (general-simulate-key "C-l"))
   (setq lsp-csharp-omnisharp-roslyn-download-url "https://github.com/OmniSharp/omnisharp-roslyn/releases/download/v1.39.0/omnisharp-linux-x64.zip")
   (setq lsp-auto-guess-root nil)
   ;;(setq lsp-log-io nil)
@@ -1970,7 +2006,8 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
   (setq lsp-ui-doc-show-with-cursor t)
   (setq lsp-ui-doc-delay 0.5)
   (setq lsp-ui-doc-border (face-foreground 'default))
-  (setq lsp-ui-sideline-show-code-actions t)
+  (setq lsp-ui-sideline-mode nil)
+  (setq lsp-ui-sideline-show-code-actions nil)
   (setq lsp-ui-sideline-delay 0.05))
 
 (use-package flymake
@@ -2074,3 +2111,41 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
   (setq dashboard-projects-backend 'project-el)
   (dashboard-setup-startup-hook))
+
+(use-package perspective
+  :defer nil
+  :demand t
+  :init
+  (setq persp-state-default-file (no-littering-expand-var-file-name "persp/auto-save"))
+  (persp-mode)
+  (persp-state-load persp-state-default-file)
+  :custom
+  (persp-sort 'access)
+  :config
+  (progn
+    (defun me/persp-state-save ()
+      (let ((dir-name (no-littering-expand-var-file-name "persp/")))
+        (when (not (file-exists-p dir-name))
+          (make-directory dir-name t)))
+      (persp-state-save))
+
+    (add-hook 'kill-emacs-hook 'me/persp-state-save)
+
+    (leader-map
+      "TAB" 'persp-switch
+      "t" '(:keymap perspective-map :wk "perspectives"))
+
+    (general-def perspective-map
+      "t" 'persp-switch)
+
+    (with-eval-after-load 'consult
+      (consult-customize consult--source-buffer :hidden t :default nil)
+      (defvar consult--source-perspective
+        (list :name     "Perspective"
+              :narrow   ?s
+              :category 'buffer
+              :state    #'consult--buffer-state
+              :default  t
+              :items    #'persp-get-buffer-names))
+
+      (push consult--source-perspective consult-buffer-sources))))

@@ -201,8 +201,7 @@ You can also use =M-x auto-package-update-now= to update right now!
 
       ;; Maps
       (leader-map
-        "h" '(:keymap help-map :wk "help")
-        "t" '(:keymap tab-prefix-map :wk "tabs"))
+        "h" '(:keymap help-map :wk "help"))
 
       ;; Base
       (leader-map
@@ -341,10 +340,10 @@ You can also use =M-x auto-package-update-now= to update right now!
       (setq recentf-max-menu-items 40)
       (setq recentf-max-saved-items 250)
       (setq save-interprogram-paste-before-kill t)
-      (setq initial-buffer-choice t)
-      (require 'desktop)
-      (customize-set-variable 'desktop-save 't)
-      (desktop-save-mode 1)
+      (setq initial-buffer-choice nil)
+      ;; (require 'desktop)
+      ;; (customize-set-variable 'desktop-save 't)
+      ;; (desktop-save-mode 1)
       (recentf-mode 1)
       (with-eval-after-load 'no-littering
         (add-to-list 'recentf-exclude no-littering-etc-directory)
@@ -482,9 +481,9 @@ You can also use =M-x auto-package-update-now= to update right now!
       (setq apropos-do-all t)
 
       ;; Tab bar ;;
-      (tab-bar-mode t)
-      (customize-set-variable 'tab-bar-new-tab-choice '"*scratch*")
-      (customize-set-variable 'tab-bar-show 't)
+      ;; (tab-bar-mode t)
+      ;; (customize-set-variable 'tab-bar-new-tab-choice '"*scratch*")
+      ;; (customize-set-variable 'tab-bar-show 't)
 
       ;; Mac OS ;;
       (when IS-MAC
@@ -640,11 +639,13 @@ You can also use =M-x auto-package-update-now= to update right now!
 #+begin_src emacs-lisp
   (use-package doom-modeline
     :init (doom-modeline-mode 1)
-    :custom ((doom-modeline-bar-width 3)
+    :custom ((doom-modeline-bar-width 4)
              (doom-modeline-minor-modes nil)
              (doom-modeline-buffer-file-name-style 'truncate-with-project)
              (doom-modeline-minor-modes nil)
-             (doom-modeline-modal-icon t))
+             (doom-modeline-modal-icon t)
+             (doom-modeline-persp-name nil)
+             (doom-modeline-persp-icon t))
     ;; This configuration to is fix a bug where certain windows would not display
     ;; their full content due to the overlapping modeline
     :config (advice-add #'fit-window-to-buffer :before (lambda (&rest _) (redisplay t))))
@@ -711,63 +712,64 @@ You can also use =M-x auto-package-update-now= to update right now!
 ** evil
 
 #+begin_src emacs-lisp
-  (use-package evil
-    :demand t
-    :preface
-    (defun me/evil-record-macro ()
-      (interactive)
-      (if buffer-read-only
-          (quit-window)
-        (call-interactively 'evil-record-macro)))
+    (use-package evil
+      :demand t
+      :preface
+      (defun me/evil-record-macro ()
+        (interactive)
+        (if buffer-read-only
+            (quit-window)
+          (call-interactively 'evil-record-macro)))
 
-    (defun me/save-and-kill-this-buffer ()
-      (interactive)
-      (save-buffer)
-      (kill-this-buffer))
-    :init
-    (progn
-      (setq evil-want-integration t
-            evil-want-keybinding nil
-            evil-want-C-u-scroll t
-            evil-want-C-i-jump t
-            evil-respect-visual-line-mode t
-            evil-undo-system 'undo-tree))
-    :config
-    (progn
-      (evil-mode 1)
+      (defun me/save-and-kill-this-buffer ()
+        (interactive)
+        (save-buffer)
+        (kill-this-buffer))
+      :init
+      (progn
+        (setq evil-want-integration t
+              evil-want-keybinding nil
+              evil-want-C-u-scroll t
+              evil-want-C-i-jump t
+              evil-respect-visual-line-mode t
+              evil-undo-system 'undo-tree))
+      :config
+      (progn
+        (evil-mode 1)
 
-      (evil-set-initial-state 'messages-buffer-mode 'normal)
-      (evil-set-initial-state 'dashboard-mode 'normal)
-      (with-eval-after-load 'general
-        (imap "C-n" nil
-          "C-p" nil)
+        (evil-set-initial-state 'messages-buffer-mode 'normal)
+        (evil-set-initial-state 'dashboard-mode 'normal)
+        (with-eval-after-load 'general
+          (imap "C-n" nil
+            "C-p" nil)
 
-        (nmap "R" 'evil-replace-state
-          "q" 'me/evil-record-macro
-          "g ?" 'nil
-          "gu" 'universal-argument)
+          (nmap "R" 'evil-replace-state
+            "q" 'me/evil-record-macro
+            "g ?" 'nil
+            "gu" 'universal-argument)
 
-        (imap "C-g" 'evil-normal-state
-          "C-u" 'universal-argument)
+          (imap "C-g" 'evil-normal-state
+            "C-u" 'universal-argument)
 
-        (vmap "gu" 'universal-argument)
+          (vmap "gu" 'universal-argument)
 
-        (mmap "j" 'evil-next-visual-line
-          "k" 'evil-previous-visual-line
-          "L" 'evil-end-of-line-or-visual-line
-          "H" 'evil-first-non-blank-of-visual-line
-          "gu" 'universal-argument)
+          (mmap "j" 'evil-next-visual-line
+            "k" 'evil-previous-visual-line
+            "L" 'evil-end-of-line-or-visual-line
+            "H" 'evil-first-non-blank-of-visual-line
+            "gu" 'universal-argument)
 
-        (setq me/window-map (cons 'keymap evil-window-map))
+          (setq me/window-map (cons 'keymap evil-window-map))
 
-        (general-def me/window-map
-          "u" 'winner-undo
-          "U" 'winner-redo)
+          (general-def me/window-map
+            "u" 'winner-undo
+            "U" 'winner-redo
+            "f" 'other-frame)
 
-        (leader-map "w" '(:keymap me/window-map :wk "windows"))
+          (leader-map "w" '(:keymap me/window-map :wk "windows"))
 
-        (evil-ex-define-cmd "q" #'kill-this-buffer)
-        (evil-ex-define-cmd "wq" #'me/save-and-kill-this-buffer))))
+          (evil-ex-define-cmd "q" #'kill-this-buffer)
+          (evil-ex-define-cmd "wq" #'me/save-and-kill-this-buffer))))
 #+end_src
 
 ** evil-collection
@@ -937,6 +939,7 @@ You can also use =M-x auto-package-update-now= to update right now!
 #+end_src
 
 ** projectile
+
 #+begin_src emacs-lisp
   (use-package projectile
     :ensure t
@@ -951,6 +954,7 @@ You can also use =M-x auto-package-update-now= to update right now!
         (general-def projectile-command-map
           "b" 'consult-project-buffer))))
 #+end_src
+
 ** avy
 
 #+begin_src emacs-lisp
@@ -1480,14 +1484,16 @@ You can also use =M-x auto-package-update-now= to update right now!
 #+end_src
 
 ** company-posframe
+
 #+begin_src emacs-lisp
   (use-package company-posframe
     :config
-    (push '(company-posframe-mode . nil)
-          desktop-minor-mode-table)
+    ;; (push '(company-posframe-mode . nil)
+    ;;       desktop-minor-mode-table)
     (setq company-tooltip-minimum-width 40)
     (company-posframe-mode 1))
 #+end_src
+
 ** prescient
 
   #+begin_src emacs-lisp
@@ -1817,7 +1823,7 @@ You can also use =M-x auto-package-update-now= to update right now!
 
       ;; Open links in current window
       (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file)
-      (setq org-agenda-files '("~/Org/todo.org" "~/Org/work.org"))
+      (setq org-agenda-files '("~/Org/todo.org" "~/Org/work.org" "~/Org/notes/projects/"))
       ;;(directory-files-recursively "~/Org/" "^[a-z0-9]*.org$")
       (setq org-agenda-start-on-weekday nil)
       (setq org-agenda-start-with-log-mode t)
@@ -2118,7 +2124,7 @@ You can also use =M-x auto-package-update-now= to update right now!
       (setq org-roam-node-display-template
             (concat "${title:30} "
                     (propertize "${tags:30}" 'face 'org-tag)))
-      (setq org-roam-mode-sections '(org-roam-backlinks-section org-roam-reflinks-section org-roam-unlinked-references-section))
+      (setq org-roam-mode-sections '(org-roam-backlinks-section org-roam-reflinks-section))
 
       ;; Capture ;;
       (setq org-roam-dailies-capture-templates
@@ -2129,22 +2135,41 @@ You can also use =M-x auto-package-update-now= to update right now!
             '(("d" "fleeting" plain
                "\n%?"
                :target (file+head "fleeting/%<%Y%m%d-%H%M%S>--${slug}.org"
-                                  "#+TITLE: %<%Y%m%d-%H%M%S>--${title}\n")
+                                  "#+TITLE: %<%Y%m%d-%H%M%S>--${title}\n#+FILETAGS: \n#+CATEGORY: \n")
                :unnarrowed t)
               ("r" "reference" plain
                "\n%?"
                :target (file+head "reference/%<%Y%m%d-%H%M%S>--${slug}.org"
-                                  "#+TITLE: %<%Y%m%d-%H%M%S>--${title}\n")
+                                  "#+TITLE: %<%Y%m%d-%H%M%S>--${title}\n#+FILETAGS: \n#+CATEGORY: \n")
                :unnarrowed t)
               ("p" "project" plain "* Tasks\n\n** TODO Add initial tasks\n\n* Dates\n\n"
                :if-new (file+head "projects/${slug}.org" "#+TITLE: ${title}\n#+FILETAGS: :project:\n#+CATEGORY: \n")
                :unnarrowed t)
               ("t" "topic" plain "\n%?"
                :if-new (file+head "topics/${slug}.org"
-                                  "#+TITLE: ${title}\n#+FILETAGS:\n")
+                                  "#+TITLE: ${title}\n#+FILETAGS: \n")
                :unnarrowed t)))
 
       (org-roam-db-autosync-mode)))
+#+end_src
+
+** consult-org-roam
+
+#+begin_src emacs-lisp
+  (use-package consult-org-roam
+    :after org-roam
+    :custom
+    (consult-org-roam-grep-func #'consult-ripgrep)
+    :config
+    (progn
+      (leader-map
+        "rF" 'consult-org-roam-file-find
+        "rb" 'consult-org-roam-backlinks
+        "rs" 'consult-org-roam-search)
+
+      (consult-customize
+       consult-org-roam-forward-links
+       :preview-key (kbd "M-."))))
 #+end_src
 
 ** org-pomodoro
@@ -2233,6 +2258,21 @@ You can also use =M-x auto-package-update-now= to update right now!
     :general
     (leader-map
       "Tt" 'treemacs))
+
+  (use-package treemacs-evil
+    :after treemacs
+    :straight nil
+    :load-path "straight/repos/treemacs/src/extra")
+
+  (use-package treemacs-perspective
+    :after treemacs
+    :straight nil
+    :load-path "straight/repos/treemacs/src/extra")
+
+  (use-package treemacs-projectile
+    :after treemacs
+    :straight nil
+    :load-path "straight/repos/treemacs/src/extra")
 #+end_src
 
 ** xref
@@ -2288,8 +2328,12 @@ You can also use =M-x auto-package-update-now= to update right now!
 
     :config
     (lsp-enable-which-key-integration t)
+
+    (leader-map
+      "l" (general-simulate-key "C-l"))
+
     (local-leader-map
-      "l" '(:keymap lsp-command-map :wk "lsp"))
+      "l" (general-simulate-key "C-l"))
     (setq lsp-csharp-omnisharp-roslyn-download-url "https://github.com/OmniSharp/omnisharp-roslyn/releases/download/v1.39.0/omnisharp-linux-x64.zip")
     (setq lsp-auto-guess-root nil)
     ;;(setq lsp-log-io nil)
@@ -2332,7 +2376,8 @@ You can also use =M-x auto-package-update-now= to update right now!
     (setq lsp-ui-doc-show-with-cursor t)
     (setq lsp-ui-doc-delay 0.5)
     (setq lsp-ui-doc-border (face-foreground 'default))
-    (setq lsp-ui-sideline-show-code-actions t)
+    (setq lsp-ui-sideline-mode nil)
+    (setq lsp-ui-sideline-show-code-actions nil)
     (setq lsp-ui-sideline-delay 0.05))
 #+end_src
 
@@ -2501,6 +2546,49 @@ You can also use =M-x auto-package-update-now= to update right now!
     (setq dashboard-projects-backend 'project-el)
     (dashboard-setup-startup-hook))
 #+end_src
+
+** perspective
+
+#+begin_src emacs-lisp
+  (use-package perspective
+    :defer nil
+    :demand t
+    :init
+    (setq persp-state-default-file (no-littering-expand-var-file-name "persp/auto-save"))
+    (persp-mode)
+    (persp-state-load persp-state-default-file)
+    :custom
+    (persp-sort 'access)
+    :config
+    (progn
+      (defun me/persp-state-save ()
+        (let ((dir-name (no-littering-expand-var-file-name "persp/")))
+          (when (not (file-exists-p dir-name))
+            (make-directory dir-name t)))
+        (persp-state-save))
+
+      (add-hook 'kill-emacs-hook 'me/persp-state-save)
+
+      (leader-map
+        "TAB" 'persp-switch
+        "t" '(:keymap perspective-map :wk "perspectives"))
+
+      (general-def perspective-map
+        "t" 'persp-switch)
+
+      (with-eval-after-load 'consult
+        (consult-customize consult--source-buffer :hidden t :default nil)
+        (defvar consult--source-perspective
+          (list :name     "Perspective"
+                :narrow   ?s
+                :category 'buffer
+                :state    #'consult--buffer-state
+                :default  t
+                :items    #'persp-get-buffer-names))
+
+        (push consult--source-perspective consult-buffer-sources))))
+#+end_src
+
 
 * Templates
 
