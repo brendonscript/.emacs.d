@@ -273,7 +273,9 @@
           read-buffer-completion-ignore-case t
           completion-ignore-case t
           completion-cycle-threshold 2
-          tab-always-indent 'complete)
+          tab-always-indent t
+          tab-width 4)
+    (setq-default indent-tabs-mode nil)
 
     (electric-pair-mode t)
     ;; Use `consult-completion-in-region' if Vertico is enabled.
@@ -466,12 +468,13 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   :custom ((dired-listing-switches "-agho --group-directories-first"))
   :config
   (general-def '(emacs normal visual motion) dired-mode-map
+    "q" 'kill-this-buffer
     "l" 'dired-open-file
     "L" 'dired-view-file
     "h" 'dired-up-directory)
 
   (setq dired-dwim-target t)
-
+  (setq dired-kill-when-opening-new-dired-buffer t)
   ;; MacOS ;;
   (when IS-MAC
     (setq dired-use-ls-dired t
@@ -515,7 +518,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 (use-package doom-themes
   :init
-  (load-theme 'doom-gruvbox t)
+  (load-theme 'doom-snazzy t)
   :config
   (progn
     (setq doom-themes-enable-bold t
@@ -528,13 +531,14 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 (use-package doom-modeline
   :init (doom-modeline-mode 1)
-  :custom ((doom-modeline-bar-width 4)
+  :custom ((doom-modeline-bar-width 2)
            (doom-modeline-minor-modes nil)
            (doom-modeline-buffer-file-name-style 'truncate-with-project)
            (doom-modeline-minor-modes nil)
            (doom-modeline-modal-icon t)
-           (doom-modeline-persp-name nil)
-           (doom-modeline-persp-icon t))
+           (doom-modeline-persp-name t)
+           (doom-modeline-persp-icon nil)
+           (doom-modeline-buffer-encoding nil))
   ;; This configuration to is fix a bug where certain windows would not display
   ;; their full content due to the overlapping modeline
   :config (advice-add #'fit-window-to-buffer :before (lambda (&rest _) (redisplay t))))
@@ -1176,11 +1180,9 @@ play well with `evil-mc'."
     "<backtab>" '(lambda () (interactive) (company-complete-common-or-cycle -1)))
 
   (imap text-mode-map
-    "C-." 'company-complete
-    "TAB" 'company-indent-or-complete-common)
+    "C-." 'company-complete)
   (imap prog-mode-map
-    "C-." 'company-complete
-    "TAB" 'company-indent-or-complete-common)
+    "C-." 'company-complete)
 
   (setq completion-at-point-functions '(company-complete))
 
@@ -1237,7 +1239,12 @@ play well with `evil-mc'."
   ([remap describe-variable] . helpful-variable)
   ([remap describe-key] . helpful-key)
   (:map evil-motion-state-map
-        ("K" . helpful-at-point)))
+        ("K" . helpful-at-point))
+  :config
+  (general-def '(normal motion) helpful-mode-map
+    "q" 'kill-this-buffer)
+  (leader-map
+    "bH" 'helpful-kill-buffers))
 
 (use-package hydra
   :config
@@ -1813,19 +1820,19 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
           '(("d" "fleeting" plain
              "\n%?"
              :target (file+head "fleeting/%<%Y%m%d-%H%M%S>--${slug}.org"
-                                "#+TITLE: %<%Y%m%d-%H%M%S>--${title}\n#+FILETAGS: \n#+CATEGORY: \n")
+                                "#+TITLE: %<%Y%m%d-%H%M%S>--${title}\n#+FILETAGS:\n#+CATEGORY:\n")
              :unnarrowed t)
             ("r" "reference" plain
              "\n%?"
              :target (file+head "reference/%<%Y%m%d-%H%M%S>--${slug}.org"
-                                "#+TITLE: %<%Y%m%d-%H%M%S>--${title}\n#+FILETAGS: \n#+CATEGORY: \n")
+                                "#+TITLE: %<%Y%m%d-%H%M%S>--${title}\n#+FILETAGS:\n#+CATEGORY:\n")
              :unnarrowed t)
             ("p" "project" plain "* Tasks\n\n** TODO Add initial tasks\n\n* Dates\n\n"
-             :if-new (file+head "projects/${slug}.org" "#+TITLE: ${title}\n#+FILETAGS: :project:\n#+CATEGORY: \n")
+             :if-new (file+head "projects/${slug}.org" "#+TITLE: ${title}\n#+FILETAGS: :project:\n#+CATEGORY:\n")
              :unnarrowed t)
             ("t" "topic" plain "\n%?"
              :if-new (file+head "topics/${slug}.org"
-                                "#+TITLE: ${title}\n#+FILETAGS: \n")
+                                "#+TITLE: ${title}\n#+FILETAGS:\n#+CATEGORY:\n")
              :unnarrowed t)))
 
     (org-roam-db-autosync-mode)))
@@ -1899,20 +1906,34 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 (use-package treemacs
   :general
   (leader-map
-    "Tt" 'treemacs))
+    "Tt" 'treemacs)
+  :init
+  (setq treemacs-width 20)
+
+  )
 
 (use-package treemacs-evil
-  :after treemacs
+  :after (treemacs evil)
+  :straight nil
+  :load-path "straight/repos/treemacs/src/extra")
+
+(use-package treemacs-all-the-icons
+  :after (treemacs magit)
+  :straight nil
+  :load-path "straight/repos/treemacs/src/extra")
+
+(use-package treemacs-all-the-icons
+  :after (treemacs all-the-icons)
   :straight nil
   :load-path "straight/repos/treemacs/src/extra")
 
 (use-package treemacs-perspective
-  :after treemacs
+  :after (treemacs perspective)
   :straight nil
   :load-path "straight/repos/treemacs/src/extra")
 
 (use-package treemacs-projectile
-  :after treemacs
+  :after (treemacs projectile)
   :straight nil
   :load-path "straight/repos/treemacs/src/extra")
 
@@ -1968,7 +1989,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
   (local-leader-map
     "l" (general-simulate-key "C-l"))
-  (setq lsp-csharp-omnisharp-roslyn-download-url "https://github.com/OmniSharp/omnisharp-roslyn/releases/download/v1.39.0/omnisharp-linux-x64.zip")
+  ;; (setq lsp-csharp-omnisharp-roslyn-download-url "https://github.com/OmniSharp/omnisharp-roslyn/releases/download/v1.39.0/omnisharp-linux-x64.zip")
   (setq lsp-auto-guess-root nil)
   ;;(setq lsp-log-io nil)
   (setq lsp-restart 'auto-restart)
@@ -1985,6 +2006,8 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
   (setq lsp-enable-folding t)
   (setq lsp-enable-imenu t)
   (setq lsp-enable-snippet t)
+  (setq lsp-enable-indentation nil)
+  (setq-default lsp-enable-relative-indentation nil)
   (setq read-process-output-max (* 1024 1024)) ;; 1MB
   (setq lsp-idle-delay 0.5))
 
@@ -2010,6 +2033,11 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
   (setq lsp-ui-sideline-show-code-actions nil)
   (setq lsp-ui-sideline-delay 0.05))
 
+(use-package lsp-treemacs
+  :after (perspective lsp treemacs)
+  :config
+  (lsp-treemacs-sync-mode 1))
+
 (use-package flymake
   :straight nil
   :custom
@@ -2023,14 +2051,14 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 (use-package tree-sitter-langs)
 (use-package tree-sitter-indent)
 
-;; (use-package dap-mode
-;;   :disabled t
-;;   :config
-;;   (progn
-;;     (dap-auto-configure-mode)
-;;     (require 'dap-node)
-;;     (dap-node-setup)
-;;     (require 'dap-netcore)))
+(use-package dap-mode
+  :after lsp
+  :config
+  (progn
+    (dap-auto-configure-mode)
+    (require 'dap-node)
+    (dap-node-setup)
+    (require 'dap-netcore)))
 
 
 
@@ -2067,9 +2095,9 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
   :mode ("\\.md\\'" . markdown-mode)
   :custom (markdown-wiki-link-search-type 'project)
   :init
+  (setq markdown-fontify-code-blocks-natively t)
   (setq markdown-enable-wiki-links t)
-  (setq markdown-wiki-link-fontify-missing t)
-  (setq markdown-command "multimarkdown"))
+  (setq markdown-wiki-link-fontify-missing t))
 
 (use-package vterm
   :commands vterm
@@ -2117,8 +2145,10 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
   :demand t
   :init
   (setq persp-state-default-file (no-littering-expand-var-file-name "persp/auto-save"))
+  (setq persp-suppress-no-prefix-key-warning t)
   (persp-mode)
-  (persp-state-load persp-state-default-file)
+  (when (file-exists-p persp-state-default-file)
+    (persp-state-load persp-state-default-file))
   :custom
   (persp-sort 'access)
   :config
@@ -2131,12 +2161,13 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
     (add-hook 'kill-emacs-hook 'me/persp-state-save)
 
+    (general-def perspective-map
+      "t" 'persp-switch
+      "b" 'persp-ibuffer)
+
     (leader-map
       "TAB" 'persp-switch
       "t" '(:keymap perspective-map :wk "perspectives"))
-
-    (general-def perspective-map
-      "t" 'persp-switch)
 
     (with-eval-after-load 'consult
       (consult-customize consult--source-buffer :hidden t :default nil)
