@@ -831,6 +831,7 @@ play well with `evil-mc'."
 
 (use-package vertico-posframe
   :config
+  (setq vertico-posframe-truncate-lines nil)
   (setq vertico-posframe-min-width 80)
   (setq vertico-posframe-poshandler 'posframe-poshandler-window-top-center)
   (vertico-posframe-mode))
@@ -859,10 +860,6 @@ play well with `evil-mc'."
     "bh"	'consult-history
     "xc"	'consult-complex-command
     "xk"	'consult-kmacro)
-
-
-  (local-leader-map org-mode-map
-    "s"	'consult-org-heading)
 
   (general-def
     "C-x b"	'consult-buffer
@@ -1350,7 +1347,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
   ;; Files ;;
   (defconst me/org-todo-file (concat me/org-dir "todo.org"))
-  (defconst me/org-work-file (concat me/org-dir "work.org"))
+  (defconst me/org-archive-file (concat me/org-dir "archive.org"))
   (defconst me/org-emacs-config-file (concat user-emacs-directory "README.org"))
 
   :config
@@ -1377,8 +1374,9 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
       "ts" 'me/insert-timestamp
       "1" 'org-insert-structure-template)
 
-    ;; (imap org-mode-map
-    ;;   "TAB" 'completion-at-point)
+    (with-eval-after-load 'consult
+      (mmap org-mode-map
+        "gs" 'consult-org-heading))
 
     ;; Org Agenda Keybinds
     (local-leader-map org-agenda-mode-map
@@ -1415,6 +1413,19 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
     (setq org-extend-today-until 4)
     (setq org-duration-format 'h:mm)
     (setq-default org-enforce-todo-dependencies t)
+
+    ;; Archiving ;;
+    (setq org-archive-location (concat me/org-archive-file "::datetree/"))
+    (defun me/org-archive-done-tasks ()
+      (interactive)
+      (org-map-entries
+       (lambda ()
+         (org-archive-subtree)
+         (setq org-map-continue-from (org-element-property :begin (org-element-at-point))))
+       "/+DONE|+CANCELLED" 'tree))
+
+    (local-leader-map org-mode-map
+      "A" 'me/org-archive-done-tasks)
 
 
     ;; Source Editing ;;
@@ -1532,7 +1543,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
     ;; Open links in current window
     (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file)
-    (setq org-agenda-files '("~/Org/todo.org" "~/Org/work.org" "~/Org/notes/projects/"))
+    (setq org-agenda-files '("~/Org/todo.org" "~/Org/notes/projects/" "~/Org/notes/topics/" "~/Org/notes/fleeting"))
     ;;(directory-files-recursively "~/Org/" "^[a-z0-9]*.org$")
     (setq org-agenda-start-on-weekday nil)
     (setq org-agenda-start-with-log-mode t)
@@ -1564,8 +1575,12 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
     (setq org-cycle-separator-lines 0)
     (setq org-agenda-category-icon-alist
           `(("work" ,(list (all-the-icons-faicon "cogs")) nil nil :ascent center)
-            ("emacs" ,(list (all-the-icons-material "computer")) nil nil :ascent center)
+            ("emacs" ,(list (all-the-icons-material "usb")) nil nil :ascent center)
             ("inbox" ,(list (all-the-icons-material "inbox")) nil nil :ascent center)
+            ("computer" ,(list (all-the-icons-material "computer")) nil nil :ascent center)
+            ("personal" ,(list (all-the-icons-material "person")) nil nil :ascent center)
+            ("programming" ,(list (all-the-icons-material "code")) nil nil :ascent center)
+            ("gaming" ,(list (all-the-icons-material "videogame_asset")) nil nil :ascent center)
             ("calendar" ,(list (all-the-icons-faicon "calendar")) nil nil :ascent center)))
     (add-hook 'org-agenda-finalize-hook #'me/org-agenda-place-point 90)
 
@@ -1594,10 +1609,10 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
             ;; Work ;;
             ("w" "Work Captures")
             ("wt" "Work Task" entry
-             (file+headline me/org-work-file "Inbox")
+             (file+headline me/org-todo-file "Work")
              "* TODO %? :work:\n%U\n" :prepend t)
             ("wT" "Work Task (Scheduled)" entry
-             (file+headline me/org-work-file "Inbox")
+             (file+headline me/org-todo-file "Work")
              "* TODO %?\nSCHEDULED: %^T\n" :prepend t)))
 
 
@@ -1681,11 +1696,15 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
                                                          (:name "Future"
                                                                 :scheduled future)
                                                          (:name "Inbox"
-                                                                :tag "inbox")
+                                                                :category "inbox")
                                                          (:name "Emacs"
-                                                                :tag "emacs")
+                                                                :category "emacs")
+                                                         (:name "Computer"
+                                                                :category "computer")
+                                                         (:name "Gaming"
+                                                                :category "gaming")
                                                          (:name "Work"
-                                                                :tag "work")
+                                                                :category "work")
                                                          (:auto-category t :order 99)))))))))))
 
 (use-package org-ql
@@ -1709,7 +1728,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
                                  (and
                                   (not
                                    (done))
-                                  (tags "inbox"))
+                                  (category "Inbox"))
                                  :sort
                                  (date priority)
                                  :super-groups org-super-agenda-groups :title "Inbox Items"))
@@ -1726,7 +1745,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
     (add-to-list 'org-ql-views '("Work Super View" :buffers-files org-agenda-files :query
                                  (and
-                                  (tags "work")
+                                  (category "Work")
                                   (todo)
                                   (not
                                    (done)))
@@ -1741,7 +1760,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
                                  :super-groups org-super-agenda-groups :title "Overview: NEXT tasks"))
 
     (add-to-list 'org-ql-views '("Archive" :buffers-files org-agenda-files :query
-                                 (and (done))
+                                 (done)
                                  :sort
                                  (date priority)))))
 
@@ -1819,6 +1838,11 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
     (setq org-roam-capture-templates
           '(("d" "fleeting" plain
              "\n%?"
+             :target (file+head "fleeting/%<%Y%m%d-%H%M%S>--${slug}.org"
+                                "#+TITLE: %<%Y%m%d-%H%M%S>--${title}\n#+FILETAGS:\n#+CATEGORY:\n")
+             :unnarrowed t)
+            ("c" "entry" entry
+             "* %?"
              :target (file+head "fleeting/%<%Y%m%d-%H%M%S>--${slug}.org"
                                 "#+TITLE: %<%Y%m%d-%H%M%S>--${title}\n#+FILETAGS:\n#+CATEGORY:\n")
              :unnarrowed t)
@@ -1984,10 +2008,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
   :config
   (lsp-enable-which-key-integration t)
 
-  (leader-map
-    "l" (general-simulate-key "C-l"))
-
-  (local-leader-map
+  (local-leader-map prog-mode-map
     "l" (general-simulate-key "C-l"))
   ;; (setq lsp-csharp-omnisharp-roslyn-download-url "https://github.com/OmniSharp/omnisharp-roslyn/releases/download/v1.39.0/omnisharp-linux-x64.zip")
   (setq lsp-auto-guess-root nil)
