@@ -268,6 +268,10 @@
     (winner-mode 1)
     (global-auto-revert-mode t)
 
+    ;; Remaps
+    (general-def with-editor-mode-map
+      [remap save-buffer] 'with-editor-finish)
+
     ;; Completion ;;
     (setq read-file-name-completion-ignore-case t
           read-buffer-completion-ignore-case t
@@ -297,6 +301,9 @@
     (setq minibuffer-prompt-properties
           '(read-only t cursor-intangible t face minibuffer-prompt))
     (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
+
+    (general-def minibuffer-local-map
+      "C-S-p" 'yank)
 
     ;; Enable recursive minibuffers
     (setq enable-recursive-minibuffers t)
@@ -533,20 +540,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
     (with-eval-after-load 'org
       (doom-themes-org-config))))
 
-(use-package doom-modeline
-  :init (doom-modeline-mode 1)
-  :custom ((doom-modeline-bar-width 2)
-           (doom-modeline-minor-modes nil)
-           (doom-modeline-buffer-file-name-style 'truncate-with-project)
-           (doom-modeline-minor-modes nil)
-           (doom-modeline-modal-icon t)
-           (doom-modeline-persp-name t)
-           (doom-modeline-persp-icon nil)
-           (doom-modeline-buffer-encoding nil))
-  ;; This configuration to is fix a bug where certain windows would not display
-  ;; their full content due to the overlapping modeline
-  :config (advice-add #'fit-window-to-buffer :before (lambda (&rest _) (redisplay t))))
-
 (use-package solaire-mode
   :config
   (solaire-global-mode))
@@ -636,7 +629,12 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
       (leader-map "w" '(:keymap me/window-map :wk "windows"))
 
       (evil-ex-define-cmd "q" #'kill-this-buffer)
-      (evil-ex-define-cmd "wq" #'me/save-and-kill-this-buffer))))
+      (evil-ex-define-cmd "wq" #'me/save-and-kill-this-buffer)
+
+      (imap "j"
+        (general-key-dispatch 'self-insert-command
+          :timeout 0.15
+          "k" 'evil-normal-state)))))
 
 (use-package evil-collection
     :after evil
@@ -649,20 +647,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
       "gO" 'evil-collection-unimpaired-insert-newline-above
       "gp" 'evil-collection-unimpaired-paste-below
       "gP" 'evil-collection-unimpaired-paste-above)))
-
-(use-package evil-escape
-  :after evil
-  :config
-  (progn
-    (evil-escape-mode)
-    (setq-default evil-escape-key-sequence "jk")
-    (setq evil-escape-delay 0.15)
-
-    (add-hook 'evil-escape-inhibit-functions
-              (defun +evil-inhibit-escape-in-minibuffer-fn ()
-                (and (minibufferp)
-                     (or (not (bound-and-true-p evil-collection-setup-minibuffer))
-                         (evil-normal-state-p)))))))
 
 (use-package evil-org
   :after org
@@ -835,6 +819,7 @@ play well with `evil-mc'."
   :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
 
 (use-package vertico-posframe
+  :disabled t
   :config
   (setq vertico-posframe-truncate-lines nil)
   (setq vertico-posframe-min-width 80)
@@ -1279,8 +1264,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
       "op" 'org-set-property)
 
     (local-leader-map org-mode-map
-      "s" 'org-ql-search
-      "S" 'org-ql-sparse-tree
+      "s" '(:ignore t :wk "search")
       "T" '(:ignore t :wk "tables")
       "Ti" 'org-table-field-info
       "i" '(:ignore t :wk "insert")
@@ -1295,23 +1279,27 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
       "gT" 'org-ctrl-c-minus)
 
     (general-def '(motion normal insert) org-mode-map
-      "M-<return>" 'org-insert-subheading
+      ;; "M-<return>" 'org-insert-subheading
       "s-<return>" 'org-insert-todo-heading-respect-content
       "H-t" 'org-insert-todo-subheading)
 
     ;; Orgql
     (with-eval-after-load 'org-ql
       (local-leader-map org-mode-map
-        "oh" 'org-ql-find-heading
-        "oS" 'org-ql-sparse-tree))
+        "sh" 'org-ql-find-heading
+        "sm" 'org-match-sparse-tree
+        "sM" 'org-tags-sparse-tree
+        "st" 'org-sparse-tree
+        "sT" 'org-ql-sparse-tree))
 
     ;; Consult
     (with-eval-after-load 'consult
       (local-leader-map org-mode-map
-        "s"	'consult-outline)
+        "so"	'consult-outline
+        "ss" 'consult-org-heading)
 
-      (mmap org-mode-map
-        "S" 'consult-org-heading))
+      (leader-map org-mode-map
+        "ss" 'consult-org-heading))
 
     ;; Org Agenda Keybinds
     (local-leader-map org-agenda-mode-map
@@ -1323,6 +1311,11 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
     (local-leader-map org-src-mode-map
       "s" 'org-edit-src-exit)
+
+    ;; Capture Keybinds
+    (general-def org-capture-mode-map
+      [remap save-buffer] 'org-capture-finalize)
+
 
 
     ;; Hooks ;;
@@ -1368,6 +1361,16 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
     (setq org-edit-src-turn-on-auto-save t)
     (setq org-src-window-setup 'current-window)
     (push '("conf-unix" . conf-unix) org-src-lang-modes)
+
+    ;; Fix coming out of src editing into insert mode
+    (defun me/org-edit-special ()
+      (interactive)
+      (progn
+        (call-interactively #'evil-normal-state)
+        (call-interactively #'org-edit-special)))
+
+    (general-def org-mode-map
+      [remap org-edit-special] #'me/org-edit-special)
 
     ;; Time and Clock settings ;;
     (setq org-clock-out-when-done t)
@@ -1731,12 +1734,6 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
                 ("CANCELLED" :inverse-video t :weight semibold :foreground "darkgrey" :inherit (org-modern-label)))))
   (global-org-modern-mode))
 
-(use-package org-wild-notifier
-  :disabled t
-  :after org
-  :config
-  (org-wild-notifier-mode))
-
 (use-package org-roam
   :after org
   :demand t
@@ -1768,8 +1765,8 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
       "rf" 'org-roam-node-find
       "rg" 'org-roam-graph
       "ri" 'org-roam-node-insert
-      "rI" 'org-id-get-create
-      "rc" 'me/org-roam-node-insert-immediate
+      "rI" 'me/org-roam-node-insert-immediate
+      "r." 'org-id-get-create
       "rw" 'org-roam-extract-subtree
       "Tr" 'org-roam-buffer-toggle
       "c" 'org-roam-capture
@@ -1803,7 +1800,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
     (setq org-roam-capture-templates
           '(("d" "fleeting" plain
-             "\n%?\n* References\n"
+             "\n%?\n* Related\n"
              :target (file+head "fleeting/${slug}--%<%Y%m%d-%H%M%S>.org"
                                 "#+TITLE: ${title}\n#+FILETAGS: \n#+CATEGORY: %^{category||calendar|computer|emacs|gaming|inbox|personal|programming|work}\n\n")
              :unnarrowed t
@@ -1818,7 +1815,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
              :if-new (file+head "projects/${slug}--%<%Y%m%d-%H%M%S>.org" "#+TITLE: ${title}\n#+FILETAGS: :project:\n#+CATEGORY: %^{category||calendar|computer|emacs|gaming|inbox|personal|programming|work}\n\n")
              :unnarrowed t
              :empty-lines-before 1)
-            ("p" "permanent" plain "\n%?\n* References\n"
+            ("p" "permanent" plain "\n%?\n* Related\n"
              :if-new (file+head "permanent/${slug}--%<%Y%m%d-%H%M%S>.org"
                                 "#+TITLE: ${title}\n#+FILETAGS: \n#+CATEGORY: %^{category||calendar|computer|emacs|gaming|inbox|personal|programming|work}\n\n")
              :unnarrowed t
@@ -1968,7 +1965,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
   :after magit
   :init
   (setq forge-add-default-bindings t)
-  (setq auth-sources '("~/.authinfo.gpg")))
+  (setq auth-sources '("~/.authinfo")))
 
 (use-package rainbow-delimiters
   :hook (prog-mode . rainbow-delimiters-mode))
@@ -2185,8 +2182,6 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 (use-package fish-mode)
 
 (use-package dashboard
-  :disabled t
-  :init (add-hook 'desktop-no-desktop-file-hook (lambda () (setq initial-buffer-choice (get-buffer "*dashboard*"))))
   :custom ((dashboard-agenda-sort-strategy '(todo-state-down)))
   :config
   (setq dashboard-week-agenda nil)
@@ -2195,7 +2190,6 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
   (setq dashboard-set-file-icons t)
   (setq dashboard-set-navigator t)
   (setq dashboard-set-init-info t)
-  (setq dashboard-match-agenda-entry "-routine")
   (setq dashboard-image-banner-max-height 190)
 
   ;; Format: "(icon title help action face prefix suffix)"
@@ -2211,13 +2205,14 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
             (lambda (&rest _) (org-ql-view-sidebar)))
            ("⚙" nil "Open Config" (lambda (&rest _) (me/open-config)) success))))
 
-  (setq dashboard-projects-backend 'project-el)
   (dashboard-setup-startup-hook))
 
 (use-package perspective
   :defer nil
   :demand t
   :init
+  (setq persp-initial-frame-name "config")
+  (setq persp-show-modestring nil)
   (setq persp-state-default-file (no-littering-expand-var-file-name "persp/auto-save"))
   (setq persp-suppress-no-prefix-key-warning t)
   (persp-mode)
@@ -2240,19 +2235,64 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
       "b" 'persp-ibuffer)
 
     (leader-map
-      "TAB" 'persp-switch
-      "P" '(:keymap perspective-map :wk "perspectives"))
+      "P" '(:keymap perspective-map :wk "perspectives")
+      "C-TAB" 'persp-last
+      "TAB" 'persp-switch)
 
     (with-eval-after-load 'consult
       (consult-customize consult--source-buffer :hidden t :default nil)
-      (add-to-list 'consult-buffer-sources persp-consult-source)
+      (add-to-list 'consult-buffer-sources persp-consult-source))))
 
-      ;; (defvar consult--source-perspective
-      ;;   (list :name     "Perspective"
-      ;;         :narrow   ?s
-      ;;         :category 'buffer
-      ;;         :state    #'consult--buffer-state
-      ;;         :default  t
-      ;;         :items    #'persp-get-buffer-names))
+(use-package org-wild-notifier
+  :disabled t
+  :after org
+  :config
+  (org-wild-notifier-mode))
 
-      )))
+(use-package doom-modeline
+  :init (doom-modeline-mode 1)
+  :custom ((doom-modeline-bar-width 1)
+           (doom-modeline-minor-modes nil)
+           (doom-modeline-buffer-file-name-style 'auto)
+           (doom-modeline-minor-modes nil)
+           (doom-modeline-modal-icon t)
+           (doom-modeline-persp-name t)
+           (doom-modeline-display-default-persp-name t)
+           (doom-modeline-persp-icon nil)
+           (doom-modeline-buffer-encoding nil))
+  :config
+  ;; This configuration to is fix a bug where certain windows would not display
+  ;; their full content due to the overlapping modeline
+  (advice-add #'fit-window-to-buffer :before (lambda (&rest _) (redisplay t))))
+
+(with-eval-after-load 'perspective
+    ;; First remove the advice and hooks
+    (general-remove-hook (list 'persp-renamed-functions 'persp-activated-functions 'find-file-hook 'buffer-list-update-hook) #'doom-modeline-update-persp-name)
+    (advice-remove #'lv-message #'doom-modeline-update-persp-name)
+
+    ;; New function for updating persp name
+    (defun me/doom-modeline-update-persp-name (&rest _)
+      "Update perspective name in mode-line."
+      (setq doom-modeline--persp-name
+            (when (and doom-modeline-persp-name)
+              (let* ((persp (persp-current-name))
+                     (face (if (and persp)
+                               'doom-modeline-persp-buffer-not-in-persp
+                             'doom-modeline-persp-name))
+                     (icon (doom-modeline-icon 'material "folder" "🖿" "#"
+                                               :face `(:inherit ,face :slant normal)
+                                               :height 1.1
+                                               :v-adjust -0.225)))
+                (when (or doom-modeline-display-default-persp-name)
+                  (concat doom-modeline-spc
+                          (propertize (concat (and doom-modeline-persp-icon
+                                                   (concat icon doom-modeline-vspc))
+                                              (propertize persp 'face face))
+                                      'mouse-face 'doom-modeline-highlight)
+                          doom-modeline-spc))))))
+    ;; Initialize
+    (me/doom-modeline-update-persp-name)
+
+    ;; Add hooks
+    (general-add-hook (list 'persp-switch-hook 'persp-activated-hook 'persp-after-rename-hook 'persp-state-after-save-hook 'find-file-hook 'buffer-list-update-hook) #'me/doom-modeline-update-persp-name)
+    (advice-add #'lv-message :after #'doom-modeline-update-persp-name))
