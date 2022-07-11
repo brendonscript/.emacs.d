@@ -99,13 +99,12 @@
     (leader-map
       ""   '(nil :which-key "my lieutenant general prefix")
       "b"  '(:ignore t :wk "buffers")
-      "d"  '(:ignore t :wk "debug")
+      "D"  '(:ignore t :wk "debug")
       "e"  '(:ignore t :wk "edit")
       "o"  '(:ignore t :wk "org")
       "f"  '(:ignore t :wk "files")
       "fe" '(:ignore t :wk "emacs")
       "g"  '(:ignore t :wk "git")
-      "r"  '(:ignore t :wk "refactor")
       "s"  '(:ignore t :wk "search")
       "x"  '(:ignore t :wk "execute")
       "T"  '(:ignore t :wk "toggles"))
@@ -133,7 +132,7 @@
       "bp"  'me/alternate-buffer
       "bk"  'kill-this-buffer
       "bK"  'kill-some-buffers
-      "bB"  'ibuffer-list-buffers
+      "B"   'ibuffer
       "ea"  'align-regexp
       "eA"  'align
       "er"  'query-replace
@@ -237,8 +236,9 @@
              (window-parameters . (no-delete-other-windows . t))))
       (delete-window)))
 
-
-
+  (defun me/quit-window-force ()
+    (interactive)
+    (quit-window t))
   :config
   (progn
     ;; Startup ;;
@@ -352,11 +352,14 @@
 
     ;; Formatting ;;
     (setq sentence-end-double-space nil)
-    (me/set-default-line-length-to 80)
+    ;; (me/set-default-line-length-to 80)
 
     ;; Behavior ;;
     (setq require-final-newline t)
     (setq show-paren-delay 0.0)
+    (global-set-key [remap quit-window] 'me/quit-window-force)
+    ;; (global-set-key [remap kill-buffer] 'kill-buffer-and-its-windows)
+    ;; (global-set-key [remap quit-window] '(quit-window t))
 
     ;; Confirmations
     (setq confirm-kill-emacs 'y-or-n-p)
@@ -462,13 +465,14 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (use-package dired
   :straight nil
   :commands (dired dired-jump)
+  :preface
   :general
   (general-def
     "C-x C-j" 'dired-jump)
   :custom ((dired-listing-switches "-agho --group-directories-first"))
+  :hook (dired-mode . dired-hide-details-mode)
   :config
-  (general-def '(emacs normal visual motion) dired-mode-map
-    "q" 'kill-this-buffer
+  (general-def '(motion visual normal emacs) dired-mode-map
     "l" 'dired-open-file
     "L" 'dired-view-file
     "h" 'dired-up-directory)
@@ -608,7 +612,8 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
       (nmap "R" 'evil-replace-state
         "q" 'me/evil-record-macro
         "g ?" 'nil
-        "gu" 'universal-argument)
+        "gu" 'universal-argument
+        "gw" 'other-window-prefix)
 
       (imap "C-g" 'evil-normal-state
         "C-u" 'universal-argument)
@@ -770,17 +775,15 @@ play well with `evil-mc'."
   :after evil
   :config
   (progn
-    (setq avy-timeout-seconds 0.3)
-
     (general-def :states '(normal visual motion)
       "gf"	'avy-goto-char-timer
       "gF"	'avy-resume)
 
     (general-def :states '(normal visual motion insert emacs)
-      "M-S-f"	'avy-resume
-      "M-f"	'avy-goto-char-timer
       "C-f" 'avy-goto-char-timer
-      "C-S-f" 'avy-resume)))
+      "C-S-f" 'avy-resume)
+
+    (setq avy-timeout-seconds 0.2)))
 
 (use-package all-the-icons)
 
@@ -807,7 +810,9 @@ play well with `evil-mc'."
       "C-k"	'vertico-previous
       "C-K"	'vertico-previous-group
       "M-RET"	'minibuffer-force-complete-and-exit
-      "M-TAB"	'minibuffer-complete)
+      "M-TAB"	'minibuffer-complete
+      "C-RET" 'vertico-exit-input
+      "C-<return>" 'vertico-exit-input)
 
     (advice-add #'vertico--format-candidate :around
                 (lambda (orig cand prefix suffix index _start)
@@ -944,7 +949,14 @@ play well with `evil-mc'."
               consult--preview-function #'ignore)))
     (general-def vertico-map
       "M-p" 'consult-toggle-preview)
-    (setq consult-narrow-key "<")))
+    (setq consult-narrow-key "<")
+
+    (setq completion-in-region-function
+          (lambda (&rest args)
+            (apply (if vertico-mode
+                       #'consult-completion-in-region
+                     #'completion--in-region)
+                   args)))))
 
 (use-package orderless
   :config
@@ -1355,28 +1367,53 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
     ;; Keybinds ;;
 
-    (leader-map
-      "c"  'org-capture
-      "a" 'org-agenda
-      "L"  'org-store-link
-      "fo" 'org-save-all-org-buffers
-      "oc" 'org-clock-goto)
-
     ;; Org Mode Keybinds
     (general-unbind org-mode-map
       "C-c ?" nil)
 
-    (local-leader-map org-mode-map
-      "t" '(:ignore t "toggles")
-      "T" '(:ignore t "tables")
-      "TI" 'org-table-field-info
-      "tt" 'org-set-tags-command
-      "ts" 'me/insert-timestamp
-      "1" 'org-insert-structure-template)
+    (leader-map
+      "t"  'org-capture
+      "a" 'org-agenda
+      "l"  'org-store-link
+      "L" 'org-insert-link
+      "fo" 'org-save-all-org-buffers
+      "oc" 'org-clock-goto
+      "op" 'org-set-property)
 
+    (local-leader-map org-mode-map
+      "s" 'org-ql-search
+      "S" 'org-ql-sparse-tree
+      "T" '(:ignore t :wk "tables")
+      "Ti" 'org-table-field-info
+      "i" '(:ignore t :wk "insert")
+      "it" 'org-set-tags-command
+      "id" 'me/insert-timestamp
+      "is" 'org-insert-structure-template
+      "e" '(:ignore t :wk "edit")
+      "es" 'org-sort)
+
+    (general-def '(motion normal) org-mode-map
+      "gt" 'org-toggle-heading
+      "gT" 'org-ctrl-c-minus)
+
+    (general-def '(motion normal insert) org-mode-map
+      "M-<return>" 'org-insert-subheading
+      "s-<return>" 'org-insert-todo-heading-respect-content
+      "H-t" 'org-insert-todo-subheading)
+
+    ;; Orgql
+    (with-eval-after-load 'org-ql
+      (local-leader-map org-mode-map
+        "oh" 'org-ql-find-heading
+        "oS" 'org-ql-sparse-tree))
+
+    ;; Consult
     (with-eval-after-load 'consult
+      (local-leader-map org-mode-map
+        "s"	'consult-outline)
+
       (mmap org-mode-map
-        "gs" 'consult-org-heading))
+        "S" 'consult-org-heading))
 
     ;; Org Agenda Keybinds
     (local-leader-map org-agenda-mode-map
@@ -1388,6 +1425,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
     (local-leader-map org-src-mode-map
       "s" 'org-edit-src-exit)
+
 
     ;; Hooks ;;
     (org-clock-persistence-insinuate)
@@ -1543,7 +1581,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
     ;; Open links in current window
     (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file)
-    (setq org-agenda-files '("~/Org/todo.org" "~/Org/notes/projects/" "~/Org/notes/topics/" "~/Org/notes/fleeting"))
+    (setq org-agenda-files '("~/Org/todo.org" "~/Org/notes/projects/" "~/Org/notes/permanent/" "~/Org/notes/fleeting" "~/Org/notes/inbox.org"))
     ;;(directory-files-recursively "~/Org/" "^[a-z0-9]*.org$")
     (setq org-agenda-start-on-weekday nil)
     (setq org-agenda-start-with-log-mode t)
@@ -1660,8 +1698,17 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
                                            :scheduled past)
                                     (:name "Future"
                                            :scheduled future)
+                                    (:name "Emacs"
+                                           :category "emacs")
+                                    (:name "Computer"
+                                           :category "computer")
+                                    (:name "Gaming"
+                                           :category "gaming")
+                                    (:name "Work"
+                                           :category "work")
                                     (:name "Inbox"
-                                           :tag "inbox")
+                                           :category "inbox"
+                                           :order 98)
                                     (:auto-category t :order 99)))
 
     (setq org-agenda-custom-commands '(("a" "POG AGENDA"
@@ -1685,6 +1732,9 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
                                                       (org-super-agenda-groups
                                                        '((:discard (:habit t))
                                                          (:discard (:tag "ARCHIVE"))
+                                                         (:name "Someday"
+                                                                :todo "SOMEDAY"
+                                                                :order 98)
                                                          (:name "In Progress"
                                                                 :todo "PROG")
                                                          (:name "Next to do"
@@ -1715,11 +1765,9 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
       "os" 'org-ql-search
       "ov" 'org-ql-view
       "To" 'org-ql-view-sidebar
-      "oS" 'org-ql-sparse-tree
       "or" 'org-ql-view-recent-items
       "of" 'org-ql-find
-      "op" 'org-ql-find-path
-      "oh" 'org-ql-find-heading)
+      "oP" 'org-ql-find-path)
 
     (setq org-ql-views nil)
     (evil-define-key 'motion org-ql-view-list-map (kbd "RET") 'org-ql-view-switch)
@@ -1728,7 +1776,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
                                  (and
                                   (not
                                    (done))
-                                  (category "Inbox"))
+                                  (category "inbox"))
                                  :sort
                                  (date priority)
                                  :super-groups org-super-agenda-groups :title "Inbox Items"))
@@ -1745,7 +1793,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
     (add-to-list 'org-ql-views '("Work Super View" :buffers-files org-agenda-files :query
                                  (and
-                                  (category "Work")
+                                  (category "work")
                                   (todo)
                                   (not
                                    (done)))
@@ -1786,6 +1834,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
   (global-org-modern-mode))
 
 (use-package org-wild-notifier
+  :disabled t
   :after org
   :config
   (org-wild-notifier-mode))
@@ -1807,17 +1856,27 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
   :config
   (progn
     (require 'org-roam-dailies)
+
+    (defun me/org-roam-node-insert-immediate (arg &rest args)
+      (interactive "P")
+      (let ((args (cons arg args))
+            (org-roam-capture-templates (list (append (car org-roam-capture-templates)
+                                                      '(:immediate-finish t)))))
+        (apply #'org-roam-node-insert args)))
+
     (leader-map
-      "Tr" 'org-roam-buffer-toggle
+      "r"  '(:ignore t :wk "roam")
+      "rt" 'org-roam-buffer-toggle
       "rf" 'org-roam-node-find
       "rg" 'org-roam-graph
       "ri" 'org-roam-node-insert
       "rI" 'org-id-get-create
-      "rc" 'org-roam-capture
-      "C" 'org-roam-capture
-      "rj" 'org-roam-dailies-capture-today
-      "j" 'org-roam-dailies-capture-today
-      "rd" '(:keymap org-roam-dailies-map :wk "dailies"))
+      "rc" 'me/org-roam-node-insert-immediate
+      "rw" 'org-roam-extract-subtree
+      "Tr" 'org-roam-buffer-toggle
+      "c" 'org-roam-capture
+      "j" '(org-roam-dailies-capture-today :wk "journal")
+      "d" '(:keymap org-roam-dailies-map :wk "dailies"))
 
     (general-def org-roam-dailies-map
       "Y" 'org-roam-dailies-capture-yesterday
@@ -1825,41 +1884,187 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
     (setq org-roam-dailies-directory (concat org-roam-directory "/journals"))
     (setq org-roam-completion-everywhere nil)
+
+    (cl-defmethod org-roam-node-category ((node org-roam-node))
+      "Return the currently set category for the NODE."
+      (let ((category (cdr (assoc-string "CATEGORY" (org-roam-node-properties node)))))
+        (if (string= category (file-name-base (org-roam-node-file node)))
+            "" ; or return the current title, e.g. (org-roam-node-title node)
+          category)))
+
+
     (setq org-roam-node-display-template
-          (concat "${title:30} "
-                  (propertize "${tags:30}" 'face 'org-tag)))
+          (concat "${title:30} " "${category:10} " (propertize "${tags:30}" 'face 'org-tag)))
     (setq org-roam-mode-sections '(org-roam-backlinks-section org-roam-reflinks-section))
 
     ;; Capture ;;
+    (setq org-roam-extract-new-file-path "permanent/${slug}--%<%Y%m%d-%H%M%S>.org")
     (setq org-roam-dailies-capture-templates
           '(("d" "default" entry "* %<%I:%M %p>: %?"
-             :if-new (file+head "%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d>\n"))))
+             :if-new (file+head "%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d>\n\n"))))
 
     (setq org-roam-capture-templates
           '(("d" "fleeting" plain
-             "\n%?"
-             :target (file+head "fleeting/%<%Y%m%d-%H%M%S>--${slug}.org"
-                                "#+TITLE: %<%Y%m%d-%H%M%S>--${title}\n#+FILETAGS:\n#+CATEGORY:\n")
-             :unnarrowed t)
-            ("c" "entry" entry
-             "* %?"
-             :target (file+head "fleeting/%<%Y%m%d-%H%M%S>--${slug}.org"
-                                "#+TITLE: %<%Y%m%d-%H%M%S>--${title}\n#+FILETAGS:\n#+CATEGORY:\n")
-             :unnarrowed t)
+             "\n%?\n* References\n"
+             :target (file+head "fleeting/${slug}--%<%Y%m%d-%H%M%S>.org"
+                                "#+TITLE: ${title}\n#+FILETAGS: \n#+CATEGORY: %^{category||calendar|computer|emacs|gaming|inbox|personal|programming|work}\n\n")
+             :unnarrowed t
+             :empty-lines-before 1)
             ("r" "reference" plain
              "\n%?"
-             :target (file+head "reference/%<%Y%m%d-%H%M%S>--${slug}.org"
-                                "#+TITLE: %<%Y%m%d-%H%M%S>--${title}\n#+FILETAGS:\n#+CATEGORY:\n")
-             :unnarrowed t)
-            ("p" "project" plain "* Tasks\n\n** TODO Add initial tasks\n\n* Dates\n\n"
-             :if-new (file+head "projects/${slug}.org" "#+TITLE: ${title}\n#+FILETAGS: :project:\n#+CATEGORY:\n")
-             :unnarrowed t)
-            ("t" "topic" plain "\n%?"
-             :if-new (file+head "topics/${slug}.org"
-                                "#+TITLE: ${title}\n#+FILETAGS:\n#+CATEGORY:\n")
-             :unnarrowed t)))
+             :target (file+head "reference/${slug}--%<%Y%m%d-%H%M%S>.org"
+                                "#+TITLE: ${title}\n#+FILETAGS: \n#+CATEGORY: %^{category||calendar|computer|emacs|gaming|inbox|personal|programming|work}\n\n")
+             :unnarrowed t
+             :empty-lines-before 1)
+            ("P" "project" plain "\n* Tasks\n\n** TODO Add initial tasks\n\n* Dates\n\n"
+             :if-new (file+head "projects/${slug}--%<%Y%m%d-%H%M%S>.org" "#+TITLE: ${title}\n#+FILETAGS: :project:\n#+CATEGORY: %^{category||calendar|computer|emacs|gaming|inbox|personal|programming|work}\n\n")
+             :unnarrowed t
+             :empty-lines-before 1)
+            ("p" "permanent" plain "\n%?\n* References\n"
+             :if-new (file+head "permanent/${slug}--%<%Y%m%d-%H%M%S>.org"
+                                "#+TITLE: ${title}\n#+FILETAGS: \n#+CATEGORY: %^{category||calendar|computer|emacs|gaming|inbox|personal|programming|work}\n\n")
+             :unnarrowed t
+             :empty-lines-before 1)))
 
     (org-roam-db-autosync-mode)))
+
+(use-package delve
+  :straight (:repo "publicimageltd/delve"
+                   :host github
+                   :type git)
+  :after (org-roam)
+  ;; this is necessary if use-package-always-defer is true
+  :demand t
+  :hook (org-roam-mode . delve--maybe-activate-minor-mode)
+  :general
+  (leader-map
+    "rd" 'delve)
+  :config
+  (progn
+    ;; (evil-set-initial-state 'delve-mode 'normal)
+    (general-def '(normal motion insert) delve-mode-map
+      "<return>" #'delve--key--toggle-preview
+      "<tab>" #'delve-expand-toggle-sublist
+      "gr" #'delve-revert
+      "sm" #'delve-sort-buffer-by-mtime
+      "sa" #'delve-sort-buffer-by-atime
+      "sc" #'delve-sort-buffer-by-ctime
+      "<right>" #'delve-expand-insert-tolinks
+      "<left>"  #'delve-expand-insert-backlinks
+      "c" #'delve-collect
+      "q" #'delve-kill-buffer)
+
+    (setq delve-storage-paths (no-littering-expand-var-file-name "delve"))
+    ;; set meaningful tag names for the dashboard query
+    (setq delve-dashboard-tags '("games" "emacs" "org" "linux"))
+    ;; optionally turn on compact view as default
+    (add-hook #'delve-mode-hook #'delve-compact-view-mode)
+    ;; turn on delve-minor-mode when Org Roam file is opened:
+    (delve-global-minor-mode)))
+
+(use-package deft
+  :disabled t
+  :config
+  (progn
+    (leader-map
+      "D"  '(nil :wk "deft")
+      "Dd" 'deft)
+    (setq deft-extensions '("txt" "md" "org")
+          deft-default-extension "org"
+          deft-directory (file-truename "~/Notes")
+          deft-recursive t
+          deft-use-filter-string-for-filename t
+          deft-org-mode-title-prefix t
+          deft-file-naming-rules '((noslash . "-")
+                                   (nospace . "-")
+                                   (case-fn . downcase)))
+
+    (with-eval-after-load 'evil
+      (evil-set-initial-state 'deft-mode 'insert))))
+
+(use-package zetteldeft
+  :disabled t
+  :after deft
+  :config
+  (progn
+    (leader-map
+      "DD" '(zetteldeft-deft-new-search :wk "new search")
+      "DR" '(deft-refresh :wk "refresh")
+      "Ds" '(zetteldeft-search-at-point :wk "search at point")
+      "Dc" '(zetteldeft-search-current-id :wk "search current id")
+      "Df" '(zetteldeft-follow-link :wk "follow link")
+      "DF" '(zetteldeft-avy-file-search-ace-window :wk "avy file other window")
+      "D." '(zetteldeft-browse :wk "browse")
+      "Dh" '(zetteldeft-go-home :wk "go home")
+      "Dl" '(zetteldeft-avy-link-search :wk "avy link search")
+      "DL" '(zetteldeft-insert-list-links-block :wk "insert list of links")
+      "Dt" '(zetteldeft-avy-tag-search :wk "avy tag search")
+      "DT" '(zetteldeft-tag-buffer :wk "tag list")
+      "D#" '(zetteldeft-tag-insert :wk "insert tag")
+      "D$" '(zetteldeft-tag-remove :wk "remove tag")
+      "D/" '(zetteldeft-search-tag :wk "search tag")
+      "Di" '(zetteldeft-find-file-id-insert :wk "insert id")
+      "DI" '(zetteldeft-find-file-full-title-insert :wk "insert full title")
+      "Do" '(zetteldeft-find-file :wk "find file")
+      "Dn" '(zetteldeft-new-file :wk "new file")
+      "DN" '(zetteldeft-new-file-and-link :wk "new file & link")
+      "DB" '(zetteldeft-new-file-and-backlink :wk "new file & backlink")
+      "Db" '(zetteldeft-backlink-add :wk "add backlink")
+      "Dr" '(zetteldeft-file-rename :wk "rename")
+      "Dx" '(zetteldeft-count-words :wk "count words"))))
+
+(use-package pinboard
+  :general
+  (leader-map
+    "Tp" 'pinboard
+    "fP" 'pinboard-add-for-later)
+
+  (general-def '(motion normal) pinboard-mode-map
+    "A"          'pinboard-add
+    "D"          'pinboard-delete
+    "x"          'pinboard-edit
+    "y"          'pinboard-kill-url
+    "gr"         'pinboard-refresh
+    "r"          'pinboard-read
+    "s"          'pinboard-search
+    "t"          'pinboard-extend-tagged
+    "T"          'pinboard-tagged
+    "R"          'pinboard-toggle-read
+    "u"          'pinboard-unread
+    "U"          'pinboard-untagged
+    "v"          'pinboard-visit-pinboard
+    "C-<return>" 'pinboard-view
+    "RET"        'pinboard-open)
+
+  (local-leader-map pinboard-mode-map
+    "n"   'pinboard-add
+    "d"   'pinboard-delete
+    "e"   'pinboard-edit
+    "y"   'pinboard-kill-url
+    "g"   'pinboard-refresh
+    "r"   'pinboard-read
+    "s"   'pinboard-search
+    "t"   'pinboard-extend-tagged
+    "T"   'pinboard-tagged
+    "r"   'pinboard-toggle-read
+    "u"   'pinboard-unread
+    "U"   'pinboard-untagged
+    "v"   'pinboard-visit-pinboard
+    "SPC" 'pinboard-view)
+  :config
+  (progn
+    (defun org-pinboard-store-link ()
+      "Store a link taken from a pinboard buffer."
+      (when (eq major-mode 'pinboard-mode)
+        (pinboard-with-current-pin pin
+          (org-store-link-props
+           :type "pinboard"
+           :link (alist-get 'href pin)
+           :description (alist-get 'description pin)))))
+
+    (org-link-set-parameters "pinboard"
+                             :follow #'browse-url
+                             :store #'org-pinboard-store-link)))
 
 (use-package consult-org-roam
   :after org-roam
@@ -2103,7 +2308,8 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
 (use-package docker
   :general
-  (leader-map "d" 'docker))
+  (local-leader-map prog-mode-map
+    "D" 'docker))
 
 (use-package dockerfile-mode
     :mode ("Dockerfile\\'" . dockerfile-mode))
@@ -2188,16 +2394,18 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
     (leader-map
       "TAB" 'persp-switch
-      "t" '(:keymap perspective-map :wk "perspectives"))
+      "P" '(:keymap perspective-map :wk "perspectives"))
 
     (with-eval-after-load 'consult
       (consult-customize consult--source-buffer :hidden t :default nil)
-      (defvar consult--source-perspective
-        (list :name     "Perspective"
-              :narrow   ?s
-              :category 'buffer
-              :state    #'consult--buffer-state
-              :default  t
-              :items    #'persp-get-buffer-names))
+      (add-to-list 'consult-buffer-sources persp-consult-source)
 
-      (push consult--source-perspective consult-buffer-sources))))
+      ;; (defvar consult--source-perspective
+      ;;   (list :name     "Perspective"
+      ;;         :narrow   ?s
+      ;;         :category 'buffer
+      ;;         :state    #'consult--buffer-state
+      ;;         :default  t
+      ;;         :items    #'persp-get-buffer-names))
+
+      )))
