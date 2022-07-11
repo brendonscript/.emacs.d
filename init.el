@@ -1088,98 +1088,6 @@ play well with `evil-mc'."
   :hook
   (embark-collect-mode . consult-preview-at-point-mode))
 
-(use-package corfu
-  :disabled t
-  :custom
-  (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
-  (corfu-auto t)                 ;; Enable auto completion
-  (corfu-separator ?\s)          ;; Orderless field separator
-  (corfu-quit-at-boundary nil)   ;; Never quit at completion boundary
-  (corfu-quit-no-match t)      ;; Never quit, even if there is no match
-  (corfu-auto-delay 0.1)
-  (corfu-auto-prefix 2)
-  :init
-  (global-corfu-mode))
-
-(use-package corfu-doc
-  :disabled t
-  :after corfu
-  :hook (corfu-mode . corfu-doc-mode)
-  :bind (:map corfu-map
-              ([remap corfu-show-documentation] . corfu-doc-toggle)
-              ("M-n" . corfu-doc-scroll-up)
-              ("M-p" . corfu-doc-scroll-down))
-  :custom
-  (corfu-doc-delay 0.1)
-  (corfu-doc-max-width 70)
-  (corfu-doc-max-height 30)
-  (corfu-doc-display-within-parent-frame t)
-  (corfu-echo-documentation nil))
-
-(use-package cape
-  :disabled t
-  :config
-  (imap :keymaps 'org-mode-map
-    "TAB" 'completion-at-point)
-
-  (imap
-    ("C-S-p p" 'completion-at-point) ;; capf
-    ("C-S-p t" 'complete-tag)        ;; etags
-    ("C-S-p d" 'cape-dabbrev)        ;; or dabbrev-completion
-    ("C-S-p h" 'cape-history)
-    ("C-S-p f" 'cape-file)
-    ("C-S-p k" 'cape-keyword)
-    ("C-S-p s" 'cape-symbol)
-    ("C-S-p a" 'cape-abbrev)
-    ("C-S-p i" 'cape-ispell)
-    ("C-S-p l" 'cape-line)
-    ("C-S-p w" 'cape-dict)
-    ("C-S-p \\" 'cape-tex)
-    ("C-S-p _" 'cape-tex)
-    ("C-S-p ^" 'cape-tex)
-    ("C-S-p &" 'cape-sgml)
-    ("C-S-p r" 'cape-rfc1345))
-  (add-hook 'prog-mode-hook '(lambda () (setq-local completion-at-point-functions
-                                                    (list #'cape-keyword #'cape-symbol #'cape-file #'cape-dabbrev))))
-  ;;(add-to-list 'completion-at-point-functions #'cape-history)
-  ;;(add-to-list 'completion-at-point-functions #'cape-keyword)
-  ;;(add-to-list 'completion-at-point-functions #'cape-tex)
-  ;;(add-to-list 'completion-at-point-functions #'cape-sgml)
-  ;;(add-to-list 'completion-at-point-functions #'cape-rfc1345)
-  ;;(add-to-list 'completion-at-point-functions #'cape-abbrev)
-  ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
-  ;;(add-to-list 'completion-at-point-functions #'cape-dict)
-  ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
-  ;;(add-to-list 'completion-at-point-functions #'cape-line)
-  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
-  (add-to-list 'completion-at-point-functions #'cape-file))
-
-(use-package kind-icon
-  :disabled t
-  :after corfu
-  :custom
-  (kind-icon-use-icons t)
-  (kind-icon-default-face 'corfu-default) ; Have background color be the same as `corfu' face background
-  (kind-icon-blend-background nil)  ; Use midpoint color between foreground and background colors ("blended")?
-  (kind-icon-blend-frac 0.08)
-
-  ;; NOTE 2022-02-05: `kind-icon' depends `svg-lib' which creates a cache
-  ;; directory that defaults to the `user-emacs-directory'. Here, I change that
-  ;; directory to a location appropriate to `no-littering' conventions, a
-  ;; package which moves directories of other packages to sane locations.
-  (svg-lib-icons-dir (no-littering-expand-var-file-name "svg-lib/cache/")) ; Change cache dir
-  :config
-  (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter) ; Enable `kind-icon'
-
-  ;; Add hook to reset cache so the icon colors match my theme
-  ;; NOTE 2022-02-05: This is a hook which resets the cache whenever I switch
-  ;; the theme using my custom defined command for switching themes. If I don't
-  ;; do this, then the backgound color will remain the same, meaning it will not
-  ;; match the background color corresponding to the current theme. Important
-  ;; since I have a light theme and dark theme I switch between. This has no
-  ;; function unless you use something similar
-  (add-hook 'kb/themes-hooks #'(lambda () (interactive) (kind-icon-reset-cache))))
-
 (use-package company
   :delight
   :config
@@ -1316,16 +1224,6 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
     (add-hook 'org-agenda-finalize-hook 'me/org-super-agenda-origami-fold-default)
     (global-origami-mode)
     (add-hook 'org-agenda-mode-hook 'origami-mode)))
-
-(use-package ranger
-  :disabled t
-  :config
-  (setq ranger-show-hidden 'format
-        ranger-parent-depth 2
-        ranger-preview-file nil
-        ranger-dont-show-binary t
-        ranger-cleanup-on-disable t
-        ranger-cleanup-eagerly t))
 
 (use-package org
   :demand t
@@ -1961,57 +1859,6 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
     (add-hook #'delve-mode-hook #'delve-compact-view-mode)
     ;; turn on delve-minor-mode when Org Roam file is opened:
     (delve-global-minor-mode)))
-
-(use-package deft
-  :disabled t
-  :config
-  (progn
-    (leader-map
-      "D"  '(nil :wk "deft")
-      "Dd" 'deft)
-    (setq deft-extensions '("txt" "md" "org")
-          deft-default-extension "org"
-          deft-directory (file-truename "~/Notes")
-          deft-recursive t
-          deft-use-filter-string-for-filename t
-          deft-org-mode-title-prefix t
-          deft-file-naming-rules '((noslash . "-")
-                                   (nospace . "-")
-                                   (case-fn . downcase)))
-
-    (with-eval-after-load 'evil
-      (evil-set-initial-state 'deft-mode 'insert))))
-
-(use-package zetteldeft
-  :disabled t
-  :after deft
-  :config
-  (progn
-    (leader-map
-      "DD" '(zetteldeft-deft-new-search :wk "new search")
-      "DR" '(deft-refresh :wk "refresh")
-      "Ds" '(zetteldeft-search-at-point :wk "search at point")
-      "Dc" '(zetteldeft-search-current-id :wk "search current id")
-      "Df" '(zetteldeft-follow-link :wk "follow link")
-      "DF" '(zetteldeft-avy-file-search-ace-window :wk "avy file other window")
-      "D." '(zetteldeft-browse :wk "browse")
-      "Dh" '(zetteldeft-go-home :wk "go home")
-      "Dl" '(zetteldeft-avy-link-search :wk "avy link search")
-      "DL" '(zetteldeft-insert-list-links-block :wk "insert list of links")
-      "Dt" '(zetteldeft-avy-tag-search :wk "avy tag search")
-      "DT" '(zetteldeft-tag-buffer :wk "tag list")
-      "D#" '(zetteldeft-tag-insert :wk "insert tag")
-      "D$" '(zetteldeft-tag-remove :wk "remove tag")
-      "D/" '(zetteldeft-search-tag :wk "search tag")
-      "Di" '(zetteldeft-find-file-id-insert :wk "insert id")
-      "DI" '(zetteldeft-find-file-full-title-insert :wk "insert full title")
-      "Do" '(zetteldeft-find-file :wk "find file")
-      "Dn" '(zetteldeft-new-file :wk "new file")
-      "DN" '(zetteldeft-new-file-and-link :wk "new file & link")
-      "DB" '(zetteldeft-new-file-and-backlink :wk "new file & backlink")
-      "Db" '(zetteldeft-backlink-add :wk "add backlink")
-      "Dr" '(zetteldeft-file-rename :wk "rename")
-      "Dx" '(zetteldeft-count-words :wk "count words"))))
 
 (use-package pinboard
   :general
