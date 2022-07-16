@@ -93,68 +93,7 @@
       :states '(insert emacs normal hybrid motion visual operator)
       :global-prefix "C-c m"
       :non-normal-prefix "M-SPC m"
-      :prefix "SPC m")
-
-    ;; Prefixes
-    (leader-map
-      ""   '(nil :which-key "my lieutenant general prefix")
-      "b"  '(:ignore t :wk "buffers")
-      "D"  '(:ignore t :wk "debug")
-      "e"  '(:ignore t :wk "edit")
-      "o"  '(:ignore t :wk "org")
-      "f"  '(:ignore t :wk "files")
-      "fe" '(:ignore t :wk "emacs")
-      "g"  '(:ignore t :wk "git")
-      "s"  '(:ignore t :wk "search")
-      "x"  '(:ignore t :wk "execute")
-      "T"  '(:ignore t :wk "toggles"))
-
-    (local-leader-map
-      ""	'(nil :which-key "major mode"))
-
-    ;; Sim Keys
-    (leader-map
-      "," (general-simulate-key "C-c")
-      "C" (general-simulate-key "C-x")
-      "M" (general-simulate-key "C-c C-x"))
-
-    ;; Maps
-    (leader-map
-      "h" '(:keymap help-map :wk "help"))
-
-    ;; Base
-    (leader-map
-      ";"   'execute-extended-command
-      ":"   'eval-expression
-      "O"   'other-window-prefix
-      "X"   '((lambda () (interactive) (switch-to-buffer "*scratch*")) :wk "scratch")
-      "bd"  'bury-buffer
-      "bp"  'me/alternate-buffer
-      "bk"  'kill-this-buffer
-      "bK"  'kill-some-buffers
-      "B"   'ibuffer
-      "ea"  'align-regexp
-      "eA"  'align
-      "er"  'query-replace
-      "fB"  'bookmark-set
-      "ff"  'find-file
-      "fs"  'save-buffer
-      "fd"  'dired
-      "fS"  'me/save-all-unsaved
-      "fee" 'me/open-config
-      "fer" 'me/reload-emacs-config
-      "feq" 'save-buffers-kill-emacs
-      "feQ" 'kill-emacs
-      "xp"  'check-parens
-      "xe"  'eval-last-sexp
-      "xb"  'eval-buffer)
-
-    (leader-map "C-h" '(which-key-C-h-dispatch :wk t))
-    (local-leader-map "C-h" '(which-key-C-h-dispatch :wk t))
-
-    (general-def
-      "C-v" 'me/scroll-half-page-down
-      "M-v" 'me/scroll-half-page-up)))
+      :prefix "SPC m")))
 
 (use-package emacs
   :demand t
@@ -267,10 +206,6 @@
     (save-place-mode 1)
     (winner-mode 1)
     (global-auto-revert-mode t)
-
-    ;; Remaps
-    (general-def with-editor-mode-map
-      [remap save-buffer] 'with-editor-finish)
 
     ;; Completion ;;
     (setq read-file-name-completion-ignore-case t
@@ -420,7 +355,78 @@
             mac-control-modifier 'super
             mac-right-command-modifier 'control
             mac-right-option-modifier 'meta
-            ns-function-modifier 'hyper))))
+            ns-function-modifier 'hyper))
+
+    ;; Keybindings ;;
+
+    ;; Prefixes
+    (leader-map
+      ""   '(nil :which-key "my lieutenant general prefix")
+      "b"  '(:ignore t :wk "buffers")
+      "D"  '(:ignore t :wk "debug")
+      "e"  '(:ignore t :wk "edit")
+      "o"  '(:ignore t :wk "org")
+      "f"  '(:ignore t :wk "files")
+      "fe" '(:ignore t :wk "emacs")
+      "g"  '(:ignore t :wk "git")
+      "s"  '(:ignore t :wk "search")
+      "x"  '(:ignore t :wk "execute")
+      "T"  '(:ignore t :wk "toggles"))
+
+    (local-leader-map
+      ""	'(nil :which-key "major mode"))
+
+    ;; Sim Keys
+    (leader-map
+      "," (general-simulate-key "C-c")
+      "C" (general-simulate-key "C-x")
+      "M" (general-simulate-key "C-c C-x"))
+
+    ;; Maps
+    (leader-map
+      "h" '(:keymap help-map :wk "help"))
+
+    ;; Base
+    (leader-map
+      ";"   'execute-extended-command
+      ":"   'eval-expression
+      "O"   'other-window-prefix
+      "X"   '((lambda () (interactive) (switch-to-buffer "*scratch*")) :wk "scratch")
+      "br"  'rename-buffer
+      "bd"  'bury-buffer
+      "bp"  'me/alternate-buffer
+      "bk"  'kill-this-buffer
+      "bK"  'kill-some-buffers
+      "B"   'ibuffer
+      "ea"  'align-regexp
+      "eA"  'align
+      "er"  'query-replace
+      "fB"  'bookmark-set
+      "ff"  'find-file
+      "fs"  'save-buffer
+      "fd"  'dired
+      "fS"  'me/save-all-unsaved
+      "fee" 'me/open-config
+      "fer" 'me/reload-emacs-config
+      "feq" 'save-buffers-kill-emacs
+      "feQ" 'kill-emacs
+      "xp"  'check-parens
+      "xe"  'eval-last-sexp
+      "xb"  'eval-buffer)
+
+    (leader-map "C-h" '(which-key-C-h-dispatch :wk t))
+    (local-leader-map "C-h" '(which-key-C-h-dispatch :wk t))
+
+    (general-def
+      "C-v" 'me/scroll-half-page-down
+      "M-v" 'me/scroll-half-page-up)
+
+    ;; Remaps
+    (general-def with-editor-mode-map
+      [remap save-buffer] 'with-editor-finish)
+
+
+    ))
 
 (use-package ediff
   :straight nil
@@ -1264,6 +1270,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
       "op" 'org-set-property)
 
     (local-leader-map org-mode-map
+      "p" 'org-set-property
       "s" '(:ignore t :wk "search")
       "T" '(:ignore t :wk "tables")
       "Ti" 'org-table-field-info
@@ -1272,24 +1279,34 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
       "id" 'me/insert-timestamp
       "is" 'org-insert-structure-template
       "e" '(:ignore t :wk "edit")
-      "es" 'org-sort)
+      "es" 'org-sort
+      "sh" 'org-ql-find-heading
+      "sm" 'org-match-sparse-tree
+      "sM" 'org-tags-sparse-tree
+      "st" 'org-sparse-tree
+      "sT" 'org-ql-sparse-tree)
 
     (general-def '(motion normal) org-mode-map
       "gt" 'org-toggle-heading
       "gT" 'org-ctrl-c-minus)
 
-    (general-def '(motion normal insert) org-mode-map
-      ;; "M-<return>" 'org-insert-subheading
-      "s-<return>" 'org-insert-todo-heading-respect-content
-      "H-t" 'org-insert-todo-subheading)
+
+    (defun me/org-insert-subheading ()
+      (interactive)
+      (progn
+        (call-interactively #'org-insert-subheading)
+        (call-interactively #'evil-insert-state)))
+
+    (general-def '(motion normal) org-mode-map
+      "M-S-RET"      #'evil-org-org-insert-todo-heading-respect-content-below
+      "M-S-<return>" #'evil-org-org-insert-todo-heading-respect-content-below
+      "M-RET"      #'me/org-insert-subheading
+      "M-<return>" #'me/org-insert-subheading)
 
     ;; Orgql
     (with-eval-after-load 'org-ql
       (local-leader-map org-mode-map
         "sh" 'org-ql-find-heading
-        "sm" 'org-match-sparse-tree
-        "sM" 'org-tags-sparse-tree
-        "st" 'org-sparse-tree
         "sT" 'org-ql-sparse-tree))
 
     ;; Consult
@@ -1344,7 +1361,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
     (setq-default org-enforce-todo-dependencies t)
 
     ;; Archiving ;;
-    (setq org-archive-location (concat me/org-archive-file "::datetree/"))
+    (setq org-archive-location (concat me/org-archive-file "::* From %s"))
     (defun me/org-archive-done-tasks ()
       (interactive)
       (org-map-entries
@@ -1482,7 +1499,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
     ;; Open links in current window
     (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file)
-    (setq org-agenda-files '("~/Org/todo.org" "~/Org/notes/projects/" "~/Org/notes/permanent/" "~/Org/notes/fleeting" "~/Org/notes/inbox.org"))
+    (setq org-agenda-files '("~/Org/todo.org" "~/Org/notes/"))
     ;;(directory-files-recursively "~/Org/" "^[a-z0-9]*.org$")
     (setq org-agenda-start-on-weekday nil)
     (setq org-agenda-start-with-log-mode t)
@@ -1752,6 +1769,51 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
   (progn
     (require 'org-roam-dailies)
 
+    (defun me/org-roam-capture-inbox ()
+      (interactive)
+      (org-roam-capture- :node (org-roam-node-create)
+                         :templates '(("i" "inbox" plain "* %?\n:PROPERTIES:\n:CREATED: %U\n:CATEGORY: %^{category||calendar|computer|emacs|gaming|inbox|personal|programming|work}\n:END:\n\n\n** Related\n"
+                                       :if-new (file+head "inbox.org" "#+title: Inbox\n")))))
+
+    (defun me/org-roam-filter-by-tag (tag-name)
+      (lambda (node)
+        (member tag-name (org-roam-node-tags node))))
+
+    (defun me/org-roam-list-notes-by-tag (tag-name)
+      (mapcar #'org-roam-node-file
+              (seq-filter
+               (me/org-roam-filter-by-tag tag-name)
+               (org-roam-node-list))))
+
+    (defun me/org-roam-project-finalize-hook ()
+      "Adds the captured project file to `org-agenda-files' if the
+    capture was not aborted."
+      ;; Remove the hook since it was added temporarily
+      (remove-hook 'org-capture-after-finalize-hook #'me/org-roam-project-finalize-hook)
+
+      ;; Add project file to the agenda list if the capture was confirmed
+      (unless org-note-abort
+        (with-current-buffer (org-capture-get :buffer)
+          (add-to-list 'org-agenda-files (buffer-file-name)))))
+
+    (defun me/org-roam-find-project ()
+      (interactive)
+      ;; Add the project file to the agenda after capture is finished
+      (add-hook 'org-capture-after-finalize-hook #'me/org-roam-project-finalize-hook)
+
+      ;; Select a project file to open, creating it if necessary
+      (org-roam-node-find
+       nil
+       nil
+       (me/org-roam-filter-by-tag "project")
+       :templates
+       '(("P" "project" plain
+          "\n* Tasks\n\n** TODO Add initial tasks\n\n* Dates\n\n"
+          :if-new (file+head "${slug}--%<%Y%m%d-%H%M%S>.org"
+                             ":PROPERTIES:\n:CREATED: %U\n:CATEGORY: %^{category||calendar|computer|emacs|gaming|inbox|personal|programming|work}\n:END:\n#+title: ${title}\n#+filetags: :project:\n")
+          :unnarrowed t
+          :empty-lines-before 1))))
+
     (defun me/org-roam-node-insert-immediate (arg &rest args)
       (interactive "P")
       (let ((args (cons arg args))
@@ -1760,18 +1822,21 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
         (apply #'org-roam-node-insert args)))
 
     (leader-map
-      "r"  '(:ignore t :wk "roam")
-      "rt" 'org-roam-buffer-toggle
-      "rf" 'org-roam-node-find
-      "rg" 'org-roam-graph
-      "ri" 'org-roam-node-insert
-      "rI" 'me/org-roam-node-insert-immediate
-      "r." 'org-id-get-create
-      "rw" 'org-roam-extract-subtree
-      "Tr" 'org-roam-buffer-toggle
-      "c" 'org-roam-capture
-      "j" '(org-roam-dailies-capture-today :wk "journal")
-      "d" '(:keymap org-roam-dailies-map :wk "dailies"))
+      "i"  #'me/org-roam-capture-inbox
+      "r"  #'(:ignore t :wk "roam")
+      "ru" #'org-roam-unlinked-references-section
+      "rt" #'org-roam-buffer-toggle
+      "rf" #'org-roam-node-find
+      "rg" #'org-roam-graph
+      "ri" #'org-roam-node-insert
+      "rI" #'me/org-roam-node-insert-immediate
+      "rp" #'me/org-roam-find-project
+      "r." #'org-id-get-create
+      "rw" #'org-roam-extract-subtree
+      "Tr" #'org-roam-buffer-toggle
+      "c" #'org-roam-capture
+      "j" #'(org-roam-dailies-capture-today :wk "journal")
+      "d" #'(:keymap org-roam-dailies-map :wk "dailies"))
 
     (general-def org-roam-dailies-map
       "Y" 'org-roam-dailies-capture-yesterday
@@ -1786,40 +1851,39 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
         (if (string= category (file-name-base (org-roam-node-file node)))
             "" ; or return the current title, e.g. (org-roam-node-title node)
           category)))
-
-
     (setq org-roam-node-display-template
           (concat "${title:30} " "${category:10} " (propertize "${tags:30}" 'face 'org-tag)))
+
     (setq org-roam-mode-sections '(org-roam-backlinks-section org-roam-reflinks-section))
 
     ;; Capture ;;
-    (setq org-roam-extract-new-file-path "permanent/${slug}--%<%Y%m%d-%H%M%S>.org")
+    (setq org-roam-extract-new-file-path "${slug}--%<%Y%m%d-%H%M%S>.org")
     (setq org-roam-dailies-capture-templates
           '(("d" "default" entry "* %<%I:%M %p>: %?"
-             :if-new (file+head "%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d>\n\n"))))
+             :if-new (file+head "%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d>\n#+filetags: :daily:\n"))))
 
     (setq org-roam-capture-templates
-          '(("d" "fleeting" plain
-             "\n%?\n* Related\n"
-             :target (file+head "fleeting/${slug}--%<%Y%m%d-%H%M%S>.org"
-                                "#+TITLE: ${title}\n#+FILETAGS: \n#+CATEGORY: %^{category||calendar|computer|emacs|gaming|inbox|personal|programming|work}\n\n")
-             :unnarrowed t
-             :empty-lines-before 1)
+          '(("d" "inbox" plain "* %?\n:PROPERTIES:\n:CREATED: %U\n:CATEGORY: %^{category||calendar|computer|emacs|gaming|inbox|personal|programming|work}\n:END:\n\n\n** Related\n"
+             :if-new (file+head "inbox.org" "#+title: Inbox\n"))
             ("r" "reference" plain
-             "\n%?"
-             :target (file+head "reference/${slug}--%<%Y%m%d-%H%M%S>.org"
-                                "#+TITLE: ${title}\n#+FILETAGS: \n#+CATEGORY: %^{category||calendar|computer|emacs|gaming|inbox|personal|programming|work}\n\n")
+             "\n%?\n* Related"
+             :if-new (file+head "${slug}--%<%Y%m%d-%H%M%S>.org"
+                                ":PROPERTIES:\n:CREATED: %U\n:CATEGORY: %^{category||calendar|computer|emacs|gaming|inbox|personal|programming|work}\n:END:\n#+title: ${title}\n#+filetags: :reference:\n")
              :unnarrowed t
              :empty-lines-before 1)
-            ("P" "project" plain "\n* Tasks\n\n** TODO Add initial tasks\n\n* Dates\n\n"
-             :if-new (file+head "projects/${slug}--%<%Y%m%d-%H%M%S>.org" "#+TITLE: ${title}\n#+FILETAGS: :project:\n#+CATEGORY: %^{category||calendar|computer|emacs|gaming|inbox|personal|programming|work}\n\n")
+            ("P" "project" plain
+             "\n* Tasks\n\n** TODO Add initial tasks\n\n* Dates\n\n"
+             :if-new (file+head "${slug}--%<%Y%m%d-%H%M%S>.org"
+                                ":PROPERTIES:\n:CREATED: %U\n:CATEGORY: %^{category||calendar|computer|emacs|gaming|inbox|personal|programming|work}\n:END:\n#+title: ${title}\n#+filetags: :project:\n")
              :unnarrowed t
              :empty-lines-before 1)
-            ("p" "permanent" plain "\n%?\n* Related\n"
-             :if-new (file+head "permanent/${slug}--%<%Y%m%d-%H%M%S>.org"
-                                "#+TITLE: ${title}\n#+FILETAGS: \n#+CATEGORY: %^{category||calendar|computer|emacs|gaming|inbox|personal|programming|work}\n\n")
+            ("t" "topic" plain
+             "\n%?\n* Related"
+             :if-new (file+head "${slug}--%<%Y%m%d-%H%M%S>.org"
+                                ":PROPERTIES:\n:CREATED: %U\n:CATEGORY: %^{category||calendar|computer|emacs|gaming|inbox|personal|programming|work}\n:END:\n#+title: ${title}\n#+filetags: :topic:\n")
              :unnarrowed t
              :empty-lines-before 1)))
+
 
     (org-roam-db-autosync-mode)))
 
@@ -1919,6 +1983,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
     (leader-map
       "rF" 'consult-org-roam-file-find
       "rb" 'consult-org-roam-backlinks
+      "rB" 'consult-org-roam-forward-links
       "rs" 'consult-org-roam-search)
 
     (consult-customize
@@ -2250,22 +2315,24 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
   (org-wild-notifier-mode))
 
 (use-package doom-modeline
-  :init (doom-modeline-mode 1)
-  :custom ((doom-modeline-bar-width 1)
-           (doom-modeline-minor-modes nil)
-           (doom-modeline-buffer-file-name-style 'auto)
-           (doom-modeline-minor-modes nil)
-           (doom-modeline-modal-icon t)
-           (doom-modeline-persp-name t)
-           (doom-modeline-display-default-persp-name t)
-           (doom-modeline-persp-icon nil)
-           (doom-modeline-buffer-encoding nil))
+  :init
+  (doom-modeline-mode 1)
+  (setq doom-modeline-bar-width 1
+        doom-modeline-minor-modes nil
+        doom-modeline-buffer-file-name-style 'auto
+        doom-modeline-minor-modes nil
+        doom-modeline-modal-icon t
+        doom-modeline-persp-name t
+        doom-modeline-display-default-persp-name t
+        doom-modeline-persp-icon nil
+        doom-modeline-buffer-encoding nil)
   :config
   ;; This configuration to is fix a bug where certain windows would not display
   ;; their full content due to the overlapping modeline
   (advice-add #'fit-window-to-buffer :before (lambda (&rest _) (redisplay t))))
 
 (with-eval-after-load 'perspective
+  (progn
     ;; First remove the advice and hooks
     (general-remove-hook (list 'persp-renamed-functions 'persp-activated-functions 'find-file-hook 'buffer-list-update-hook) #'doom-modeline-update-persp-name)
     (advice-remove #'lv-message #'doom-modeline-update-persp-name)
@@ -2295,4 +2362,4 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
     ;; Add hooks
     (general-add-hook (list 'persp-switch-hook 'persp-activated-hook 'persp-after-rename-hook 'persp-state-after-save-hook 'find-file-hook 'buffer-list-update-hook) #'me/doom-modeline-update-persp-name)
-    (advice-add #'lv-message :after #'doom-modeline-update-persp-name))
+    (advice-add #'lv-message :after #'doom-modeline-update-persp-name)))
