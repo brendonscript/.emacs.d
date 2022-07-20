@@ -299,9 +299,7 @@
     ;; Behavior ;;
     (setq require-final-newline t)
     (setq show-paren-delay 0.0)
-    (global-set-key [remap quit-window] 'me/quit-window-force)
-    ;; (global-set-key [remap kill-buffer] 'kill-buffer-and-its-windows)
-    ;; (global-set-key [remap quit-window] '(quit-window t))
+    (global-set-key [remap quit-window] #'me/quit-window-force)
 
     ;; Confirmations
     (setq confirm-kill-emacs 'y-or-n-p)
@@ -948,6 +946,49 @@ play well with `evil-mc'."
                        #'consult-completion-in-region
                      #'completion--in-region)
                    args)))))
+
+(use-package consult-notes
+  :after consult
+  :straight (:type git :host github :repo "mclear-tools/consult-notes")
+  :commands (consult-notes
+             consult-notes-search-in-all-notes
+             consult-notes-org-roam-find-node
+             consult-notes-org-roam-find-node-relation)
+  :config
+  (progn
+    (setq consult-notes-sources
+          '(("Roam"  ?r  "~/Org/notes")))
+    (consult-notes-org-roam-mode)
+
+    (with-eval-after-load 'embark
+      (defun consult-notes-open-dired (cand)
+        "Open notes directory dired with point on file CAND."
+        (interactive "fNote: ")
+        ;; dired-jump is in dired-x.el but is moved to dired in Emacs 28
+        (dired-jump nil cand))
+
+      (defun consult-notes-marked (cand)
+        "Open a notes file CAND in Marked 2.
+Marked 2 is a mac app that renders markdown."
+        (interactive "fNote: ")
+        (call-process-shell-command (format "open -a \"Marked 2\" \"%s\"" (expand-file-name cand))))
+
+      (defun consult-notes-grep (cand)
+        "Run grep in directory of notes file CAND."
+        (interactive "fNote: ")
+        (consult-grep (file-name-directory cand)))
+
+      (embark-define-keymap consult-notes-map
+                            "Keymap for Embark notes actions."
+                            :parent embark-file-map
+                            ("d" consult-notes-dired)
+                            ("g" consult-notes-grep)
+                            ("m" consult-notes-marked))
+
+      (add-to-list 'embark-keymap-alist `(,consult-notes-category . consult-notes-map))
+
+      ;; make embark-export use dired for notes
+      (setf (alist-get consult-notes-category embark-exporters-alist) #'embark-export-dired))))
 
 (use-package orderless
   :config
@@ -1892,32 +1933,53 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
                    :host github
                    :type git)
   :after (org-roam)
-  ;; this is necessary if use-package-always-defer is true
+  :init
+  (setq delve-storage-paths (no-littering-expand-var-file-name "delve"))
+  (setq delve-minor-mode-prefix-key "M-n")
   :demand t
-  :hook (org-roam-mode . delve--maybe-activate-minor-mode)
-  :general
-  (leader-map
-    "rd" 'delve)
   :config
   (progn
-    ;; (evil-set-initial-state 'delve-mode 'normal)
-    (general-def '(normal motion insert) delve-mode-map
-      "<return>" #'delve--key--toggle-preview
-      "<tab>" #'delve-expand-toggle-sublist
-      "gr" #'delve-revert
-      "sm" #'delve-sort-buffer-by-mtime
-      "sa" #'delve-sort-buffer-by-atime
-      "sc" #'delve-sort-buffer-by-ctime
-      "<right>" #'delve-expand-insert-tolinks
-      "<left>"  #'delve-expand-insert-backlinks
-      "c" #'delve-collect
-      "q" #'delve-kill-buffer)
+    (leader-map
+      "rd" 'delve)
+    (evil-set-initial-state 'delve-mode 'emacs)
+    (general-def 'emacs delve-mode-map
+      "j" #'next-line
+      "k" #'previous-line
+      [remap bury-buffer] #'me/quit-window-force)
+    ;; (general-def '(normal motion) delve-mode-map
+    ;;   "<return>" #'delve--key--toggle-preview
+    ;;   "<tab>" #'delve--key--tab
+    ;;   "i" #'delve--key--insert-query-or-pile
+    ;;   "gr" #'delve--key--sync
+    ;;   "v" #'delve-compact-view-mode
+    ;;   "p" #'delve--key--yank
+    ;;   "F" #'delve-find-storage-file
+    ;;   "S" #'delve-write-buffer
+    ;;   "s" #'delve-save-buffer
+    ;;   "q" #'me/quit-window-force
+    ;;   "<delete>" #'delve--key--multi-delete
+    ;;   "E" #'delve--node-transient-key
+    ;;   "gh" #'delve--key--insert-heading
+    ;;   "c" #'delve--key--collect-into-buffer
+    ;;   "C" #'delve--key--collect-into-pile
+    ;;   [remap org-roam-buffer-toggle] #'delve--key--roam
+    ;;   "o" #'delve--key--open-zettel
+    ;;   "C-l" #'delve--key--fromlinks
+    ;;   "f" #'delve--key--fromlinks
+    ;;   "b" #'delve--key--backlinks
+    ;;   "C-h" #'delve--key--backlinks
+    ;;   "t" #'delve--key--insert-tagged
+    ;;   "T" #'delve--key--insert-node-by-tags
+    ;;   "gs" #'delve--key--sort
+    ;;   "+" #'delve--key--add-tags
+    ;;   "-" #'delve--key--remove-tags)
 
-    (setq delve-storage-paths (no-littering-expand-var-file-name "delve"))
+
     ;; set meaningful tag names for the dashboard query
-    (setq delve-dashboard-tags '("games" "emacs" "org" "linux"))
+    (setq delve-dashboard-tags '("games" "topic" "fleeting" "project" "inbox" "reference"))
     ;; optionally turn on compact view as default
     (add-hook #'delve-mode-hook #'delve-compact-view-mode)
+    (add-hook 'org-roam-mode-hook 'delve--maybe-activate-minor-mode)
     ;; turn on delve-minor-mode when Org Roam file is opened:
     (delve-global-minor-mode)))
 
@@ -2021,7 +2083,13 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
   :custom
   (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
   :config
-  (add-hook 'with-editor-mode-hook #'evil-insert-state))
+  (progn
+    (defun me/magit-quit ()
+      (interactive)
+      (magit-mode-bury-buffer t))
+    (general-def magit-mode-map
+      [remap magit-mode-bury-buffer] #'me/magit-quit)
+    (add-hook 'with-editor-mode-hook #'evil-insert-state)))
 
 ;; NOTE: Make sure to configure a GitHub token before using this package!
 ;; - https://magit.vc/manual/forge/Token-Creation.html#Token-Creation
