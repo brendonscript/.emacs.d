@@ -1883,7 +1883,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
       "Y" 'org-roam-dailies-capture-yesterday
       "T" 'org-roam-dailies-capture-tomorrow)
 
-    (setq org-roam-dailies-directory (concat org-roam-directory "/journals"))
+    (setq org-roam-dailies-directory org-roam-directory)
     (setq org-roam-completion-everywhere nil)
 
     (cl-defmethod org-roam-node-category ((node org-roam-node))
@@ -1925,7 +1925,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
              :unnarrowed t
              :empty-lines-before 1)))
 
-
+    (setq org-id-extra-files (org-roam--list-files org-roam-directory))
     (org-roam-db-autosync-mode)))
 
 (use-package delve
@@ -2297,11 +2297,14 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
 (use-package markdown-mode
   :mode ("\\.md\\'" . markdown-mode)
-  :custom (markdown-wiki-link-search-type 'project)
+  :custom (markdown-wiki-link-search-type '(sub-directories parent-directories))
   :init
   (setq markdown-fontify-code-blocks-natively t)
   (setq markdown-enable-wiki-links t)
   (setq markdown-wiki-link-fontify-missing t))
+
+(use-package taskpaper-mode
+  :mode ("\\.todo\\'" . taskpaper-mode))
 
 (use-package vterm
   :commands vterm

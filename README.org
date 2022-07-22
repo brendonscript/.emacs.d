@@ -2177,7 +2177,7 @@ You can also use =M-x auto-package-update-now= to update right now!
         "Y" 'org-roam-dailies-capture-yesterday
         "T" 'org-roam-dailies-capture-tomorrow)
 
-      (setq org-roam-dailies-directory (concat org-roam-directory "/journals"))
+      (setq org-roam-dailies-directory org-roam-directory)
       (setq org-roam-completion-everywhere nil)
 
       (cl-defmethod org-roam-node-category ((node org-roam-node))
@@ -2219,7 +2219,7 @@ You can also use =M-x auto-package-update-now= to update right now!
                :unnarrowed t
                :empty-lines-before 1)))
 
-
+      (setq org-id-extra-files (org-roam--list-files org-roam-directory))
       (org-roam-db-autosync-mode)))
 #+end_src
 
@@ -2702,11 +2702,18 @@ You can also use =M-x auto-package-update-now= to update right now!
 #+begin_src emacs-lisp
   (use-package markdown-mode
     :mode ("\\.md\\'" . markdown-mode)
-    :custom (markdown-wiki-link-search-type 'project)
+    :custom (markdown-wiki-link-search-type '(sub-directories parent-directories))
     :init
     (setq markdown-fontify-code-blocks-natively t)
     (setq markdown-enable-wiki-links t)
     (setq markdown-wiki-link-fontify-missing t))
+#+end_src
+
+** taskpaper-mode
+
+#+begin_src emacs-lisp
+  (use-package taskpaper-mode
+    :mode ("\\.todo\\'" . taskpaper-mode))
 #+end_src
 
 ** vterm
