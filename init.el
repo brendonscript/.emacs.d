@@ -320,7 +320,8 @@
                     treemacs-mode-hook
                     eshell-mode-hook
                     org-agenda-mode-hook
-                    vterm-mode-hook))
+                    vterm-mode-hook
+                    dired-mode-hook))
       (add-hook mode (lambda () (display-line-numbers-mode 0))))
     (global-display-line-numbers-mode 1)
 
@@ -946,49 +947,6 @@ play well with `evil-mc'."
                        #'consult-completion-in-region
                      #'completion--in-region)
                    args)))))
-
-(use-package consult-notes
-  :after consult
-  :straight (:type git :host github :repo "mclear-tools/consult-notes")
-  :commands (consult-notes
-             consult-notes-search-in-all-notes
-             consult-notes-org-roam-find-node
-             consult-notes-org-roam-find-node-relation)
-  :config
-  (progn
-    (setq consult-notes-sources
-          '(("Roam"  ?r  "~/Org/notes")))
-    (consult-notes-org-roam-mode)
-
-    (with-eval-after-load 'embark
-      (defun consult-notes-open-dired (cand)
-        "Open notes directory dired with point on file CAND."
-        (interactive "fNote: ")
-        ;; dired-jump is in dired-x.el but is moved to dired in Emacs 28
-        (dired-jump nil cand))
-
-      (defun consult-notes-marked (cand)
-        "Open a notes file CAND in Marked 2.
-Marked 2 is a mac app that renders markdown."
-        (interactive "fNote: ")
-        (call-process-shell-command (format "open -a \"Marked 2\" \"%s\"" (expand-file-name cand))))
-
-      (defun consult-notes-grep (cand)
-        "Run grep in directory of notes file CAND."
-        (interactive "fNote: ")
-        (consult-grep (file-name-directory cand)))
-
-      (embark-define-keymap consult-notes-map
-                            "Keymap for Embark notes actions."
-                            :parent embark-file-map
-                            ("d" consult-notes-dired)
-                            ("g" consult-notes-grep)
-                            ("m" consult-notes-marked))
-
-      (add-to-list 'embark-keymap-alist `(,consult-notes-category . consult-notes-map))
-
-      ;; make embark-export use dired for notes
-      (setf (alist-get consult-notes-category embark-exporters-alist) #'embark-export-dired))))
 
 (use-package orderless
   :config
@@ -1625,152 +1583,6 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 (use-package org-contrib
   :after org)
 
-(use-package org-super-agenda
-  :after (evil evil-collection evil-org org)
-  :config
-  (progn
-    (org-super-agenda-mode 1)
-    (general-unbind org-super-agenda-header-map
-      "z"
-      "j"
-      "k"
-      "g"
-      "SPC")
-
-    (setq org-super-agenda-groups '((:habit t :order 98)
-                                    (:name "In Progress"
-                                           :todo "PROG")
-                                    (:name "Next to do"
-                                           :todo "NEXT")
-                                    (:name "Waiting"
-                                           :todo "WAIT")
-                                    (:name "Due Today"
-                                           :deadline today)
-                                    (:name "Due Soon"
-                                           :deadline future)
-                                    (:name "Overdue"
-                                           :deadline past)
-                                    (:name "Today"
-                                           :scheduled today
-                                           :date today)
-                                    (:name "Scheduled Earlier"
-                                           :scheduled past)
-                                    (:name "Future"
-                                           :scheduled future)
-                                    (:name "Emacs"
-                                           :category "emacs")
-                                    (:name "Computer"
-                                           :category "computer")
-                                    (:name "Gaming"
-                                           :category "gaming")
-                                    (:name "Work"
-                                           :category "work")
-                                    (:name "Inbox"
-                                           :category "inbox"
-                                           :order 98)
-                                    (:auto-category t :order 99)))
-
-    (setq org-agenda-custom-commands '(("a" "POG AGENDA"
-                                        ((agenda "" ((org-agenda-span 'day)
-                                                     (org-agenda-log-mode t)
-                                                     (org-super-agenda-groups
-                                                      '((:order-multi (99
-                                                                       (:name "Clocked Today" :log clock)
-                                                                       (:name "Done Today" :todo ("DONE" "CANCELLED") :and (:log t))))
-                                                        (:name "In Progress" :todo "PROG")
-                                                        (:name "Next" :todo "NEXT")
-                                                        (:name "Waiting"
-                                                               :todo "WAIT")
-                                                        (:name "Overdue" :deadline past)
-                                                        (:name "Due Today" :deadline today)
-                                                        (:name "Today"
-                                                               :scheduled today
-                                                               :date today)
-                                                        (:name "Scheduled Earlier" :scheduled past)))))
-                                         (alltodo "" ((org-agenda-overriding-header "\nAll Tasks")
-                                                      (org-super-agenda-groups
-                                                       '((:discard (:habit t))
-                                                         (:discard (:tag "ARCHIVE"))
-                                                         (:name "Someday"
-                                                                :todo "SOMEDAY"
-                                                                :order 98)
-                                                         (:name "In Progress"
-                                                                :todo "PROG")
-                                                         (:name "Next to do"
-                                                                :todo "NEXT")
-                                                         (:name "Waiting"
-                                                                :todo "WAIT")
-                                                         (:name "Due Soon"
-                                                                :deadline future)
-                                                         (:name "Future"
-                                                                :scheduled future)
-                                                         (:name "Inbox"
-                                                                :category "inbox")
-                                                         (:name "Emacs"
-                                                                :category "emacs")
-                                                         (:name "Computer"
-                                                                :category "computer")
-                                                         (:name "Gaming"
-                                                                :category "gaming")
-                                                         (:name "Work"
-                                                                :category "work")
-                                                         (:auto-category t :order 99)))))))))))
-
-(use-package org-ql
-  :after org
-  :config
-  (progn
-    (leader-map
-      "os" 'org-ql-search
-      "ov" 'org-ql-view
-      "To" 'org-ql-view-sidebar
-      "or" 'org-ql-view-recent-items
-      "of" 'org-ql-find
-      "oP" 'org-ql-find-path)
-
-    (setq org-ql-views nil)
-    (evil-define-key 'motion org-ql-view-list-map (kbd "RET") 'org-ql-view-switch)
-    ;; Add these to a hydra or something
-    (add-to-list 'org-ql-views '("Inbox" :buffers-files org-agenda-files :query
-                                 (and
-                                  (not
-                                   (done))
-                                  (category "inbox"))
-                                 :sort
-                                 (date priority)
-                                 :super-groups org-super-agenda-groups :title "Inbox Items"))
-
-    (add-to-list 'org-ql-views '("Super View" :buffers-files org-agenda-files :query
-                                 (and
-                                  (not
-                                   (done))
-                                  (and
-                                   (todo)))
-                                 :sort
-                                 (date priority)
-                                 :super-groups org-super-agenda-groups :title "SUPER VIEW"))
-
-    (add-to-list 'org-ql-views '("Work Super View" :buffers-files org-agenda-files :query
-                                 (and
-                                  (category "work")
-                                  (todo)
-                                  (not
-                                   (done)))
-                                 :sort
-                                 (date priority)
-                                 :super-groups org-super-agenda-groups :title "SUPER VIEW"))
-
-    (add-to-list 'org-ql-views '("NEXT tasks" :buffers-files org-agenda-files :query
-                                 (todo "NEXT")
-                                 :sort
-                                 (date priority)
-                                 :super-groups org-super-agenda-groups :title "Overview: NEXT tasks"))
-
-    (add-to-list 'org-ql-views '("Archive" :buffers-files org-agenda-files :query
-                                 (done)
-                                 :sort
-                                 (date priority)))))
-
 (use-package org-modern
   :after org
   :init
@@ -1791,142 +1603,6 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
                 ("DONE" :inverse-video t :weight semibold :foreground "darkgrey" :inherit (org-modern-label))
                 ("CANCELLED" :inverse-video t :weight semibold :foreground "darkgrey" :inherit (org-modern-label)))))
   (global-org-modern-mode))
-
-(use-package org-roam
-  :after org
-  :demand t
-  :custom
-  (org-roam-directory (file-truename (concat me/org-dir "notes")))
-  :init
-  (add-to-list 'display-buffer-alist
-               '("\\*org-roam\\*"
-                 (display-buffer-in-side-window)
-                 (side . right)
-                 (slot . 0)
-                 (window-width . 0.33)
-                 (window-parameters . ((no-other-window . nil)
-                                       (no-delete-other-windows . t)))))
-  :config
-  (progn
-    (require 'org-roam-dailies)
-
-    (defun me/org-roam-capture-inbox ()
-      (interactive)
-      (org-roam-capture- :node (org-roam-node-create)
-                         :templates '(("i" "inbox" plain "* %?\n:PROPERTIES:\n:CREATED: %U\n:CATEGORY: %^{category||calendar|computer|emacs|gaming|inbox|personal|programming|work}\n:END:\n\n\n** Related\n"
-                                       :if-new (file+head "inbox.org" "#+title: Inbox\n")))))
-
-    (defun me/org-roam-filter-by-tag (tag-name)
-      (lambda (node)
-        (member tag-name (org-roam-node-tags node))))
-
-    (defun me/org-roam-list-notes-by-tag (tag-name)
-      (mapcar #'org-roam-node-file
-              (seq-filter
-               (me/org-roam-filter-by-tag tag-name)
-               (org-roam-node-list))))
-
-    (defun me/org-roam-project-finalize-hook ()
-      "Adds the captured project file to `org-agenda-files' if the
-    capture was not aborted."
-      ;; Remove the hook since it was added temporarily
-      (remove-hook 'org-capture-after-finalize-hook #'me/org-roam-project-finalize-hook)
-
-      ;; Add project file to the agenda list if the capture was confirmed
-      (unless org-note-abort
-        (with-current-buffer (org-capture-get :buffer)
-          (add-to-list 'org-agenda-files (buffer-file-name)))))
-
-    (defun me/org-roam-find-project ()
-      (interactive)
-      ;; Add the project file to the agenda after capture is finished
-      (add-hook 'org-capture-after-finalize-hook #'me/org-roam-project-finalize-hook)
-
-      ;; Select a project file to open, creating it if necessary
-      (org-roam-node-find
-       nil
-       nil
-       (me/org-roam-filter-by-tag "project")
-       :templates
-       '(("P" "project" plain
-          "\n* Tasks\n\n** TODO Add initial tasks\n\n* Dates\n\n"
-          :if-new (file+head "${slug}--%<%Y%m%d-%H%M%S>.org"
-                             ":PROPERTIES:\n:CREATED: %U\n:CATEGORY: %^{category||calendar|computer|emacs|gaming|inbox|personal|programming|work}\n:END:\n#+title: ${title}\n#+filetags: :project:\n")
-          :unnarrowed t
-          :empty-lines-before 1))))
-
-    (defun me/org-roam-node-insert-immediate (arg &rest args)
-      (interactive "P")
-      (let ((args (cons arg args))
-            (org-roam-capture-templates (list (append (car org-roam-capture-templates)
-                                                      '(:immediate-finish t)))))
-        (apply #'org-roam-node-insert args)))
-
-    (leader-map
-      "i"  #'me/org-roam-capture-inbox
-      "r"  #'(:ignore t :wk "roam")
-      "ru" #'org-roam-unlinked-references-section
-      "rt" #'org-roam-buffer-toggle
-      "rf" #'org-roam-node-find
-      "rg" #'org-roam-graph
-      "ri" #'org-roam-node-insert
-      "rI" #'me/org-roam-node-insert-immediate
-      "rp" #'me/org-roam-find-project
-      "r." #'org-id-get-create
-      "rw" #'org-roam-extract-subtree
-      "Tr" #'org-roam-buffer-toggle
-      "c" #'org-roam-capture
-      "j" #'(org-roam-dailies-capture-today :wk "journal")
-      "d" #'(:keymap org-roam-dailies-map :wk "dailies"))
-
-    (general-def org-roam-dailies-map
-      "Y" 'org-roam-dailies-capture-yesterday
-      "T" 'org-roam-dailies-capture-tomorrow)
-
-    (setq org-roam-dailies-directory org-roam-directory)
-    (setq org-roam-completion-everywhere nil)
-
-    (cl-defmethod org-roam-node-category ((node org-roam-node))
-      "Return the currently set category for the NODE."
-      (let ((category (cdr (assoc-string "CATEGORY" (org-roam-node-properties node)))))
-        (if (string= category (file-name-base (org-roam-node-file node)))
-            "" ; or return the current title, e.g. (org-roam-node-title node)
-          category)))
-    (setq org-roam-node-display-template
-          (concat "${title:30} " "${category:10} " (propertize "${tags:30}" 'face 'org-tag)))
-
-    (setq org-roam-mode-sections '(org-roam-backlinks-section org-roam-reflinks-section))
-
-    ;; Capture ;;
-    (setq org-roam-extract-new-file-path "${slug}--%<%Y%m%d-%H%M%S>.org")
-    (setq org-roam-dailies-capture-templates
-          '(("d" "default" entry "* %<%I:%M %p>: %?"
-             :if-new (file+head "%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d>\n#+filetags: :daily:\n"))))
-
-    (setq org-roam-capture-templates
-          '(("d" "inbox" plain "* %?\n:PROPERTIES:\n:CREATED: %U\n:CATEGORY: %^{category||calendar|computer|emacs|gaming|inbox|personal|programming|work}\n:END:\n\n\n** Related\n"
-             :if-new (file+head "inbox.org" "#+title: Inbox\n"))
-            ("r" "reference" plain
-             "\n%?\n* Related"
-             :if-new (file+head "${slug}--%<%Y%m%d-%H%M%S>.org"
-                                ":PROPERTIES:\n:CREATED: %U\n:CATEGORY: %^{category||calendar|computer|emacs|gaming|inbox|personal|programming|work}\n:END:\n#+title: ${title}\n#+filetags: :reference:\n")
-             :unnarrowed t
-             :empty-lines-before 1)
-            ("P" "project" plain
-             "\n* Tasks\n\n** TODO Add initial tasks\n\n* Dates\n\n"
-             :if-new (file+head "${slug}--%<%Y%m%d-%H%M%S>.org"
-                                ":PROPERTIES:\n:CREATED: %U\n:CATEGORY: %^{category||calendar|computer|emacs|gaming|inbox|personal|programming|work}\n:END:\n#+title: ${title}\n#+filetags: :project:\n")
-             :unnarrowed t
-             :empty-lines-before 1)
-            ("t" "topic" plain
-             "\n%?\n* Related"
-             :if-new (file+head "${slug}--%<%Y%m%d-%H%M%S>.org"
-                                ":PROPERTIES:\n:CREATED: %U\n:CATEGORY: %^{category||calendar|computer|emacs|gaming|inbox|personal|programming|work}\n:END:\n#+title: ${title}\n#+filetags: :topic:\n")
-             :unnarrowed t
-             :empty-lines-before 1)))
-
-    (setq org-id-extra-files (org-roam--list-files org-roam-directory))
-    (org-roam-db-autosync-mode)))
 
 (use-package delve
   :straight (:repo "publicimageltd/delve"
@@ -1982,89 +1658,6 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
     (add-hook 'org-roam-mode-hook 'delve--maybe-activate-minor-mode)
     ;; turn on delve-minor-mode when Org Roam file is opened:
     (delve-global-minor-mode)))
-
-(use-package pinboard
-  :general
-  (leader-map
-    "Tp" 'pinboard
-    "fP" 'pinboard-add-for-later)
-
-  (general-def '(motion normal) pinboard-mode-map
-    "A"          'pinboard-add
-    "D"          'pinboard-delete
-    "x"          'pinboard-edit
-    "y"          'pinboard-kill-url
-    "gr"         'pinboard-refresh
-    "r"          'pinboard-read
-    "s"          'pinboard-search
-    "t"          'pinboard-extend-tagged
-    "T"          'pinboard-tagged
-    "R"          'pinboard-toggle-read
-    "u"          'pinboard-unread
-    "U"          'pinboard-untagged
-    "v"          'pinboard-visit-pinboard
-    "C-<return>" 'pinboard-view
-    "RET"        'pinboard-open)
-
-  (local-leader-map pinboard-mode-map
-    "n"   'pinboard-add
-    "d"   'pinboard-delete
-    "e"   'pinboard-edit
-    "y"   'pinboard-kill-url
-    "g"   'pinboard-refresh
-    "r"   'pinboard-read
-    "s"   'pinboard-search
-    "t"   'pinboard-extend-tagged
-    "T"   'pinboard-tagged
-    "r"   'pinboard-toggle-read
-    "u"   'pinboard-unread
-    "U"   'pinboard-untagged
-    "v"   'pinboard-visit-pinboard
-    "SPC" 'pinboard-view)
-  :config
-  (progn
-    (defun org-pinboard-store-link ()
-      "Store a link taken from a pinboard buffer."
-      (when (eq major-mode 'pinboard-mode)
-        (pinboard-with-current-pin pin
-          (org-store-link-props
-           :type "pinboard"
-           :link (alist-get 'href pin)
-           :description (alist-get 'description pin)))))
-
-    (org-link-set-parameters "pinboard"
-                             :follow #'browse-url
-                             :store #'org-pinboard-store-link)))
-
-(use-package consult-org-roam
-  :after org-roam
-  :custom
-  (consult-org-roam-grep-func #'consult-ripgrep)
-  :config
-  (progn
-    (leader-map
-      "rF" 'consult-org-roam-file-find
-      "rb" 'consult-org-roam-backlinks
-      "rB" 'consult-org-roam-forward-links
-      "rs" 'consult-org-roam-search)
-
-    (consult-customize
-     consult-org-roam-forward-links
-     :preview-key (kbd "M-."))))
-
-(use-package org-pomodoro
-  :after org
-  :config
-  (progn
-    (leader-map
-      "oi" 'org-pomodoro
-      "oI" 'org-clock-in
-      "oo" 'org-clock-out)
-
-    (setq org-pomodoro-manual-break t)
-    (setq org-pomodoro-length 30)
-    (setq org-pomodoro-short-break-length 10)
-    (setq org-pomodoro-long-break-length 45)))
 
 (use-package visual-fill-column
   :preface
@@ -2299,12 +1892,28 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
   :mode ("\\.md\\'" . markdown-mode)
   :custom (markdown-wiki-link-search-type '(sub-directories parent-directories))
   :init
+  (setq markdown-link-space-sub-char " ")
+  (setq markdown-wiki-link-alias-first nil)
   (setq markdown-fontify-code-blocks-natively t)
   (setq markdown-enable-wiki-links t)
   (setq markdown-wiki-link-fontify-missing t))
 
-(use-package taskpaper-mode
-  :mode ("\\.todo\\'" . taskpaper-mode))
+(use-package obsidian
+  :ensure t
+  :demand t
+  :config
+  (obsidian-specify-path "~/Documents/BrendOS")
+  (global-obsidian-mode t)
+
+  (leader-map
+    "c" 'obsidian-capture)
+
+  (general-def obsidian-mode-map
+    "C-c C-o" 'obsidian-follow-link-at-point
+    "C-c C-l" 'obsidian-insert-wikilink)
+  :custom
+  ;; This directory will be used for `obsidian-capture' if set.
+  (obsidian-inbox-directory "Inbox"))
 
 (use-package vterm
   :commands vterm
@@ -2378,12 +1987,6 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
     (with-eval-after-load 'consult
       (consult-customize consult--source-buffer :hidden t :default nil)
       (add-to-list 'consult-buffer-sources persp-consult-source))))
-
-(use-package org-wild-notifier
-  :disabled t
-  :after org
-  :config
-  (org-wild-notifier-mode))
 
 (use-package doom-modeline
   :init

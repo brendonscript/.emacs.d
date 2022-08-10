@@ -405,7 +405,8 @@ You can also use =M-x auto-package-update-now= to update right now!
                       treemacs-mode-hook
                       eshell-mode-hook
                       org-agenda-mode-hook
-                      vterm-mode-hook))
+                      vterm-mode-hook
+                      dired-mode-hook))
         (add-hook mode (lambda () (display-line-numbers-mode 0))))
       (global-display-line-numbers-mode 1)
 
@@ -1173,10 +1174,11 @@ You can also use =M-x auto-package-update-now= to update right now!
                      args)))))
 #+end_src
 
-** consult-notes
+** *DISABLED* consult-notes
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   (use-package consult-notes
+    :disabled t
     :after consult
     :straight (:type git :host github :repo "mclear-tools/consult-notes")
     :commands (consult-notes
@@ -1904,10 +1906,11 @@ You can also use =M-x auto-package-update-now= to update right now!
     :after org)
 #+end_src
 
-** org-super-agenda
+** *DISABLED* org-super-agenda
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   (use-package org-super-agenda
+    :disabled t
     :after (evil evil-collection evil-org org)
     :config
     (progn
@@ -1999,10 +2002,11 @@ You can also use =M-x auto-package-update-now= to update right now!
                                                            (:auto-category t :order 99)))))))))))
 #+end_src
 
-** org-ql
+** *DISABLED* org-ql
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   (use-package org-ql
+    :disabled t
     :after org
     :config
     (progn
@@ -2083,10 +2087,11 @@ You can also use =M-x auto-package-update-now= to update right now!
     (global-org-modern-mode))
 #+end_src
 
-** org-roam
+** *DISABLED* org-roam
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   (use-package org-roam
+    :disabled t
     :after org
     :demand t
     :custom
@@ -2281,10 +2286,11 @@ You can also use =M-x auto-package-update-now= to update right now!
       (delve-global-minor-mode)))
 #+end_src
 
-** pinboard
+** *DISABLED* pinboard
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   (use-package pinboard
+    :disabled t
     :general
     (leader-map
       "Tp" 'pinboard
@@ -2338,10 +2344,11 @@ You can also use =M-x auto-package-update-now= to update right now!
                                :store #'org-pinboard-store-link)))
 #+end_src
 
-** consult-org-roam
+** *DISABLED* consult-org-roam
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   (use-package consult-org-roam
+    :disabled t
     :after org-roam
     :custom
     (consult-org-roam-grep-func #'consult-ripgrep)
@@ -2358,10 +2365,11 @@ You can also use =M-x auto-package-update-now= to update right now!
        :preview-key (kbd "M-."))))
 #+end_src
 
-** org-pomodoro
+** *DISABLED* org-pomodoro
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   (use-package org-pomodoro
+    :disabled t
     :after org
     :config
     (progn
@@ -2704,16 +2712,31 @@ You can also use =M-x auto-package-update-now= to update right now!
     :mode ("\\.md\\'" . markdown-mode)
     :custom (markdown-wiki-link-search-type '(sub-directories parent-directories))
     :init
+    (setq markdown-link-space-sub-char " ")
+    (setq markdown-wiki-link-alias-first nil)
     (setq markdown-fontify-code-blocks-natively t)
     (setq markdown-enable-wiki-links t)
     (setq markdown-wiki-link-fontify-missing t))
 #+end_src
 
-** taskpaper-mode
-
+** obsidian
 #+begin_src emacs-lisp
-  (use-package taskpaper-mode
-    :mode ("\\.todo\\'" . taskpaper-mode))
+  (use-package obsidian
+    :ensure t
+    :demand t
+    :config
+    (obsidian-specify-path "~/Documents/BrendOS")
+    (global-obsidian-mode t)
+
+    (leader-map
+      "c" 'obsidian-capture)
+
+    (general-def obsidian-mode-map
+      "C-c C-o" 'obsidian-follow-link-at-point
+      "C-c C-l" 'obsidian-insert-wikilink)
+    :custom
+    ;; This directory will be used for `obsidian-capture' if set.
+    (obsidian-inbox-directory "Inbox"))
 #+end_src
 
 ** vterm
@@ -2810,7 +2833,7 @@ You can also use =M-x auto-package-update-now= to update right now!
 
 ** *DISABLED* org-wild-notifier
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   (use-package org-wild-notifier
     :disabled t
     :after org
