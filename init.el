@@ -1902,18 +1902,27 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
   :ensure t
   :demand t
   :config
-  (obsidian-specify-path "~/Documents/BrendOS")
-  (global-obsidian-mode t)
+  (progn
+    (leader-map
+      "c" 'obsidian-capture
+      "os" 'obsidian-search
+      "oj" 'obsidian-jump
+      "ot" 'obsidian-tag-find)
 
-  (leader-map
-    "c" 'obsidian-capture)
+    (leader-map obsidian-mode-map
+      "ol" 'obsidian-insert-wikilink
+      "oL" 'obsidian-insert-link
+      "oo" 'obsidian-follow-link-at-point)
 
-  (general-def obsidian-mode-map
-    "C-c C-o" 'obsidian-follow-link-at-point
-    "C-c C-l" 'obsidian-insert-wikilink)
+    (general-def obsidian-mode-map
+      "C-c C-o" 'obsidian-follow-link-at-point
+      "C-c C-l" 'obsidian-insert-wikilink)
+
+    (obsidian-specify-path "~/Documents/BrendOS")
+    (global-obsidian-mode t))
   :custom
   ;; This directory will be used for `obsidian-capture' if set.
-  (obsidian-inbox-directory "Inbox"))
+  (obsidian-inbox-directory "• Encounters/• Unsorted"))
 
 (use-package vterm
   :commands vterm
