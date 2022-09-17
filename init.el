@@ -750,7 +750,7 @@ play well with `evil-mc'."
 (use-package projectile
   :ensure t
   :init
-  (setq projectile-project-search-path '("~/Code/" "~/Org/" "~/BrendOS/"))
+  (setq projectile-project-search-path '("~/Code/"))
   (projectile-mode +1)
   :config
   (progn
@@ -1243,11 +1243,11 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
 
   ;; Directories ;;
-  (defconst me/org-dir "~/Org/")
+  ;;(defconst me/org-dir "~/Org/")
 
   ;; Files ;;
-  (defconst me/org-todo-file (concat me/org-dir "todo.org"))
-  (defconst me/org-archive-file (concat me/org-dir "archive.org"))
+  ;; (defconst me/org-todo-file (concat me/org-dir "todo.org"))
+  ;; (defconst me/org-archive-file (concat me/org-dir "archive.org"))
   (defconst me/org-emacs-config-file (concat user-emacs-directory "README.org"))
 
   :config
@@ -1259,14 +1259,14 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
     (general-unbind org-mode-map
       "C-c ?" nil)
 
-    (leader-map
-      "t"  'org-capture
-      "a" 'org-agenda
-      "l"  'org-store-link
-      "L" 'org-insert-link
-      "fo" 'org-save-all-org-buffers
-      "oc" 'org-clock-goto
-      "op" 'org-set-property)
+    ;; (leader-map
+    ;;   "t"  'org-capture
+    ;;   "a" 'org-agenda
+    ;;   "l"  'org-store-link
+    ;;   "L" 'org-insert-link
+    ;;   "fo" 'org-save-all-org-buffers
+    ;;   "oc" 'org-clock-goto
+    ;;   "op" 'org-set-property)
 
     (local-leader-map org-mode-map
       "p" 'org-set-property
@@ -1341,7 +1341,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
 
     ;; Directories ;;
-    (setq org-directory me/org-dir)
+    ;;(setq org-directory me/org-dir)
 
     ;; Visuals ;;
     (setq org-ellipsis " ▼ ")
@@ -1360,7 +1360,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
     (setq-default org-enforce-todo-dependencies t)
 
     ;; Archiving ;;
-    (setq org-archive-location (concat me/org-archive-file "::* From %s"))
+    ;;(setq org-archive-location (concat me/org-archive-file "::* From %s"))
     (defun me/org-archive-done-tasks ()
       (interactive)
       (org-map-entries
@@ -1412,7 +1412,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
     ;; Refile ;;
     (setq org-refile-use-outline-path nil)
     (setq org-refile-allow-creating-parent-nodes 'confirm)
-    (setq org-refile-targets `((,(directory-files-recursively "~/Org/" "^[a-z0-9]*.org$") :maxlevel . 5)))
+    ;;(setq org-refile-targets `((,(directory-files-recursively "~/Org/" "^[a-z0-9]*.org$") :maxlevel . 5)))
 
 
     ;; Fonts ;;
@@ -1498,7 +1498,6 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
     ;; Open links in current window
     (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file)
-    (setq org-agenda-files '("~/Org/todo.org" "~/Org/notes/"))
     ;;(directory-files-recursively "~/Org/" "^[a-z0-9]*.org$")
     (setq org-agenda-start-on-weekday nil)
     (setq org-agenda-start-with-log-mode t)
