@@ -339,10 +339,10 @@ You can also use =M-x auto-package-update-now= to update right now!
       (set-buffer-file-coding-system 'utf-8)
 
       ;; Fonts ;;
-      (cond (IS-MAC (setq me/default-font-size 180) (setq me/default-variable-font-size 180))
+      (cond (IS-MAC (setq me/default-font-size 200) (setq me/default-variable-font-size 200))
             (IS-WINDOWS (setq me/default-font-size 90) (setq me/default-variable-font-size 90)))
-      (set-face-attribute 'default nil :font "Fira Code Retina" :height me/default-font-size)
-      (set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height me/default-font-size)
+      (set-face-attribute 'default nil :font "MonoLisa Custom" :height me/default-font-size)
+      (set-face-attribute 'fixed-pitch nil :font "MonoLisa Custom" :height me/default-font-size)
       (set-face-attribute 'variable-pitch nil :font "Cantarell" :height me/default-variable-font-size :weight 'regular)
       (global-font-lock-mode t)
 
@@ -404,7 +404,6 @@ You can also use =M-x auto-package-update-now= to update right now!
                       shell-mode-hook
                       treemacs-mode-hook
                       eshell-mode-hook
-                      org-agenda-mode-hook
                       vterm-mode-hook
                       dired-mode-hook))
         (add-hook mode (lambda () (display-line-numbers-mode 0))))
@@ -617,37 +616,18 @@ You can also use =M-x auto-package-update-now= to update right now!
         "C-S-h" 'dired-hide-dotfiles-mode)))
 #+end_src
 
-** IRC
-
-#+begin_src emacs-lisp
-  (use-package erc
-    :straight nil
-    :config
-    (setq erc-server "irc.libera.chat"
-          erc-nick "geoffery"
-          erc-user-full-name "Geoffery"
-          erc-autojoin-timing 'ident
-          erc-track-shorten-start 8
-          erc-autojoin-channels-alist '(("libera.chat" "#org-mode" "#evil-mode" "#emacs-beginners" "#emacs-til" "#emacs" "#linux" "#fedora" "#archlinux" "##rust" "##programming"))
-          erc-kill-buffer-on-part t
-          erc-auto-query 'bury
-          ;; Stop displaying channels in the mode line for no good reason.
-          erc-track-exclude-type '("JOIN" "KICK" "NICK" "PART" "QUIT" "MODE" "333" "353")
-          erc-hide-list '("JOIN" "PART" "QUIT" "KICK" "NICK" "MODE" "333" "353")))
-#+end_src
-
 * Packages
 ** doom-themes
 
 #+begin_src emacs-lisp
   (use-package doom-themes
     :init
-    (load-theme 'doom-snazzy t)
+    (load-theme 'doom-tokyo-night t)
     :config
     (progn
       (setq doom-themes-enable-bold t
             doom-themes-enable-italic t)
-      (setq doom-themes-treemacs-theme "doom-atom")
+      (setq doom-themes-treemacs-theme "doom-tokyo-night")
       (with-eval-after-load 'treemacs
         (doom-themes-treemacs-config))
       (with-eval-after-load 'org
@@ -808,9 +788,7 @@ You can also use =M-x auto-package-update-now= to update right now!
     (progn
       (add-hook 'org-mode-hook 'evil-org-mode)
       (add-hook 'evil-org-mode-hook
-                (lambda () (evil-org-set-key-theme)))
-      (require 'evil-org-agenda)
-      (evil-org-agenda-set-keys)))
+                (lambda () (evil-org-set-key-theme)))))
 #+end_src
 
 ** evil-commentary
@@ -1064,7 +1042,6 @@ You can also use =M-x auto-package-update-now= to update right now!
     :general
     (leader-map
       "SPC"	'consult-buffer
-      "sa"	'consult-org-agenda
       "so"	'consult-outline
       "sm"	'consult-mark
       "sl"	'consult-line
@@ -1172,54 +1149,6 @@ You can also use =M-x auto-package-update-now= to update right now!
                          #'consult-completion-in-region
                        #'completion--in-region)
                      args)))))
-#+end_src
-
-** *DISABLED* consult-notes
-
-#+begin_src emacs-lisp :tangle no
-  (use-package consult-notes
-    :disabled t
-    :after consult
-    :straight (:type git :host github :repo "mclear-tools/consult-notes")
-    :commands (consult-notes
-               consult-notes-search-in-all-notes
-               consult-notes-org-roam-find-node
-               consult-notes-org-roam-find-node-relation)
-    :config
-    (progn
-      (setq consult-notes-sources
-            '(("Roam"  ?r  "~/Org/notes")))
-      (consult-notes-org-roam-mode)
-
-      (with-eval-after-load 'embark
-        (defun consult-notes-open-dired (cand)
-          "Open notes directory dired with point on file CAND."
-          (interactive "fNote: ")
-          ;; dired-jump is in dired-x.el but is moved to dired in Emacs 28
-          (dired-jump nil cand))
-
-        (defun consult-notes-marked (cand)
-          "Open a notes file CAND in Marked 2.
-  Marked 2 is a mac app that renders markdown."
-          (interactive "fNote: ")
-          (call-process-shell-command (format "open -a \"Marked 2\" \"%s\"" (expand-file-name cand))))
-
-        (defun consult-notes-grep (cand)
-          "Run grep in directory of notes file CAND."
-          (interactive "fNote: ")
-          (consult-grep (file-name-directory cand)))
-
-        (embark-define-keymap consult-notes-map
-                              "Keymap for Embark notes actions."
-                              :parent embark-file-map
-                              ("d" consult-notes-dired)
-                              ("g" consult-notes-grep)
-                              ("m" consult-notes-marked))
-
-        (add-to-list 'embark-keymap-alist `(,consult-notes-category . consult-notes-map))
-
-        ;; make embark-export use dired for notes
-        (setf (alist-get consult-notes-category embark-exporters-alist) #'embark-export-dired))))
 #+end_src
 
 ** orderless
@@ -1510,24 +1439,7 @@ You can also use =M-x auto-package-update-now= to update right now!
 #+begin_src emacs-lisp
   (use-package origami
     :config
-    (progn
-      (with-eval-after-load 'org-super-agenda
-        (bind-key "<tab>" 'origami-toggle-node 'org-super-agenda-header-map))
-      (defvar me/org-super-agenda-auto-hide-groups
-        '("Done Today" "Clocked Today"))
-
-      (defun me/org-super-agenda-origami-fold-default ()
-        "Fold certain groups by default in Org Super Agenda buffer.
-         To enable:
-         `(add-hook 'org-agenda-finalize 'me/org-super-agenda-origami-fold-default)'"
-        (forward-line 3)
-        (--each me/org-super-agenda-auto-hide-groups
-          (goto-char (point-min))
-          (when (re-search-forward (rx-to-string `(seq bol " " ,it)) nil t)
-            (origami-close-node (current-buffer) (point)))))
-      (add-hook 'org-agenda-finalize-hook 'me/org-super-agenda-origami-fold-default)
-      (global-origami-mode)
-      (add-hook 'org-agenda-mode-hook 'origami-mode)))
+    (global-origami-mode))
 #+end_src
 
 ** org-mode
@@ -1545,13 +1457,6 @@ You can also use =M-x auto-package-update-now= to update right now!
       (variable-pitch-mode 1)
       (visual-line-mode 1))
 
-    (defun me/insert-timestamp ()
-      (interactive)
-      (let ((current-prefix-arg '(16))) (call-interactively 'org-time-stamp-inactive))) ; Universal Argument x2 - 4*4
-
-    (defun me/org-agenda-place-point ()
-      (goto-char (point-min)))
-
     (defun me/org-babel-tangle-config ()
       (when (string-equal (file-name-directory (buffer-file-name))
                           (expand-file-name user-emacs-directory))
@@ -1559,13 +1464,7 @@ You can also use =M-x auto-package-update-now= to update right now!
         (let ((org-confirm-babel-evaluate nil))
           (org-babel-tangle))))
 
-
-    ;; Directories ;;
-    ;;(defconst me/org-dir "~/Org/")
-
     ;; Files ;;
-    ;; (defconst me/org-todo-file (concat me/org-dir "todo.org"))
-    ;; (defconst me/org-archive-file (concat me/org-dir "archive.org"))
     (defconst me/org-emacs-config-file (concat user-emacs-directory "README.org"))
 
     :config
@@ -1577,15 +1476,6 @@ You can also use =M-x auto-package-update-now= to update right now!
       (general-unbind org-mode-map
         "C-c ?" nil)
 
-      ;; (leader-map
-      ;;   "t"  'org-capture
-      ;;   "a" 'org-agenda
-      ;;   "l"  'org-store-link
-      ;;   "L" 'org-insert-link
-      ;;   "fo" 'org-save-all-org-buffers
-      ;;   "oc" 'org-clock-goto
-      ;;   "op" 'org-set-property)
-
       (local-leader-map org-mode-map
         "p" 'org-set-property
         "s" '(:ignore t :wk "search")
@@ -1593,15 +1483,12 @@ You can also use =M-x auto-package-update-now= to update right now!
         "Ti" 'org-table-field-info
         "i" '(:ignore t :wk "insert")
         "it" 'org-set-tags-command
-        "id" 'me/insert-timestamp
         "is" 'org-insert-structure-template
         "e" '(:ignore t :wk "edit")
         "es" 'org-sort
-        "sh" 'org-ql-find-heading
         "sm" 'org-match-sparse-tree
         "sM" 'org-tags-sparse-tree
-        "st" 'org-sparse-tree
-        "sT" 'org-ql-sparse-tree)
+        "st" 'org-sparse-tree)
 
       (general-def '(motion normal) org-mode-map
         "gt" 'org-toggle-heading
@@ -1615,16 +1502,8 @@ You can also use =M-x auto-package-update-now= to update right now!
           (call-interactively #'evil-insert-state)))
 
       (general-def '(motion normal) org-mode-map
-        "M-S-RET"      #'evil-org-org-insert-todo-heading-respect-content-below
-        "M-S-<return>" #'evil-org-org-insert-todo-heading-respect-content-below
         "M-RET"      #'me/org-insert-subheading
         "M-<return>" #'me/org-insert-subheading)
-
-      ;; Orgql
-      (with-eval-after-load 'org-ql
-        (local-leader-map org-mode-map
-          "sh" 'org-ql-find-heading
-          "sT" 'org-ql-sparse-tree))
 
       ;; Consult
       (with-eval-after-load 'consult
@@ -1635,10 +1514,6 @@ You can also use =M-x auto-package-update-now= to update right now!
         (leader-map org-mode-map
           "ss" 'consult-org-heading))
 
-      ;; Org Agenda Keybinds
-      (local-leader-map org-agenda-mode-map
-        "l" 'org-agenda-log-mode)
-
       ;; Org Src Keybinds
       (general-def org-src-mode-map
         [remap save-buffer] 'org-edit-src-exit)
@@ -1646,50 +1521,14 @@ You can also use =M-x auto-package-update-now= to update right now!
       (local-leader-map org-src-mode-map
         "s" 'org-edit-src-exit)
 
-      ;; Capture Keybinds
-      (general-def org-capture-mode-map
-        [remap save-buffer] 'org-capture-finalize)
-
-
-
       ;; Hooks ;;
-      (org-clock-persistence-insinuate)
       (add-hook 'org-mode-hook 'me/org-mode-initial-setup)
       (add-hook 'org-src-mode-hook 'evil-normalize-keymaps)
-
-
-      ;; Directories ;;
-      ;;(setq org-directory me/org-dir)
 
       ;; Visuals ;;
       (setq org-ellipsis " ▼ ")
       (setq org-pretty-entities t)
       (setq org-fontify-todo-headline t)
-
-      ;; Behavior ;;
-      (setq org-cycle-emulate-tab 'white)
-      (setq org-catch-invisible-edits 'smart)
-      (setq org-link-search-must-match-exact-headline nil)
-      (setq org-log-done 'time)
-      (setq org-log-into-drawer t)
-      (setq org-log-state-notes-into-drawer t)
-      (setq org-extend-today-until 4)
-      (setq org-duration-format 'h:mm)
-      (setq-default org-enforce-todo-dependencies t)
-
-      ;; Archiving ;;
-      ;;(setq org-archive-location (concat me/org-archive-file "::* From %s"))
-      (defun me/org-archive-done-tasks ()
-        (interactive)
-        (org-map-entries
-         (lambda ()
-           (org-archive-subtree)
-           (setq org-map-continue-from (org-element-property :begin (org-element-at-point))))
-         "/+DONE|+CANCELLED" 'tree))
-
-      (local-leader-map org-mode-map
-        "A" 'me/org-archive-done-tasks)
-
 
       ;; Source Editing ;;
       (setq org-edit-src-turn-on-auto-save t)
@@ -1705,33 +1544,6 @@ You can also use =M-x auto-package-update-now= to update right now!
 
       (general-def org-mode-map
         [remap org-edit-special] #'me/org-edit-special)
-
-      ;; Time and Clock settings ;;
-      (setq org-clock-out-when-done t)
-      (setq org-clock-out-remove-zero-time-clocks t)
-
-      ;; Resume clocking task on clock-in if the clock is open
-      (setq org-clock-in-resume t)
-
-      ;; Save the running clock and all clock history when exiting Emacs, load it on startup
-      (setq org-clock-persist t)
-      (setq org-clock-report-include-clocking-task t)
-      (setq org-clock-persist-query-resume nil)
-      (setq org-clock-auto-clock-resolution (quote when-no-clock-is-running))
-
-      ;; Use a function to decide what to change the state to.
-      (defun me/switch-task-on-clock-start (task-state)
-        (if (or (string= task-state "TODO")(string= task-state "NEXT"))
-            "PROG"
-          task-state))
-      (setq org-clock-in-switch-to-state #'me/switch-task-on-clock-start)
-
-
-      ;; Refile ;;
-      (setq org-refile-use-outline-path nil)
-      (setq org-refile-allow-creating-parent-nodes 'confirm)
-      ;;(setq org-refile-targets `((,(directory-files-recursively "~/Org/" "^[a-z0-9]*.org$") :maxlevel . 5)))
-
 
       ;; Fonts ;;
       ;; Replace list hyphen with dot
@@ -1762,131 +1574,10 @@ You can also use =M-x auto-package-update-now= to update right now!
       (set-face-attribute 'line-number-current-line nil :inherit 'fixed-pitch)
       (set-face-attribute 'org-hide nil :inherit 'fixed-pitch)
 
-
-      ;; Org Habits ;;
-      (require 'org-habit)
-      (add-to-list 'org-modules 'org-habit)
-      (setq org-habit-today-glyph ?◌
-            org-habit-completed-glyph ?●
-            org-habit-missed-glyph ?○
-            org-habit-preceding-days 7
-            org-habit-show-habits-only-for-today t
-            org-habit-graph-column 65)
-
-
-      ;; Org Todos ;;
-      (setq org-todo-keywords
-            '((sequence "TODO(t)" "NEXT(n)" "PROG(p)" "WAIT(w@)" "SOMEDAY(s)" "|" "DONE(d!)" "CANCELLED(c!)")))
-
-      (setq org-todo-keyword-faces
-            '(("TODO" . (:foreground "#00ff66" :weight bold))
-              ("NEXT" . (:foreground "#66ffff"
-                                     :weight bold))
-              ("PROG"  . (:foreground "#ff0066"
-                                      :weight bold))
-              ("WAIT"  . (:foreground "#FF6600"
-                                      :weight bold))
-              ("DONE" . (:foreground "darkgrey"
-                                     :weight bold))
-              ("CANCELLED" . (:foreground "darkgrey"
-                                          :weight bold))))
-
-
-      ;; Org Tags ;;
-      (setq org-tag-persistent-alist
-            '(("ARCHIVE" . ?A)
-              ("work" . ?b)
-              ("emacs" . ?e)
-              ("idea" . ?i)
-              ("snippet" . ?s)))
-
-
-      ;; Org Agenda ;;
-
-      ;; Agenda Evil Keybinds
-      (evil-define-key 'motion org-agenda-mode-map (kbd "sf") 'org-agenda-filter)
-      (evil-define-key 'motion org-agenda-mode-map (kbd "zc") 'evil-close-fold)
-      (evil-define-key 'motion org-agenda-mode-map (kbd "zo") 'evil-open-fold)
-      (evil-define-key 'motion org-agenda-mode-map (kbd "zr") 'evil-open-folds)
-      (evil-define-key 'motion org-agenda-mode-map (kbd "zm") 'evil-close-folds)
-      (evil-define-key 'motion org-agenda-mode-map (kbd "zO") 'evil-open-fold-rec)
-      (evil-define-key 'motion org-agenda-mode-map (kbd "za") 'evil-toggle-fold)
-
-      ;; Agenda Settings ;;
-
       ;; Open links in current window
       (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file)
-      ;;(directory-files-recursively "~/Org/" "^[a-z0-9]*.org$")
-      (setq org-agenda-start-on-weekday nil)
-      (setq org-agenda-start-with-log-mode t)
-      (setq org-agenda-start-day nil)
-      (setq org-agenda-todo-ignore-scheduled 'future)
-      (setq org-agenda-skip-scheduled-if-deadline-is-shown t)
-      (setq org-agenda-compact-blocks t)
-      (setq org-agenda-window-setup 'current-window)
-      (setq org-agenda-restore-windows-after-quit t)
-      (setq org-agenda-use-time-grid nil)
-      (setq org-deadline-warning-days 1)
-      ;; (setq org-agenda-skip-timestamp-if-done t)
-      (setq org-agenda-current-time-string "⏰ ┈┈┈┈┈┈┈┈┈┈┈ now"
-            org-agenda-time-grid '((daily today require-timed)
-                                   (800 1000 1200 1400 1600 1800 2000)
-                                   "---" "┈┈┈┈┈┈┈┈┈┈┈┈┈")
-            org-agenda-prefix-format '(
-                                       (agenda . " %i %-12:c%?-12t% s")
-                                       (todo . " %i  ")
-                                       (tags . " %i  ")
-                                       (search . " %i  ")))
 
-      (setq org-agenda-hide-tags-regexp
-            (concat org-agenda-hide-tags-regexp "\\|sometag"))
-
-      (setq org-agenda-format-date (lambda (date) (concat "\n" (make-string (window-width) 9472)
-                                                          "\n"
-                                                          (org-agenda-format-date-aligned date))))
       (setq org-cycle-separator-lines 0)
-      (setq org-agenda-category-icon-alist
-            `(("work" ,(list (all-the-icons-faicon "cogs")) nil nil :ascent center)
-              ("emacs" ,(list (all-the-icons-material "usb")) nil nil :ascent center)
-              ("inbox" ,(list (all-the-icons-material "inbox")) nil nil :ascent center)
-              ("computer" ,(list (all-the-icons-material "computer")) nil nil :ascent center)
-              ("personal" ,(list (all-the-icons-material "person")) nil nil :ascent center)
-              ("programming" ,(list (all-the-icons-material "code")) nil nil :ascent center)
-              ("gaming" ,(list (all-the-icons-material "videogame_asset")) nil nil :ascent center)
-              ("calendar" ,(list (all-the-icons-faicon "calendar")) nil nil :ascent center)))
-      (add-hook 'org-agenda-finalize-hook #'me/org-agenda-place-point 90)
-
-
-      ;; Org Capture ;;
-      (defun my-org-capture-place-template-dont-delete-windows (oldfun &rest args)
-        (cl-letf (((symbol-function 'delete-other-windows) 'ignore))
-          (apply oldfun args)))
-
-      (with-eval-after-load "org-capture"
-        (advice-add 'org-capture-place-template :around 'my-org-capture-place-template-dont-delete-windows))
-
-      (setq org-capture-templates
-            '(("c" "Current" entry
-               (file+headline me/org-todo-file "Inbox")
-               "* PROG %?\n%t\n" :prepend t :clock-in t :clock-keep t :clock-resume t)
-              ("e" "Emacs Task" entry
-               (file+headline me/org-todo-file "Emacs")
-               "* TODO %?\n%U\n" :prepend t)
-              ("t" "Task" entry
-               (file+headline me/org-todo-file "Inbox")
-               "* TODO %?\n%U\n" :prepend t)
-              ("T" "Task (Scheduled)" entry
-               (file+headline me/org-todo-file "Inbox")
-               "* TODO %?\nSCHEDULED: %^t\n" :prepend t)
-              ;; Work ;;
-              ("w" "Work Captures")
-              ("wt" "Work Task" entry
-               (file+headline me/org-todo-file "Work")
-               "* TODO %? :work:\n%U\n" :prepend t)
-              ("wT" "Work Task (Scheduled)" entry
-               (file+headline me/org-todo-file "Work")
-               "* TODO %?\nSCHEDULED: %^T\n" :prepend t)))
-
 
       ;; Babel ;;
       (setq org-confirm-babel-evaluate nil)
@@ -1905,162 +1596,6 @@ You can also use =M-x auto-package-update-now= to update right now!
     :after org)
 #+end_src
 
-** *DISABLED* org-super-agenda
-
-#+begin_src emacs-lisp :tangle no
-  (use-package org-super-agenda
-    :disabled t
-    :after (evil evil-collection evil-org org)
-    :config
-    (progn
-      (org-super-agenda-mode 1)
-      (general-unbind org-super-agenda-header-map
-        "z"
-        "j"
-        "k"
-        "g"
-        "SPC")
-
-      (setq org-super-agenda-groups '((:habit t :order 98)
-                                      (:name "In Progress"
-                                             :todo "PROG")
-                                      (:name "Next to do"
-                                             :todo "NEXT")
-                                      (:name "Waiting"
-                                             :todo "WAIT")
-                                      (:name "Due Today"
-                                             :deadline today)
-                                      (:name "Due Soon"
-                                             :deadline future)
-                                      (:name "Overdue"
-                                             :deadline past)
-                                      (:name "Today"
-                                             :scheduled today
-                                             :date today)
-                                      (:name "Scheduled Earlier"
-                                             :scheduled past)
-                                      (:name "Future"
-                                             :scheduled future)
-                                      (:name "Emacs"
-                                             :category "emacs")
-                                      (:name "Computer"
-                                             :category "computer")
-                                      (:name "Gaming"
-                                             :category "gaming")
-                                      (:name "Work"
-                                             :category "work")
-                                      (:name "Inbox"
-                                             :category "inbox"
-                                             :order 98)
-                                      (:auto-category t :order 99)))
-
-      (setq org-agenda-custom-commands '(("a" "POG AGENDA"
-                                          ((agenda "" ((org-agenda-span 'day)
-                                                       (org-agenda-log-mode t)
-                                                       (org-super-agenda-groups
-                                                        '((:order-multi (99
-                                                                         (:name "Clocked Today" :log clock)
-                                                                         (:name "Done Today" :todo ("DONE" "CANCELLED") :and (:log t))))
-                                                          (:name "In Progress" :todo "PROG")
-                                                          (:name "Next" :todo "NEXT")
-                                                          (:name "Waiting"
-                                                                 :todo "WAIT")
-                                                          (:name "Overdue" :deadline past)
-                                                          (:name "Due Today" :deadline today)
-                                                          (:name "Today"
-                                                                 :scheduled today
-                                                                 :date today)
-                                                          (:name "Scheduled Earlier" :scheduled past)))))
-                                           (alltodo "" ((org-agenda-overriding-header "\nAll Tasks")
-                                                        (org-super-agenda-groups
-                                                         '((:discard (:habit t))
-                                                           (:discard (:tag "ARCHIVE"))
-                                                           (:name "Someday"
-                                                                  :todo "SOMEDAY"
-                                                                  :order 98)
-                                                           (:name "In Progress"
-                                                                  :todo "PROG")
-                                                           (:name "Next to do"
-                                                                  :todo "NEXT")
-                                                           (:name "Waiting"
-                                                                  :todo "WAIT")
-                                                           (:name "Due Soon"
-                                                                  :deadline future)
-                                                           (:name "Future"
-                                                                  :scheduled future)
-                                                           (:name "Inbox"
-                                                                  :category "inbox")
-                                                           (:name "Emacs"
-                                                                  :category "emacs")
-                                                           (:name "Computer"
-                                                                  :category "computer")
-                                                           (:name "Gaming"
-                                                                  :category "gaming")
-                                                           (:name "Work"
-                                                                  :category "work")
-                                                           (:auto-category t :order 99)))))))))))
-#+end_src
-
-** *DISABLED* org-ql
-
-#+begin_src emacs-lisp :tangle no
-  (use-package org-ql
-    :disabled t
-    :after org
-    :config
-    (progn
-      (leader-map
-        "os" 'org-ql-search
-        "ov" 'org-ql-view
-        "To" 'org-ql-view-sidebar
-        "or" 'org-ql-view-recent-items
-        "of" 'org-ql-find
-        "oP" 'org-ql-find-path)
-
-      (setq org-ql-views nil)
-      (evil-define-key 'motion org-ql-view-list-map (kbd "RET") 'org-ql-view-switch)
-      ;; Add these to a hydra or something
-      (add-to-list 'org-ql-views '("Inbox" :buffers-files org-agenda-files :query
-                                   (and
-                                    (not
-                                     (done))
-                                    (category "inbox"))
-                                   :sort
-                                   (date priority)
-                                   :super-groups org-super-agenda-groups :title "Inbox Items"))
-
-      (add-to-list 'org-ql-views '("Super View" :buffers-files org-agenda-files :query
-                                   (and
-                                    (not
-                                     (done))
-                                    (and
-                                     (todo)))
-                                   :sort
-                                   (date priority)
-                                   :super-groups org-super-agenda-groups :title "SUPER VIEW"))
-
-      (add-to-list 'org-ql-views '("Work Super View" :buffers-files org-agenda-files :query
-                                   (and
-                                    (category "work")
-                                    (todo)
-                                    (not
-                                     (done)))
-                                   :sort
-                                   (date priority)
-                                   :super-groups org-super-agenda-groups :title "SUPER VIEW"))
-
-      (add-to-list 'org-ql-views '("NEXT tasks" :buffers-files org-agenda-files :query
-                                   (todo "NEXT")
-                                   :sort
-                                   (date priority)
-                                   :super-groups org-super-agenda-groups :title "Overview: NEXT tasks"))
-
-      (add-to-list 'org-ql-views '("Archive" :buffers-files org-agenda-files :query
-                                   (done)
-                                   :sort
-                                   (date priority)))))
-#+end_src
-
 ** org-modern
 
 #+begin_src emacs-lisp
@@ -2070,317 +1605,12 @@ You can also use =M-x auto-package-update-now= to update right now!
     (setq org-auto-align-tags nil
           org-tags-column 0
           org-catch-invisible-edits 'show-and-error
-          org-insert-heading-respect-content t
-          org-agenda-tags-column 0)
+          org-insert-heading-respect-content t)
     :config
     (set-face-attribute 'org-modern-symbol nil :family "Fira Code Retina")
     (setq org-modern-checkbox nil)
     (setq org-modern-keyword "‣")
-
-    (setq org-modern-todo-faces
-          (quote (("TODO" :inverse-video t :weight semibold :foreground "#00ff66" :inherit (org-modern-label))
-                  ("NEXT" :inverse-video t :weight semibold :foreground "#66ffff" :inherit (org-modern-label))
-                  ("PROG" :inverse-video t :weight semibold :foreground "#ff0066" :inherit (org-modern-label))
-                  ("DONE" :inverse-video t :weight semibold :foreground "darkgrey" :inherit (org-modern-label))
-                  ("CANCELLED" :inverse-video t :weight semibold :foreground "darkgrey" :inherit (org-modern-label)))))
     (global-org-modern-mode))
-#+end_src
-
-** *DISABLED* org-roam
-
-#+begin_src emacs-lisp :tangle no
-  (use-package org-roam
-    :disabled t
-    :after org
-    :demand t
-    :custom
-    (org-roam-directory (file-truename (concat me/org-dir "notes")))
-    :init
-    (add-to-list 'display-buffer-alist
-                 '("\\*org-roam\\*"
-                   (display-buffer-in-side-window)
-                   (side . right)
-                   (slot . 0)
-                   (window-width . 0.33)
-                   (window-parameters . ((no-other-window . nil)
-                                         (no-delete-other-windows . t)))))
-    :config
-    (progn
-      (require 'org-roam-dailies)
-
-      (defun me/org-roam-capture-inbox ()
-        (interactive)
-        (org-roam-capture- :node (org-roam-node-create)
-                           :templates '(("i" "inbox" plain "* %?\n:PROPERTIES:\n:CREATED: %U\n:CATEGORY: %^{category||calendar|computer|emacs|gaming|inbox|personal|programming|work}\n:END:\n\n\n** Related\n"
-                                         :if-new (file+head "inbox.org" "#+title: Inbox\n")))))
-
-      (defun me/org-roam-filter-by-tag (tag-name)
-        (lambda (node)
-          (member tag-name (org-roam-node-tags node))))
-
-      (defun me/org-roam-list-notes-by-tag (tag-name)
-        (mapcar #'org-roam-node-file
-                (seq-filter
-                 (me/org-roam-filter-by-tag tag-name)
-                 (org-roam-node-list))))
-
-      (defun me/org-roam-project-finalize-hook ()
-        "Adds the captured project file to `org-agenda-files' if the
-      capture was not aborted."
-        ;; Remove the hook since it was added temporarily
-        (remove-hook 'org-capture-after-finalize-hook #'me/org-roam-project-finalize-hook)
-
-        ;; Add project file to the agenda list if the capture was confirmed
-        (unless org-note-abort
-          (with-current-buffer (org-capture-get :buffer)
-            (add-to-list 'org-agenda-files (buffer-file-name)))))
-
-      (defun me/org-roam-find-project ()
-        (interactive)
-        ;; Add the project file to the agenda after capture is finished
-        (add-hook 'org-capture-after-finalize-hook #'me/org-roam-project-finalize-hook)
-
-        ;; Select a project file to open, creating it if necessary
-        (org-roam-node-find
-         nil
-         nil
-         (me/org-roam-filter-by-tag "project")
-         :templates
-         '(("P" "project" plain
-            "\n* Tasks\n\n** TODO Add initial tasks\n\n* Dates\n\n"
-            :if-new (file+head "${slug}--%<%Y%m%d-%H%M%S>.org"
-                               ":PROPERTIES:\n:CREATED: %U\n:CATEGORY: %^{category||calendar|computer|emacs|gaming|inbox|personal|programming|work}\n:END:\n#+title: ${title}\n#+filetags: :project:\n")
-            :unnarrowed t
-            :empty-lines-before 1))))
-
-      (defun me/org-roam-node-insert-immediate (arg &rest args)
-        (interactive "P")
-        (let ((args (cons arg args))
-              (org-roam-capture-templates (list (append (car org-roam-capture-templates)
-                                                        '(:immediate-finish t)))))
-          (apply #'org-roam-node-insert args)))
-
-      (leader-map
-        "i"  #'me/org-roam-capture-inbox
-        "r"  #'(:ignore t :wk "roam")
-        "ru" #'org-roam-unlinked-references-section
-        "rt" #'org-roam-buffer-toggle
-        "rf" #'org-roam-node-find
-        "rg" #'org-roam-graph
-        "ri" #'org-roam-node-insert
-        "rI" #'me/org-roam-node-insert-immediate
-        "rp" #'me/org-roam-find-project
-        "r." #'org-id-get-create
-        "rw" #'org-roam-extract-subtree
-        "Tr" #'org-roam-buffer-toggle
-        "c" #'org-roam-capture
-        "j" #'(org-roam-dailies-capture-today :wk "journal")
-        "d" #'(:keymap org-roam-dailies-map :wk "dailies"))
-
-      (general-def org-roam-dailies-map
-        "Y" 'org-roam-dailies-capture-yesterday
-        "T" 'org-roam-dailies-capture-tomorrow)
-
-      (setq org-roam-dailies-directory org-roam-directory)
-      (setq org-roam-completion-everywhere nil)
-
-      (cl-defmethod org-roam-node-category ((node org-roam-node))
-        "Return the currently set category for the NODE."
-        (let ((category (cdr (assoc-string "CATEGORY" (org-roam-node-properties node)))))
-          (if (string= category (file-name-base (org-roam-node-file node)))
-              "" ; or return the current title, e.g. (org-roam-node-title node)
-            category)))
-      (setq org-roam-node-display-template
-            (concat "${title:30} " "${category:10} " (propertize "${tags:30}" 'face 'org-tag)))
-
-      (setq org-roam-mode-sections '(org-roam-backlinks-section org-roam-reflinks-section))
-
-      ;; Capture ;;
-      (setq org-roam-extract-new-file-path "${slug}--%<%Y%m%d-%H%M%S>.org")
-      (setq org-roam-dailies-capture-templates
-            '(("d" "default" entry "* %<%I:%M %p>: %?"
-               :if-new (file+head "%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d>\n#+filetags: :daily:\n"))))
-
-      (setq org-roam-capture-templates
-            '(("d" "inbox" plain "* %?\n:PROPERTIES:\n:CREATED: %U\n:CATEGORY: %^{category||calendar|computer|emacs|gaming|inbox|personal|programming|work}\n:END:\n\n\n** Related\n"
-               :if-new (file+head "inbox.org" "#+title: Inbox\n"))
-              ("r" "reference" plain
-               "\n%?\n* Related"
-               :if-new (file+head "${slug}--%<%Y%m%d-%H%M%S>.org"
-                                  ":PROPERTIES:\n:CREATED: %U\n:CATEGORY: %^{category||calendar|computer|emacs|gaming|inbox|personal|programming|work}\n:END:\n#+title: ${title}\n#+filetags: :reference:\n")
-               :unnarrowed t
-               :empty-lines-before 1)
-              ("P" "project" plain
-               "\n* Tasks\n\n** TODO Add initial tasks\n\n* Dates\n\n"
-               :if-new (file+head "${slug}--%<%Y%m%d-%H%M%S>.org"
-                                  ":PROPERTIES:\n:CREATED: %U\n:CATEGORY: %^{category||calendar|computer|emacs|gaming|inbox|personal|programming|work}\n:END:\n#+title: ${title}\n#+filetags: :project:\n")
-               :unnarrowed t
-               :empty-lines-before 1)
-              ("t" "topic" plain
-               "\n%?\n* Related"
-               :if-new (file+head "${slug}--%<%Y%m%d-%H%M%S>.org"
-                                  ":PROPERTIES:\n:CREATED: %U\n:CATEGORY: %^{category||calendar|computer|emacs|gaming|inbox|personal|programming|work}\n:END:\n#+title: ${title}\n#+filetags: :topic:\n")
-               :unnarrowed t
-               :empty-lines-before 1)))
-
-      (setq org-id-extra-files (org-roam--list-files org-roam-directory))
-      (org-roam-db-autosync-mode)))
-#+end_src
-
-** delve
-#+begin_src emacs-lisp
-  (use-package delve
-    :straight (:repo "publicimageltd/delve"
-                     :host github
-                     :type git)
-    :after (org-roam)
-    :init
-    (setq delve-storage-paths (no-littering-expand-var-file-name "delve"))
-    (setq delve-minor-mode-prefix-key "M-n")
-    :demand t
-    :config
-    (progn
-      (leader-map
-        "rd" 'delve)
-      (evil-set-initial-state 'delve-mode 'emacs)
-      (general-def 'emacs delve-mode-map
-        "j" #'next-line
-        "k" #'previous-line
-        [remap bury-buffer] #'me/quit-window-force)
-      ;; (general-def '(normal motion) delve-mode-map
-      ;;   "<return>" #'delve--key--toggle-preview
-      ;;   "<tab>" #'delve--key--tab
-      ;;   "i" #'delve--key--insert-query-or-pile
-      ;;   "gr" #'delve--key--sync
-      ;;   "v" #'delve-compact-view-mode
-      ;;   "p" #'delve--key--yank
-      ;;   "F" #'delve-find-storage-file
-      ;;   "S" #'delve-write-buffer
-      ;;   "s" #'delve-save-buffer
-      ;;   "q" #'me/quit-window-force
-      ;;   "<delete>" #'delve--key--multi-delete
-      ;;   "E" #'delve--node-transient-key
-      ;;   "gh" #'delve--key--insert-heading
-      ;;   "c" #'delve--key--collect-into-buffer
-      ;;   "C" #'delve--key--collect-into-pile
-      ;;   [remap org-roam-buffer-toggle] #'delve--key--roam
-      ;;   "o" #'delve--key--open-zettel
-      ;;   "C-l" #'delve--key--fromlinks
-      ;;   "f" #'delve--key--fromlinks
-      ;;   "b" #'delve--key--backlinks
-      ;;   "C-h" #'delve--key--backlinks
-      ;;   "t" #'delve--key--insert-tagged
-      ;;   "T" #'delve--key--insert-node-by-tags
-      ;;   "gs" #'delve--key--sort
-      ;;   "+" #'delve--key--add-tags
-      ;;   "-" #'delve--key--remove-tags)
-
-
-      ;; set meaningful tag names for the dashboard query
-      (setq delve-dashboard-tags '("games" "topic" "fleeting" "project" "inbox" "reference"))
-      ;; optionally turn on compact view as default
-      (add-hook #'delve-mode-hook #'delve-compact-view-mode)
-      (add-hook 'org-roam-mode-hook 'delve--maybe-activate-minor-mode)
-      ;; turn on delve-minor-mode when Org Roam file is opened:
-      (delve-global-minor-mode)))
-#+end_src
-
-** *DISABLED* pinboard
-
-#+begin_src emacs-lisp :tangle no
-  (use-package pinboard
-    :disabled t
-    :general
-    (leader-map
-      "Tp" 'pinboard
-      "fP" 'pinboard-add-for-later)
-
-    (general-def '(motion normal) pinboard-mode-map
-      "A"          'pinboard-add
-      "D"          'pinboard-delete
-      "x"          'pinboard-edit
-      "y"          'pinboard-kill-url
-      "gr"         'pinboard-refresh
-      "r"          'pinboard-read
-      "s"          'pinboard-search
-      "t"          'pinboard-extend-tagged
-      "T"          'pinboard-tagged
-      "R"          'pinboard-toggle-read
-      "u"          'pinboard-unread
-      "U"          'pinboard-untagged
-      "v"          'pinboard-visit-pinboard
-      "C-<return>" 'pinboard-view
-      "RET"        'pinboard-open)
-
-    (local-leader-map pinboard-mode-map
-      "n"   'pinboard-add
-      "d"   'pinboard-delete
-      "e"   'pinboard-edit
-      "y"   'pinboard-kill-url
-      "g"   'pinboard-refresh
-      "r"   'pinboard-read
-      "s"   'pinboard-search
-      "t"   'pinboard-extend-tagged
-      "T"   'pinboard-tagged
-      "r"   'pinboard-toggle-read
-      "u"   'pinboard-unread
-      "U"   'pinboard-untagged
-      "v"   'pinboard-visit-pinboard
-      "SPC" 'pinboard-view)
-    :config
-    (progn
-      (defun org-pinboard-store-link ()
-        "Store a link taken from a pinboard buffer."
-        (when (eq major-mode 'pinboard-mode)
-          (pinboard-with-current-pin pin
-            (org-store-link-props
-             :type "pinboard"
-             :link (alist-get 'href pin)
-             :description (alist-get 'description pin)))))
-
-      (org-link-set-parameters "pinboard"
-                               :follow #'browse-url
-                               :store #'org-pinboard-store-link)))
-#+end_src
-
-** *DISABLED* consult-org-roam
-
-#+begin_src emacs-lisp :tangle no
-  (use-package consult-org-roam
-    :disabled t
-    :after org-roam
-    :custom
-    (consult-org-roam-grep-func #'consult-ripgrep)
-    :config
-    (progn
-      (leader-map
-        "rF" 'consult-org-roam-file-find
-        "rb" 'consult-org-roam-backlinks
-        "rB" 'consult-org-roam-forward-links
-        "rs" 'consult-org-roam-search)
-
-      (consult-customize
-       consult-org-roam-forward-links
-       :preview-key (kbd "M-."))))
-#+end_src
-
-** *DISABLED* org-pomodoro
-
-#+begin_src emacs-lisp :tangle no
-  (use-package org-pomodoro
-    :disabled t
-    :after org
-    :config
-    (progn
-      (leader-map
-        "oi" 'org-pomodoro
-        "oI" 'org-clock-in
-        "oo" 'org-clock-out)
-
-      (setq org-pomodoro-manual-break t)
-      (setq org-pomodoro-length 30)
-      (setq org-pomodoro-short-break-length 10)
-      (setq org-pomodoro-long-break-length 45)))
 #+end_src
 
 ** visual-fill-column
@@ -2506,18 +1736,10 @@ You can also use =M-x auto-package-update-now= to update right now!
 #+begin_src emacs-lisp
   (use-package lsp-mode
     :hook
-    ((c-mode          ; clangd
-      c++-mode        ; clangd
-      c-or-c++-mode   ; clangd
-      java-mode       ; eclipse-jdtls
-      js-mode         ; ts-ls (tsserver wrapper)
+    ((js-mode         ; ts-ls (tsserver wrapper)
       js-jsx-mode     ; ts-ls (tsserver wrapper)
       typescript-mode ; ts-ls (tsserver wrapper)
-      python-mode     ; pyright
       web-mode        ; ts-ls/HTML/CSS
-      haskell-mode    ; haskell-language-server
-      csharp-mode
-      csharp-tree-sitter-mode
       ) . lsp-deferred)
     ;; (lsp-completion-mode . me/lsp-mode-setup-completion)
     :commands lsp
@@ -2525,33 +1747,15 @@ You can also use =M-x auto-package-update-now= to update right now!
     ;; :custom (lsp-completion-provider :none)
     :init
     (setq lsp-keymap-prefix "C-l")
-    ;; (defun me/orderless-dispatch-flex-first (_pattern index _total)
-    ;;   (and (eq index 0) 'orderless-flex))
-
-    ;; (defun me/lsp-mode-setup-completion ()
-    ;;   (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
-    ;;         '(orderless-regex orderless-flex)))
-
-    ;; Optionally configure the first word as flex filtered.
-    ;;(add-hook 'orderless-style-dispatchers #'me/orderless-dispatch-flex-first nil 'local)
-
-    ;; Optionally configure the cape-capf-buster.
-    (with-eval-after-load 'cape
-      (setq-local completion-at-point-functions (list (cape-capf-buster #'lsp-completion-at-point))))
-
     :config
     (lsp-enable-which-key-integration t)
 
     (local-leader-map prog-mode-map
       "l" (general-simulate-key "C-l"))
-    ;; (setq lsp-csharp-omnisharp-roslyn-download-url "https://github.com/OmniSharp/omnisharp-roslyn/releases/download/v1.39.0/omnisharp-linux-x64.zip")
-    (setq lsp-auto-guess-root nil)
-    ;;(setq lsp-log-io nil)
     (setq lsp-restart 'auto-restart)
     ;;(setq lsp-enable-symbol-highlighting nil)
     ;;(setq lsp-enable-on-type-formatting nil)
     ;;(setq lsp-signature-auto-activate nil)
-    (setq lsp-disabled-clients '(csharp-ls))
     (setq lsp-eldoc-enable-hover nil)
     (setq lsp-signature-render-documentation nil)
     (setq lsp-modeline-code-actions-enable nil)
@@ -2633,65 +1837,10 @@ You can also use =M-x auto-package-update-now= to update right now!
     (progn
       (dap-auto-configure-mode)
       (require 'dap-node)
-      (dap-node-setup)
-      (require 'dap-netcore)))
+      (dap-node-setup)))
 #+end_src
 
 
-
-** web-mode
-
-#+begin_src emacs-lisp
-
-#+end_src
-
-** rxjs-mode
-
-#+begin_src emacs-lisp
-  (use-package rjsx-mode
-    :config
-    (add-to-list 'auto-mode-alist '("\\.js\\'" . rjsx-mode)))
-#+end_src
-
-** typescript-mode
-
-#+begin_src emacs-lisp
-  (use-package typescript-mode
-    :after tree-sitter
-    :config
-    (define-derived-mode typescriptreact-mode typescript-mode
-      "TypeScript TSX")
-
-    ;; use our derived mode for tsx files
-    (add-to-list 'auto-mode-alist '("\\.tsx?\\'" . typescriptreact-mode))
-    (add-to-list 'tree-sitter-major-mode-language-alist '(typescriptreact-mode . tsx)))
-#+end_src
-
-
-** csharp-mode
-
-#+begin_src emacs-lisp
-  (use-package csharp-mode
-    :config
-    (add-to-list 'auto-mode-alist '("\\.cs\\'" . csharp-tree-sitter-mode)))
-#+end_src
-
-** docker
-*** manager
-
-#+begin_src emacs-lisp
-  (use-package docker
-    :general
-    (local-leader-map prog-mode-map
-      "D" 'docker))
-#+end_src
-
-*** docker-mode
-
-#+begin_src emacs-lisp
-  (use-package dockerfile-mode
-      :mode ("Dockerfile\\'" . dockerfile-mode))
-#+end_src
 
 ** yaml-mode
 #+begin_src emacs-lisp
@@ -2760,44 +1909,6 @@ You can also use =M-x auto-package-update-now= to update right now!
       (setq vterm-max-scrollback 10000)))
 #+end_src
 
-** fish-mode
-
-#+begin_src emacs-lisp
-  (use-package fish-mode)
-#+end_src
-
-
-
-** dashboard
-
-#+begin_src emacs-lisp
-  (use-package dashboard
-    :custom ((dashboard-agenda-sort-strategy '(todo-state-down)))
-    :config
-    (setq dashboard-week-agenda nil)
-    (setq dashboard-filter-agenda-entry 'dashboard-filter-agenda-by-todo)
-    (setq dashboard-set-heading-icons t)
-    (setq dashboard-set-file-icons t)
-    (setq dashboard-set-navigator t)
-    (setq dashboard-set-init-info t)
-    (setq dashboard-image-banner-max-height 190)
-
-    ;; Format: "(icon title help action face prefix suffix)"
-    (setq dashboard-navigator-buttons
-          `(;; line1
-            ((,(all-the-icons-faicon "calendar" :height 1.1 :v-adjust 0.0)
-              "Agenda"
-              "Browse Agenda"
-              (lambda (&rest _) (org-agenda)))
-             (,(all-the-icons-faicon "list" :height 1.1 :v-adjust 0.0)
-              "Views"
-              "Browse Views"
-              (lambda (&rest _) (org-ql-view-sidebar)))
-             ("⚙" nil "Open Config" (lambda (&rest _) (me/open-config)) success))))
-
-    (dashboard-setup-startup-hook))
-#+end_src
-
 ** perspective
 
 #+begin_src emacs-lisp
@@ -2838,16 +1949,6 @@ You can also use =M-x auto-package-update-now= to update right now!
         (add-to-list 'consult-buffer-sources persp-consult-source))))
 #+end_src
 
-
-** *DISABLED* org-wild-notifier
-
-#+begin_src emacs-lisp :tangle no
-  (use-package org-wild-notifier
-    :disabled t
-    :after org
-    :config
-    (org-wild-notifier-mode))
-#+end_src
 
 ** doom-modeline
 

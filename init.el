@@ -254,10 +254,10 @@
     (set-buffer-file-coding-system 'utf-8)
 
     ;; Fonts ;;
-    (cond (IS-MAC (setq me/default-font-size 180) (setq me/default-variable-font-size 180))
+    (cond (IS-MAC (setq me/default-font-size 200) (setq me/default-variable-font-size 200))
           (IS-WINDOWS (setq me/default-font-size 90) (setq me/default-variable-font-size 90)))
-    (set-face-attribute 'default nil :font "Fira Code Retina" :height me/default-font-size)
-    (set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height me/default-font-size)
+    (set-face-attribute 'default nil :font "MonoLisa Custom" :height me/default-font-size)
+    (set-face-attribute 'fixed-pitch nil :font "MonoLisa Custom" :height me/default-font-size)
     (set-face-attribute 'variable-pitch nil :font "Cantarell" :height me/default-variable-font-size :weight 'regular)
     (global-font-lock-mode t)
 
@@ -319,7 +319,6 @@
                     shell-mode-hook
                     treemacs-mode-hook
                     eshell-mode-hook
-                    org-agenda-mode-hook
                     vterm-mode-hook
                     dired-mode-hook))
       (add-hook mode (lambda () (display-line-numbers-mode 0))))
@@ -517,29 +516,14 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
     (evil-collection-define-key 'normal 'dired-mode-map
       "C-S-h" 'dired-hide-dotfiles-mode)))
 
-(use-package erc
-  :straight nil
-  :config
-  (setq erc-server "irc.libera.chat"
-        erc-nick "geoffery"
-        erc-user-full-name "Geoffery"
-        erc-autojoin-timing 'ident
-        erc-track-shorten-start 8
-        erc-autojoin-channels-alist '(("libera.chat" "#org-mode" "#evil-mode" "#emacs-beginners" "#emacs-til" "#emacs" "#linux" "#fedora" "#archlinux" "##rust" "##programming"))
-        erc-kill-buffer-on-part t
-        erc-auto-query 'bury
-        ;; Stop displaying channels in the mode line for no good reason.
-        erc-track-exclude-type '("JOIN" "KICK" "NICK" "PART" "QUIT" "MODE" "333" "353")
-        erc-hide-list '("JOIN" "PART" "QUIT" "KICK" "NICK" "MODE" "333" "353")))
-
 (use-package doom-themes
   :init
-  (load-theme 'doom-snazzy t)
+  (load-theme 'doom-tokyo-night t)
   :config
   (progn
     (setq doom-themes-enable-bold t
           doom-themes-enable-italic t)
-    (setq doom-themes-treemacs-theme "doom-atom")
+    (setq doom-themes-treemacs-theme "doom-tokyo-night")
     (with-eval-after-load 'treemacs
       (doom-themes-treemacs-config))
     (with-eval-after-load 'org
@@ -659,9 +643,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (progn
     (add-hook 'org-mode-hook 'evil-org-mode)
     (add-hook 'evil-org-mode-hook
-              (lambda () (evil-org-set-key-theme)))
-    (require 'evil-org-agenda)
-    (evil-org-agenda-set-keys)))
+              (lambda () (evil-org-set-key-theme)))))
 
 (use-package evil-commentary
   :after evil
@@ -839,7 +821,6 @@ play well with `evil-mc'."
   :general
   (leader-map
     "SPC"	'consult-buffer
-    "sa"	'consult-org-agenda
     "so"	'consult-outline
     "sm"	'consult-mark
     "sl"	'consult-line
@@ -1196,24 +1177,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
 (use-package origami
   :config
-  (progn
-    (with-eval-after-load 'org-super-agenda
-      (bind-key "<tab>" 'origami-toggle-node 'org-super-agenda-header-map))
-    (defvar me/org-super-agenda-auto-hide-groups
-      '("Done Today" "Clocked Today"))
-
-    (defun me/org-super-agenda-origami-fold-default ()
-      "Fold certain groups by default in Org Super Agenda buffer.
-       To enable:
-       `(add-hook 'org-agenda-finalize 'me/org-super-agenda-origami-fold-default)'"
-      (forward-line 3)
-      (--each me/org-super-agenda-auto-hide-groups
-        (goto-char (point-min))
-        (when (re-search-forward (rx-to-string `(seq bol " " ,it)) nil t)
-          (origami-close-node (current-buffer) (point)))))
-    (add-hook 'org-agenda-finalize-hook 'me/org-super-agenda-origami-fold-default)
-    (global-origami-mode)
-    (add-hook 'org-agenda-mode-hook 'origami-mode)))
+  (global-origami-mode))
 
 (use-package org
   :demand t
@@ -1227,13 +1191,6 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
     (variable-pitch-mode 1)
     (visual-line-mode 1))
 
-  (defun me/insert-timestamp ()
-    (interactive)
-    (let ((current-prefix-arg '(16))) (call-interactively 'org-time-stamp-inactive))) ; Universal Argument x2 - 4*4
-
-  (defun me/org-agenda-place-point ()
-    (goto-char (point-min)))
-
   (defun me/org-babel-tangle-config ()
     (when (string-equal (file-name-directory (buffer-file-name))
                         (expand-file-name user-emacs-directory))
@@ -1241,13 +1198,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
       (let ((org-confirm-babel-evaluate nil))
         (org-babel-tangle))))
 
-
-  ;; Directories ;;
-  ;;(defconst me/org-dir "~/Org/")
-
   ;; Files ;;
-  ;; (defconst me/org-todo-file (concat me/org-dir "todo.org"))
-  ;; (defconst me/org-archive-file (concat me/org-dir "archive.org"))
   (defconst me/org-emacs-config-file (concat user-emacs-directory "README.org"))
 
   :config
@@ -1259,15 +1210,6 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
     (general-unbind org-mode-map
       "C-c ?" nil)
 
-    ;; (leader-map
-    ;;   "t"  'org-capture
-    ;;   "a" 'org-agenda
-    ;;   "l"  'org-store-link
-    ;;   "L" 'org-insert-link
-    ;;   "fo" 'org-save-all-org-buffers
-    ;;   "oc" 'org-clock-goto
-    ;;   "op" 'org-set-property)
-
     (local-leader-map org-mode-map
       "p" 'org-set-property
       "s" '(:ignore t :wk "search")
@@ -1275,15 +1217,12 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
       "Ti" 'org-table-field-info
       "i" '(:ignore t :wk "insert")
       "it" 'org-set-tags-command
-      "id" 'me/insert-timestamp
       "is" 'org-insert-structure-template
       "e" '(:ignore t :wk "edit")
       "es" 'org-sort
-      "sh" 'org-ql-find-heading
       "sm" 'org-match-sparse-tree
       "sM" 'org-tags-sparse-tree
-      "st" 'org-sparse-tree
-      "sT" 'org-ql-sparse-tree)
+      "st" 'org-sparse-tree)
 
     (general-def '(motion normal) org-mode-map
       "gt" 'org-toggle-heading
@@ -1297,16 +1236,8 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
         (call-interactively #'evil-insert-state)))
 
     (general-def '(motion normal) org-mode-map
-      "M-S-RET"      #'evil-org-org-insert-todo-heading-respect-content-below
-      "M-S-<return>" #'evil-org-org-insert-todo-heading-respect-content-below
       "M-RET"      #'me/org-insert-subheading
       "M-<return>" #'me/org-insert-subheading)
-
-    ;; Orgql
-    (with-eval-after-load 'org-ql
-      (local-leader-map org-mode-map
-        "sh" 'org-ql-find-heading
-        "sT" 'org-ql-sparse-tree))
 
     ;; Consult
     (with-eval-after-load 'consult
@@ -1317,10 +1248,6 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
       (leader-map org-mode-map
         "ss" 'consult-org-heading))
 
-    ;; Org Agenda Keybinds
-    (local-leader-map org-agenda-mode-map
-      "l" 'org-agenda-log-mode)
-
     ;; Org Src Keybinds
     (general-def org-src-mode-map
       [remap save-buffer] 'org-edit-src-exit)
@@ -1328,50 +1255,14 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
     (local-leader-map org-src-mode-map
       "s" 'org-edit-src-exit)
 
-    ;; Capture Keybinds
-    (general-def org-capture-mode-map
-      [remap save-buffer] 'org-capture-finalize)
-
-
-
     ;; Hooks ;;
-    (org-clock-persistence-insinuate)
     (add-hook 'org-mode-hook 'me/org-mode-initial-setup)
     (add-hook 'org-src-mode-hook 'evil-normalize-keymaps)
-
-
-    ;; Directories ;;
-    ;;(setq org-directory me/org-dir)
 
     ;; Visuals ;;
     (setq org-ellipsis " ▼ ")
     (setq org-pretty-entities t)
     (setq org-fontify-todo-headline t)
-
-    ;; Behavior ;;
-    (setq org-cycle-emulate-tab 'white)
-    (setq org-catch-invisible-edits 'smart)
-    (setq org-link-search-must-match-exact-headline nil)
-    (setq org-log-done 'time)
-    (setq org-log-into-drawer t)
-    (setq org-log-state-notes-into-drawer t)
-    (setq org-extend-today-until 4)
-    (setq org-duration-format 'h:mm)
-    (setq-default org-enforce-todo-dependencies t)
-
-    ;; Archiving ;;
-    ;;(setq org-archive-location (concat me/org-archive-file "::* From %s"))
-    (defun me/org-archive-done-tasks ()
-      (interactive)
-      (org-map-entries
-       (lambda ()
-         (org-archive-subtree)
-         (setq org-map-continue-from (org-element-property :begin (org-element-at-point))))
-       "/+DONE|+CANCELLED" 'tree))
-
-    (local-leader-map org-mode-map
-      "A" 'me/org-archive-done-tasks)
-
 
     ;; Source Editing ;;
     (setq org-edit-src-turn-on-auto-save t)
@@ -1387,33 +1278,6 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
     (general-def org-mode-map
       [remap org-edit-special] #'me/org-edit-special)
-
-    ;; Time and Clock settings ;;
-    (setq org-clock-out-when-done t)
-    (setq org-clock-out-remove-zero-time-clocks t)
-
-    ;; Resume clocking task on clock-in if the clock is open
-    (setq org-clock-in-resume t)
-
-    ;; Save the running clock and all clock history when exiting Emacs, load it on startup
-    (setq org-clock-persist t)
-    (setq org-clock-report-include-clocking-task t)
-    (setq org-clock-persist-query-resume nil)
-    (setq org-clock-auto-clock-resolution (quote when-no-clock-is-running))
-
-    ;; Use a function to decide what to change the state to.
-    (defun me/switch-task-on-clock-start (task-state)
-      (if (or (string= task-state "TODO")(string= task-state "NEXT"))
-          "PROG"
-        task-state))
-    (setq org-clock-in-switch-to-state #'me/switch-task-on-clock-start)
-
-
-    ;; Refile ;;
-    (setq org-refile-use-outline-path nil)
-    (setq org-refile-allow-creating-parent-nodes 'confirm)
-    ;;(setq org-refile-targets `((,(directory-files-recursively "~/Org/" "^[a-z0-9]*.org$") :maxlevel . 5)))
-
 
     ;; Fonts ;;
     ;; Replace list hyphen with dot
@@ -1444,131 +1308,10 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
     (set-face-attribute 'line-number-current-line nil :inherit 'fixed-pitch)
     (set-face-attribute 'org-hide nil :inherit 'fixed-pitch)
 
-
-    ;; Org Habits ;;
-    (require 'org-habit)
-    (add-to-list 'org-modules 'org-habit)
-    (setq org-habit-today-glyph ?◌
-          org-habit-completed-glyph ?●
-          org-habit-missed-glyph ?○
-          org-habit-preceding-days 7
-          org-habit-show-habits-only-for-today t
-          org-habit-graph-column 65)
-
-
-    ;; Org Todos ;;
-    (setq org-todo-keywords
-          '((sequence "TODO(t)" "NEXT(n)" "PROG(p)" "WAIT(w@)" "SOMEDAY(s)" "|" "DONE(d!)" "CANCELLED(c!)")))
-
-    (setq org-todo-keyword-faces
-          '(("TODO" . (:foreground "#00ff66" :weight bold))
-            ("NEXT" . (:foreground "#66ffff"
-                                   :weight bold))
-            ("PROG"  . (:foreground "#ff0066"
-                                    :weight bold))
-            ("WAIT"  . (:foreground "#FF6600"
-                                    :weight bold))
-            ("DONE" . (:foreground "darkgrey"
-                                   :weight bold))
-            ("CANCELLED" . (:foreground "darkgrey"
-                                        :weight bold))))
-
-
-    ;; Org Tags ;;
-    (setq org-tag-persistent-alist
-          '(("ARCHIVE" . ?A)
-            ("work" . ?b)
-            ("emacs" . ?e)
-            ("idea" . ?i)
-            ("snippet" . ?s)))
-
-
-    ;; Org Agenda ;;
-
-    ;; Agenda Evil Keybinds
-    (evil-define-key 'motion org-agenda-mode-map (kbd "sf") 'org-agenda-filter)
-    (evil-define-key 'motion org-agenda-mode-map (kbd "zc") 'evil-close-fold)
-    (evil-define-key 'motion org-agenda-mode-map (kbd "zo") 'evil-open-fold)
-    (evil-define-key 'motion org-agenda-mode-map (kbd "zr") 'evil-open-folds)
-    (evil-define-key 'motion org-agenda-mode-map (kbd "zm") 'evil-close-folds)
-    (evil-define-key 'motion org-agenda-mode-map (kbd "zO") 'evil-open-fold-rec)
-    (evil-define-key 'motion org-agenda-mode-map (kbd "za") 'evil-toggle-fold)
-
-    ;; Agenda Settings ;;
-
     ;; Open links in current window
     (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file)
-    ;;(directory-files-recursively "~/Org/" "^[a-z0-9]*.org$")
-    (setq org-agenda-start-on-weekday nil)
-    (setq org-agenda-start-with-log-mode t)
-    (setq org-agenda-start-day nil)
-    (setq org-agenda-todo-ignore-scheduled 'future)
-    (setq org-agenda-skip-scheduled-if-deadline-is-shown t)
-    (setq org-agenda-compact-blocks t)
-    (setq org-agenda-window-setup 'current-window)
-    (setq org-agenda-restore-windows-after-quit t)
-    (setq org-agenda-use-time-grid nil)
-    (setq org-deadline-warning-days 1)
-    ;; (setq org-agenda-skip-timestamp-if-done t)
-    (setq org-agenda-current-time-string "⏰ ┈┈┈┈┈┈┈┈┈┈┈ now"
-          org-agenda-time-grid '((daily today require-timed)
-                                 (800 1000 1200 1400 1600 1800 2000)
-                                 "---" "┈┈┈┈┈┈┈┈┈┈┈┈┈")
-          org-agenda-prefix-format '(
-                                     (agenda . " %i %-12:c%?-12t% s")
-                                     (todo . " %i  ")
-                                     (tags . " %i  ")
-                                     (search . " %i  ")))
 
-    (setq org-agenda-hide-tags-regexp
-          (concat org-agenda-hide-tags-regexp "\\|sometag"))
-
-    (setq org-agenda-format-date (lambda (date) (concat "\n" (make-string (window-width) 9472)
-                                                        "\n"
-                                                        (org-agenda-format-date-aligned date))))
     (setq org-cycle-separator-lines 0)
-    (setq org-agenda-category-icon-alist
-          `(("work" ,(list (all-the-icons-faicon "cogs")) nil nil :ascent center)
-            ("emacs" ,(list (all-the-icons-material "usb")) nil nil :ascent center)
-            ("inbox" ,(list (all-the-icons-material "inbox")) nil nil :ascent center)
-            ("computer" ,(list (all-the-icons-material "computer")) nil nil :ascent center)
-            ("personal" ,(list (all-the-icons-material "person")) nil nil :ascent center)
-            ("programming" ,(list (all-the-icons-material "code")) nil nil :ascent center)
-            ("gaming" ,(list (all-the-icons-material "videogame_asset")) nil nil :ascent center)
-            ("calendar" ,(list (all-the-icons-faicon "calendar")) nil nil :ascent center)))
-    (add-hook 'org-agenda-finalize-hook #'me/org-agenda-place-point 90)
-
-
-    ;; Org Capture ;;
-    (defun my-org-capture-place-template-dont-delete-windows (oldfun &rest args)
-      (cl-letf (((symbol-function 'delete-other-windows) 'ignore))
-        (apply oldfun args)))
-
-    (with-eval-after-load "org-capture"
-      (advice-add 'org-capture-place-template :around 'my-org-capture-place-template-dont-delete-windows))
-
-    (setq org-capture-templates
-          '(("c" "Current" entry
-             (file+headline me/org-todo-file "Inbox")
-             "* PROG %?\n%t\n" :prepend t :clock-in t :clock-keep t :clock-resume t)
-            ("e" "Emacs Task" entry
-             (file+headline me/org-todo-file "Emacs")
-             "* TODO %?\n%U\n" :prepend t)
-            ("t" "Task" entry
-             (file+headline me/org-todo-file "Inbox")
-             "* TODO %?\n%U\n" :prepend t)
-            ("T" "Task (Scheduled)" entry
-             (file+headline me/org-todo-file "Inbox")
-             "* TODO %?\nSCHEDULED: %^t\n" :prepend t)
-            ;; Work ;;
-            ("w" "Work Captures")
-            ("wt" "Work Task" entry
-             (file+headline me/org-todo-file "Work")
-             "* TODO %? :work:\n%U\n" :prepend t)
-            ("wT" "Work Task (Scheduled)" entry
-             (file+headline me/org-todo-file "Work")
-             "* TODO %?\nSCHEDULED: %^T\n" :prepend t)))
-
 
     ;; Babel ;;
     (setq org-confirm-babel-evaluate nil)
@@ -1588,75 +1331,12 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
   (setq org-auto-align-tags nil
         org-tags-column 0
         org-catch-invisible-edits 'show-and-error
-        org-insert-heading-respect-content t
-        org-agenda-tags-column 0)
+        org-insert-heading-respect-content t)
   :config
   (set-face-attribute 'org-modern-symbol nil :family "Fira Code Retina")
   (setq org-modern-checkbox nil)
   (setq org-modern-keyword "‣")
-
-  (setq org-modern-todo-faces
-        (quote (("TODO" :inverse-video t :weight semibold :foreground "#00ff66" :inherit (org-modern-label))
-                ("NEXT" :inverse-video t :weight semibold :foreground "#66ffff" :inherit (org-modern-label))
-                ("PROG" :inverse-video t :weight semibold :foreground "#ff0066" :inherit (org-modern-label))
-                ("DONE" :inverse-video t :weight semibold :foreground "darkgrey" :inherit (org-modern-label))
-                ("CANCELLED" :inverse-video t :weight semibold :foreground "darkgrey" :inherit (org-modern-label)))))
   (global-org-modern-mode))
-
-(use-package delve
-  :straight (:repo "publicimageltd/delve"
-                   :host github
-                   :type git)
-  :after (org-roam)
-  :init
-  (setq delve-storage-paths (no-littering-expand-var-file-name "delve"))
-  (setq delve-minor-mode-prefix-key "M-n")
-  :demand t
-  :config
-  (progn
-    (leader-map
-      "rd" 'delve)
-    (evil-set-initial-state 'delve-mode 'emacs)
-    (general-def 'emacs delve-mode-map
-      "j" #'next-line
-      "k" #'previous-line
-      [remap bury-buffer] #'me/quit-window-force)
-    ;; (general-def '(normal motion) delve-mode-map
-    ;;   "<return>" #'delve--key--toggle-preview
-    ;;   "<tab>" #'delve--key--tab
-    ;;   "i" #'delve--key--insert-query-or-pile
-    ;;   "gr" #'delve--key--sync
-    ;;   "v" #'delve-compact-view-mode
-    ;;   "p" #'delve--key--yank
-    ;;   "F" #'delve-find-storage-file
-    ;;   "S" #'delve-write-buffer
-    ;;   "s" #'delve-save-buffer
-    ;;   "q" #'me/quit-window-force
-    ;;   "<delete>" #'delve--key--multi-delete
-    ;;   "E" #'delve--node-transient-key
-    ;;   "gh" #'delve--key--insert-heading
-    ;;   "c" #'delve--key--collect-into-buffer
-    ;;   "C" #'delve--key--collect-into-pile
-    ;;   [remap org-roam-buffer-toggle] #'delve--key--roam
-    ;;   "o" #'delve--key--open-zettel
-    ;;   "C-l" #'delve--key--fromlinks
-    ;;   "f" #'delve--key--fromlinks
-    ;;   "b" #'delve--key--backlinks
-    ;;   "C-h" #'delve--key--backlinks
-    ;;   "t" #'delve--key--insert-tagged
-    ;;   "T" #'delve--key--insert-node-by-tags
-    ;;   "gs" #'delve--key--sort
-    ;;   "+" #'delve--key--add-tags
-    ;;   "-" #'delve--key--remove-tags)
-
-
-    ;; set meaningful tag names for the dashboard query
-    (setq delve-dashboard-tags '("games" "topic" "fleeting" "project" "inbox" "reference"))
-    ;; optionally turn on compact view as default
-    (add-hook #'delve-mode-hook #'delve-compact-view-mode)
-    (add-hook 'org-roam-mode-hook 'delve--maybe-activate-minor-mode)
-    ;; turn on delve-minor-mode when Org Roam file is opened:
-    (delve-global-minor-mode)))
 
 (use-package visual-fill-column
   :preface
@@ -1746,18 +1426,10 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
 
 (use-package lsp-mode
   :hook
-  ((c-mode          ; clangd
-    c++-mode        ; clangd
-    c-or-c++-mode   ; clangd
-    java-mode       ; eclipse-jdtls
-    js-mode         ; ts-ls (tsserver wrapper)
+  ((js-mode         ; ts-ls (tsserver wrapper)
     js-jsx-mode     ; ts-ls (tsserver wrapper)
     typescript-mode ; ts-ls (tsserver wrapper)
-    python-mode     ; pyright
     web-mode        ; ts-ls/HTML/CSS
-    haskell-mode    ; haskell-language-server
-    csharp-mode
-    csharp-tree-sitter-mode
     ) . lsp-deferred)
   ;; (lsp-completion-mode . me/lsp-mode-setup-completion)
   :commands lsp
@@ -1765,33 +1437,15 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
   ;; :custom (lsp-completion-provider :none)
   :init
   (setq lsp-keymap-prefix "C-l")
-  ;; (defun me/orderless-dispatch-flex-first (_pattern index _total)
-  ;;   (and (eq index 0) 'orderless-flex))
-
-  ;; (defun me/lsp-mode-setup-completion ()
-  ;;   (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
-  ;;         '(orderless-regex orderless-flex)))
-
-  ;; Optionally configure the first word as flex filtered.
-  ;;(add-hook 'orderless-style-dispatchers #'me/orderless-dispatch-flex-first nil 'local)
-
-  ;; Optionally configure the cape-capf-buster.
-  (with-eval-after-load 'cape
-    (setq-local completion-at-point-functions (list (cape-capf-buster #'lsp-completion-at-point))))
-
   :config
   (lsp-enable-which-key-integration t)
 
   (local-leader-map prog-mode-map
     "l" (general-simulate-key "C-l"))
-  ;; (setq lsp-csharp-omnisharp-roslyn-download-url "https://github.com/OmniSharp/omnisharp-roslyn/releases/download/v1.39.0/omnisharp-linux-x64.zip")
-  (setq lsp-auto-guess-root nil)
-  ;;(setq lsp-log-io nil)
   (setq lsp-restart 'auto-restart)
   ;;(setq lsp-enable-symbol-highlighting nil)
   ;;(setq lsp-enable-on-type-formatting nil)
   ;;(setq lsp-signature-auto-activate nil)
-  (setq lsp-disabled-clients '(csharp-ls))
   (setq lsp-eldoc-enable-hover nil)
   (setq lsp-signature-render-documentation nil)
   (setq lsp-modeline-code-actions-enable nil)
@@ -1852,36 +1506,7 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
   (progn
     (dap-auto-configure-mode)
     (require 'dap-node)
-    (dap-node-setup)
-    (require 'dap-netcore)))
-
-
-
-(use-package rjsx-mode
-  :config
-  (add-to-list 'auto-mode-alist '("\\.js\\'" . rjsx-mode)))
-
-(use-package typescript-mode
-  :after tree-sitter
-  :config
-  (define-derived-mode typescriptreact-mode typescript-mode
-    "TypeScript TSX")
-
-  ;; use our derived mode for tsx files
-  (add-to-list 'auto-mode-alist '("\\.tsx?\\'" . typescriptreact-mode))
-  (add-to-list 'tree-sitter-major-mode-language-alist '(typescriptreact-mode . tsx)))
-
-(use-package csharp-mode
-  :config
-  (add-to-list 'auto-mode-alist '("\\.cs\\'" . csharp-tree-sitter-mode)))
-
-(use-package docker
-  :general
-  (local-leader-map prog-mode-map
-    "D" 'docker))
-
-(use-package dockerfile-mode
-    :mode ("Dockerfile\\'" . dockerfile-mode))
+    (dap-node-setup)))
 
 (use-package yaml-mode)
 
@@ -1931,34 +1556,6 @@ _h_ ^✜^ _l_       _b__B_ buffer/alt  _x_ Delete this win    ^_C-w_ _C-j_
     (setq vterm-buffer-name-string "vterm %s")
     (setq vterm-shell "fish")
     (setq vterm-max-scrollback 10000)))
-
-(use-package fish-mode)
-
-(use-package dashboard
-  :custom ((dashboard-agenda-sort-strategy '(todo-state-down)))
-  :config
-  (setq dashboard-week-agenda nil)
-  (setq dashboard-filter-agenda-entry 'dashboard-filter-agenda-by-todo)
-  (setq dashboard-set-heading-icons t)
-  (setq dashboard-set-file-icons t)
-  (setq dashboard-set-navigator t)
-  (setq dashboard-set-init-info t)
-  (setq dashboard-image-banner-max-height 190)
-
-  ;; Format: "(icon title help action face prefix suffix)"
-  (setq dashboard-navigator-buttons
-        `(;; line1
-          ((,(all-the-icons-faicon "calendar" :height 1.1 :v-adjust 0.0)
-            "Agenda"
-            "Browse Agenda"
-            (lambda (&rest _) (org-agenda)))
-           (,(all-the-icons-faicon "list" :height 1.1 :v-adjust 0.0)
-            "Views"
-            "Browse Views"
-            (lambda (&rest _) (org-ql-view-sidebar)))
-           ("⚙" nil "Open Config" (lambda (&rest _) (me/open-config)) success))))
-
-  (dashboard-setup-startup-hook))
 
 (use-package perspective
   :defer nil
